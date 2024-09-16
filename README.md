@@ -3,8 +3,8 @@
 by fishing game
 
 ## Team Members
-* Advanced Topic Subteam 1: Fluid Dynamics
-	* STUDENT1NAMEHERE
+* Advanced Topic Subteam 1: Physics/Fluid Dynamics
+	* NAMEHERE
 
 * Advanced Topic Subteam 2: 
 	* STUDENT2NAMEHERE
