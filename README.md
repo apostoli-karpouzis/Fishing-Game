@@ -21,6 +21,25 @@ For this advanced topic we want to create a semi-realistic physics simulation of
 ## Advanced Topic 2
 
 ## Midterm Goals
-
+### Physics Midterm Goals:
+* Calculate drag force for fish types 
+  *  Size
+  *  Mass
+  *  Fish behavior
+  *  Velocity
+* Player-fish-rod-physics
+  * Reeling mechanics
+  * Orientation of fish
+  * Orientation of player relative to fish
+   
 ## Final Goals
+### Physics Final Goals:
+* Fishing rod
+  * Line breaking
+  * Rod bending visual
+* Lure
+  * Weight
+  * Size
+* Water current
+* Debris    
 
