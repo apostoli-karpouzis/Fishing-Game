@@ -4,10 +4,17 @@ by fishing game
 
 ## Team Members
 * Advanced Topic Subteam 1: Physics/Fluid Dynamics
-	* NAMEHERE
+	* Cole Metrick
+	* Ken Barrett
+	* Jason Ye
+	* Dheyab Alshehh
 
 * Advanced Topic Subteam 2: 
-	* STUDENT2NAMEHERE
+	* Ben Gradeck
+	* Jackie Colmenares
+	* Apostoli Karpouzis
+	* Corey Medve
+
 
 ## Game Description
 
@@ -26,6 +33,9 @@ DESCRIPTIONHERE
 
 ## Midterm Goals
 
+### General Midterm Goals:
+
+
 ### Physics Midterm Goals:
 * Calculate drag force for fish types 
   *  Size
@@ -41,6 +51,9 @@ DESCRIPTIONHERE
 ...
 
 ## Final Goals
+
+### General Final Goals:
+
 
 ### Physics Final Goals:
 * Fishing rod
