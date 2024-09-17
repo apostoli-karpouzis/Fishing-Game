@@ -94,7 +94,10 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
   * Different regions of the map can have different weather at the same time
   * Weather can change throughout the day
 
-## Stretch Goals
+## Stretch Goals (10%)
 
-* GOAL1HERE
-* GOAL2HERE
+* Add 2 items that enhances the players ability to catch a fish (5%)
+  * A pair of polarized glasses to improve the odds of finding fish
+  * A new rod to change how the players interacts with the physics
+* Add a legendary rarity fish (5%)
+  * Much harder to catch and spawns less often than the other fish types
