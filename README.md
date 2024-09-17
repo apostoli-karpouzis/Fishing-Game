@@ -80,6 +80,7 @@ DESCRIPTIONHERE
 
 ### Bayesian Networks (20%)
 * 3 different fishing enviroments (5%)
+  * Fishing enviroments attempt to maintain a population of fish with fish being added/removed each day 
 * 5 different types of fish (5%)
 * Implementation of day/night cycle (5%)
   * Look / lighting in the world changes based off of the time of day
