@@ -19,12 +19,13 @@ by fishing game
 ## Game Description
 
 Fishing Game is a Top Down adventure/fishing game 
-	- The basic gameplay loop is split between looking for different fishing spots
-	- Once a spot is found the player will cast the bait and reel in attempting to catch a fish
-	- There will be realistic distance thrown, and reeling in would feel real
-	- The reels would need to be used correctly or the probability of catching fish would drop drastically 
-	- Once a fish is on the line you need to reel it in accurately or else the line will snap and you lose the fish 
+	* The basic gameplay loop is split between looking for different fishing spots
+	* Once a spot is found the player will cast the bait and reel in attempting to catch a fish
+	* There will be realistic distance thrown, and reeling in would feel real
+	* The reels would need to be used correctly or the probability of catching fish would drop drastically 
+	* Once a fish is on the line you need to reel it in accurately or else the line will snap and you lose 
 
+ ### Concept Art:
 ![Artwork](art/art1.png)
 ![Artwork](art/art2.png)
 ![Artwork](art/art3.png)
