@@ -39,15 +39,20 @@ DESCRIPTIONHERE
 
 
 ### Physics
-* Calculate drag force for fish types 
-  *  Size
-  *  Mass
-  *  Fish behavior
-  *  Velocity
-* Player-fish-rod-physics
-  * Reeling mechanics
-  * Orientation of fish
-  * Orientation of player relative to fish
+* Fish drag force
+  * Physical characteristics
+    * Mass
+    * Size
+    * Shape
+  * Motion
+    * Velocity
+    * Rotation
+* Fish behavior
+   * Strength
+   * Aggressiveness
+* Player-fish-rod interaction
+   * Reeling mechanics
+   * Orientation of player and fish
     
 ### Bayesian Networks
 * Create one fishing environment
@@ -56,21 +61,22 @@ DESCRIPTIONHERE
 * Create two different fish types
   * Bayesian network for activity of the fish types
   * Take time of day, water depth, and weather into account for Bayesian networks
-  * 
+
+
 ## Final Goals
 
 ### General
 
 
-### Physics(20% total)
-* Fishing rod(6%)
+### Physics (20% total)
+* Fishing rod (6%)
   * Line breaking
   * Rod bending visual
-* Lure(6%)
+* Lure (6%)
   * Weight
   * Size
-* Water current(4%)
-* Debris(4%)
+* Water current (4%)
+* Debris (4%)
 
 ### Bayesian Networks
 
