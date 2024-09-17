@@ -57,15 +57,15 @@ DESCRIPTIONHERE
 ### General
 
 
-### Physics
-* Fishing rod
+### Physics(20% total)
+* Fishing rod(8%)
   * Line breaking
   * Rod bending visual
-* Lure
+* Lure(4%)
   * Weight
   * Size
-* Water current
-* Debris
+* Water current(4%)
+* Debris(4%)
 
 ### Bayesian Networks
 
