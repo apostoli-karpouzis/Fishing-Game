@@ -60,7 +60,7 @@ DESCRIPTIONHERE
   * Incorporate time of day and weather into environment's model/fish spawn probability
 * Create two different fish types
   * Bayesian network for activity of the fish types
-  * Take time of day, water depth, and weather into account for Bayesian networks
+  * Take time of day, water depth, and weather into account for Bayesian networks (with fixed values for each)
 
 
 ## Final Goals
