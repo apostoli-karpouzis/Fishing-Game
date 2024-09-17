@@ -63,10 +63,10 @@ DESCRIPTIONHERE
 
 
 ### Physics(20% total)
-* Fishing rod(8%)
+* Fishing rod(6%)
   * Line breaking
   * Rod bending visual
-* Lure(4%)
+* Lure(6%)
   * Weight
   * Size
 * Water current(4%)
