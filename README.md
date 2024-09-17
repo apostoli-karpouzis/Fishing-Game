@@ -32,13 +32,10 @@ We are making a top-down Fishing and exploration game. The player will explore t
 ### Advanced Physics/Fluid Dynamics
 
 Since our game is primarly played with a top down view, the physics will focus on the x and y axis with some z axis calculations for the baits (i.e. surface baits vs underwater baits). The translational and rotational motion of the fish will be calculated based on player actions, fish characteristics, and fishing rod characteristics. Fluid-dynamic drag will factor into the motion. Projectile motion will be incorpoated for lure casting based on the lure weight and rod strength. The tensile strength of the fishing rod and line will be taken into account for visuals and line snapping. For example, the rod will bend more when there is more tension on the line. Environmental factors like water currents and debris will affect tension on the line and increase drag.
-    
-### Advanced Baysean Graph (Fish AI)
 
 ### Bayesian Networks (AI)
 
-
-DESCRIPTIONHERE
+Our goal with AI is to simulate the existence of how many fish are in the pond, and what types of fish they are, as well as their behavior. We will develop a behavior tree to model the variety of actions for each fish species. The fish behavior will be dependant on how close the lures are, and what kind of bait is in the water. These fish actions will be passed on to the fluid dynamics team. Depending on how the fish is moving, slowly or quickly, towards or away from the lure, will affect the water movement. The fish behavior will be calculated per frame, and the existance of those fish will be evaluated in a larger scope of the game world. 
 
 
 ## Midterm Goals
