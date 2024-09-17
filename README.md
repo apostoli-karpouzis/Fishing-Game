@@ -78,9 +78,15 @@ DESCRIPTIONHERE
 * Water current (4%)
 * Debris (4%)
 
-### Bayesian Networks
-
-
+### Bayesian Networks (20%)
+* 3 different fishing enviroments (5%)
+* 5 different types of fish (5%)
+* Implementation of day/night cycle (5%)
+  * Look / lighting in the world changes based off of the time of day
+  * The fish able to be caught and the activity of the enviroments differ on the time of day
+* Implement weather cycle (5%)
+  * Different regions of the map can have different weather at the same time
+  * Weather can change throughout the day
 ## Stretch Goals
 
 * GOAL1HERE
