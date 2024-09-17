@@ -18,18 +18,14 @@ by fishing game
 
 ## Game Description
 
-Fishing Game is a Top Down adventure/fishing game 
-	* The basic gameplay loop is split between looking for different fishing spots
-	* Once a spot is found the player will cast the bait and reel in attempting to catch a fish
-	* There will be realistic distance thrown, and reeling in would feel real
-	* The reels would need to be used correctly or the probability of catching fish would drop drastically 
-	* Once a fish is on the line you need to reel it in accurately or else the line will snap and you lose 
+We are making a top-down Fishing and exploration game. The player will explore the game world looking for new bodies of water to catch fish in. Along the way players will obtain new equiptment, sell their catches for money, and work towards catching the biggest fish they can. The gameplay will have two main Advanced topics to give some realism to the fishing. Fluid Dynamics will simulate casting the bait, using the lure, then dragging the fish in. It will simulate realistic fluic dynamics to give an accurate simulation of fishing. Once a fish is on the line the player will have to sucessfully reel a fish in without the fish snapping the line. The other advanced topic is sophisticated fish AI. There will be a determined number of fish in each water source. The fish in the game will all behave differently depending on species, ex: catfish staying exclusivly at the bottom, or trout only fishing against a streams current. New fish will spawn on a cycle to simulate fish reaching maturity or dying in order to simulate a target population. Enviornmental aspects and lure use will simulate catching fish, better lure use or casting into an ideal location will influence the fish to get hooked more often. 
 
- ### Concept Art:
+### Concept Art:
 ![Artwork](art/art1.png)
 ![Artwork](art/art2.png)
 ![Artwork](art/art3.png)
 ![Artwork](art/art4.png)
+
 
 ## Advanced Topic Description
 
@@ -37,7 +33,10 @@ Fishing Game is a Top Down adventure/fishing game
 
 Since our game is primarly played with a top down view, the physics will focus on the x and y axis with some z axis calculations for the baits (i.e. surface baits vs underwater baits). The translational and rotational motion of the fish will be calculated based on player actions, fish characteristics, and fishing rod characteristics. Fluid-dynamic drag will factor into the motion. Projectile motion will be incorpoated for lure casting based on the lure weight and rod strength. The tensile strength of the fishing rod and line will be taken into account for visuals and line snapping. For example, the rod will bend more when there is more tension on the line. Environmental factors like water currents and debris will affect tension on the line and increase drag.
     
+### Advanced Baysean Graph (Fish AI)
+
 ### Bayesian Networks (AI)
+
 
 DESCRIPTIONHERE
 
