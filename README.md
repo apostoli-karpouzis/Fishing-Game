@@ -22,11 +22,12 @@ DESCRIPTIONHERE
 
 CONCEPTARTHERE
 
+
 ## Advanced Topic Description
 
 ### Advanced Physics/Fluid Dynamics
 
-For this advanced topic we want to create a semi-realistic physics simulation of fishing. Since our game is primarly played with a top down view, we will primarily focus on the x, y axis of for our physics. Despite this we are going to incorporate some physics in the z-axis to simulate the use of surface bates as apposed to those that say in the water column. A main focus of the physics interactions are going to be tensile forces. We will calculate the current tensile force on fishing line based on multiple factors. This being the mass of the fish, the current speed of a fish, the direction that the player faces in relation to the fish and how hard the player is reeling. We will implement physics equations that utilize tension and water-drag to assist in our calculations. We will also incorporate some sort of projectile calculation to determine how far lures can be cast based upon the weight of the lure and rods strength. Along with these in game calculations we will give visual feedback to the user by having the rod bend more when there is more tension on the line. We are also going to incorporate environmental factors that could impact the tension on the line, such as a current in the water, or getting caught on debris.
+Since our game is primarly played with a top down view, the physics will focus on the x and y axis with some z axis calculations for the baits (i.e. surface baits vs underwater baits). The translational and rotational motion of the fish will be calculated based on player actions, fish characteristics, and fishing rod characteristics. Fluid-dynamic drag will factor into the motion. Projectile motion will be incorpoated for lure casting based on the lure weight and rod strength. The tensile strength of the fishing rod and line will be taken into account for visuals and line snapping. For example, the rod will bend more when there is more tension on the line. Environmental factors like water currents and debris will affect tension on the line and increase drag.
     
 ### Bayesian Networks (AI)
 
@@ -39,7 +40,7 @@ DESCRIPTIONHERE
 
 
 ### Physics
-* Fish drag force
+* Calculate fish drag force
   * Physical characteristics
     * Mass
     * Size
@@ -47,11 +48,11 @@ DESCRIPTIONHERE
   * Motion
     * Velocity
     * Rotation
-* Fish behavior
+* Calculate force exerted by fish
    * Strength
    * Aggressiveness
-* Player-fish-rod interaction
-   * Reeling mechanics
+* Implement player-fish-rod interaction
+   * Reeling
    * Orientation of player and fish
     
 ### Bayesian Networks
@@ -71,7 +72,7 @@ DESCRIPTIONHERE
 ### Physics (20% total)
 * Fishing rod (6%)
   * Line breaking
-  * Rod bending visual
+  * Rod bending
 * Lure (6%)
   * Weight
   * Size
@@ -87,6 +88,7 @@ DESCRIPTIONHERE
 * Implement weather cycle (5%)
   * Different regions of the map can have different weather at the same time
   * Weather can change throughout the day
+
 ## Stretch Goals
 
 * GOAL1HERE
