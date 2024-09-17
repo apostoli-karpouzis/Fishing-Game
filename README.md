@@ -35,7 +35,7 @@ Since our game is primarly played with a top down view, the physics will focus o
 
 ### Bayesian Networks (AI)
 
-Our goal with AI is to simulate the existence of how many fish are in the pond, and what types of fish they are, as well as their behavior. We will develop a behavior tree to model the variety of actions for each fish species. The fish behavior will be dependant on how close the lures are, and what kind of bait is in the water. These fish actions will be passed on to the fluid dynamics team. Depending on how the fish is moving, slowly or quickly, towards or away from the lure, will affect the water movement. The fish behavior will be calculated per frame, and the existance of those fish will be evaluated in a larger scope of the game world. 
+Our goal with AI is to simulate the existence of how many fish are in the pond, and what types of fish they are, as well as their behavior. We will develop a behavior tree to model the variety of actions for each fish species. The fish behavior will be dependant on how close the lures are, and what kind of bait is in the water, as well as environmental conditions. These fish actions will be passed on to the fluid dynamics team. Depending on how the fish is moving, slowly or quickly, towards or away from the lure, will affect the water movement. The fish behavior will be calculated per frame, and the existance of those fish will be evaluated in a larger scope of the game world. 
 
 
 ## Midterm Goals
