@@ -49,7 +49,13 @@ DESCRIPTIONHERE
     
 * GOAL2HERE
 ...
-
+### Bayesian Network Midterm Goals:
+* Create one fishing environment
+  * Defined model for introduction and removal of fish into environment
+  * Incorporate time of day and weather into environment's model/fish spawn probability
+* Create two different fish types
+  * Bayesian network for activity of the fish types
+  * Take time of day, water depth, and weather into account for Bayesian networks
 ## Final Goals
 
 ### General Final Goals:
