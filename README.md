@@ -91,8 +91,8 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 * Lure (6%)
   * Weight - Heavier lures will be in the water column not on the surface
   * Size - Larger lures will have more drag than smaller ones
-* Water current (4%)
-* Debris (4%)
+* Water current - affects tension on line (4%)
+* Debris - increases tension when debris is caught(4%)
 
 ### Bayesian Networks (20%)
 * 3 different fishing enviroments (5%)
