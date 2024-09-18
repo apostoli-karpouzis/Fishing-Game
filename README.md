@@ -45,7 +45,7 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 * 3 different lure types
 * Player movement for overworld exploration
 * Fluid dynamics for fishing mechanic
-* Small collection of fish types with basic behavior/probability for spawning maybe 4 fish, 
+* Small collection of fish types with basic behavior/probability for spawning maybe 4 fish
 * Shop system for buying lures and selling off fish
 * Simple functional animation to convey gameplay Ideas 
 
