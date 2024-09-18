@@ -77,11 +77,11 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Final Goals
 
 ### General (40%)
-* Multiple line types (braided, monofilament)
-* Expanded collection of fish types and behaviors
-* In water elements affecting spawning such as lily pads in ponds or rocks in water 
-* Weekly/random shop deals/fish
-* Rewarding exploration of map/more frequent playing with chance encounters (ex. random chance of finding rare lures in caught fish or on the ground of the map)
+* Multiple line types (braided, monofilament) (10%)
+* Expanded collection of fish types and behaviors (10%)
+* In water elements affecting spawning such as lily pads in ponds or rocks in water (8%)
+* Weekly/random shop deals/fish (6%)
+* Rewarding exploration of map/more frequent playing with chance encounters (ex. random chance of finding rare lures in caught fish or on the ground of the map) (6%)
 
 
 ### Physics (20%)
