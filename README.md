@@ -7,7 +7,7 @@ by fishing game
 	* Cole Metrick
 	* Ken Barrett
 	* Jason Ye
-	* Dheyab Alshehh
+	* Dheyab Alshehhi
 
 * Advanced Topic Subteam 2: Bayesian Networks
 	* Ben Gradeck
