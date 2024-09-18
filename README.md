@@ -86,11 +86,11 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 
 ### Physics (20%)
 * Fishing rod (6%)
-  * Line breaking
-  * Rod bending
+  * Line breaking when too much tension is reached
+  * Rod bending based on amount of tension on line
 * Lure (6%)
-  * Weight
-  * Size
+  * Weight - Heavier lures will be in the water column not on the surface
+  * Size - Larger lures will have more drag than smaller ones
 * Water current (4%)
 * Debris (4%)
 
