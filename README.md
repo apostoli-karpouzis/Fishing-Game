@@ -41,6 +41,13 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Midterm Goals
 
 ### General
+* 6x6 grid
+* 3 different lure types
+* Player movement for overworld exploration
+* Fluid dynamics for fishing mechanic
+* Small collection of fish types with basic behavior/probability for spawning maybe 4 fish, 
+* Shop system for buying lures and selling off fish
+* Simple functional animation to convey gameplay Ideas 
 
 
 ### Physics
@@ -71,6 +78,12 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Final Goals
 
 ### General
+* Different line types (braided, monofilament)
+* Expanded collection of fish types and behaviors
+* In water elements affecting spawning such as lily pads in ponds or rocks in water. 
+* Weekly/ random shop deals/ fish
+* Exploration objectives such as random chance to find rare lures in caught fishes or on the ground.
+Polished animations that look cool
 
 
 ### Physics (20% total)
