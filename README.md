@@ -111,7 +111,7 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
   * A new rod to change how the players interacts with the physics
 * Add a legendary rarity fish (3%)
   * Much harder to catch and spawns less often than the other fish types
-*Debris (2%)
+* Debris (2%)
   * increases tension when debris is caught
 * wild lures/items to find (2%)
   * makes exploration rewarding by hiding collectable items/better lures in the game world. 
