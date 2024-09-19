@@ -89,7 +89,7 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
   * Motion
     * Velocity
     * Rotation
-  * Different lures will act differently in water(4%)
+* Different lures will act differently in water(4%)
     * Heavier lures will sink and take longer to reel in due to water viscosity 
     * Surface lures will float and create more waves when reeling
 
