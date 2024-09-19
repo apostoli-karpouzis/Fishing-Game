@@ -81,7 +81,7 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 * Fishing rod (8%)
   * Line breaking when too much tension is reached
   * Rod bending based on amount of tension on line
-* Calculate fish drag force(8%)
+* Calculate fish drag force based on motion and characteristic of fish (8%)
   * Physical characteristics
     * Mass
     * Size
@@ -89,7 +89,7 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
   * Motion
     * Velocity
     * Rotation
-* Different lures will act differently in water(4%)
+* Different lures will act differently in water (4%)
     * Heavier lures will sink and take longer to reel in due to water viscosity 
     * Surface lures will float and create more waves when reeling
 
