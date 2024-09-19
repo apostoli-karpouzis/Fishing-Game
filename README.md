@@ -41,12 +41,13 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Midterm Goals
 
 ### General
-* 6x6 grid
-* 3 different lure types
-* Player movement for overworld exploration
+* 4x4 grid will be out game world each segment about one screen size(similar to nes zelda)
+* 1 different lure types
+* 2d top down Player movement for overworld exploration
 * Small collection of fish types with basic behavior. At least 2 with probability models.
 * Shop system for buying lures and selling off fish
-* Simple functional animation to convey gameplay ideas 
+* Simple functional animation to convey gameplay ideas ex: walking, casting, reel moving, fish animations when its moving.
+* Basic UI for water physics. for example a lure/fish making water ripple as they move through the water.
 
 
 ### Physics
@@ -77,27 +78,29 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Final Goals
 
 ### General (40%)
-* Multiple line types (braided, monofilament) (10%)
+* Multiple line types (braided, monofilament) (8%)
+* 3 different lure types (10%)
+* 5x5 game world grid (2%)
 * Expanded collection of fish types and behaviors (10%)
-* In water elements affecting spawning such as lily pads in ponds or rocks in water (8%)
-* Weekly/random shop deals/fish (6%)
-* Rewarding exploration of map/more frequent playing with chance encounters (ex. random chance of finding rare lures in caught fish or on the ground of the map) (6%)
+* multiple ponds/lakes that have a chance of spawning different fish (5%)
+* In water elements affecting spawning such as lily pads in ponds or rocks in water (5%)
 
 
 ### Physics (20%)
-* Fishing rod (6%)
+* Fishing rod (8%)
   * Line breaking when too much tension is reached
   * Rod bending based on amount of tension on line
-* Lure (6%)
+* Lure (8%)
   * Weight - Heavier lures will be in the water column not on the surface
   * Size - Larger lures will have more drag than smaller ones
 * Water current - affects tension on line (4%)
-* Debris - increases tension when debris is caught(4%)
+* Full 3D simulation of fluid dynamics for the body of water, lures and fish should be influenced by it. 
+
 
 ### Bayesian Networks (20%)
-* 3 different fishing enviroments (5%)
+* 1 different fishing enviroments (5%)
   * Fishing enviroments attempt to maintain a population of fish with fish being added/removed each day 
-* 5 different types of fish (5%)
+* 5 different types of fish each with its own behavioral tree(5%)
 * Implementation of day/night cycle (5%)
   * Look / lighting in the world changes based off of the time of day
   * The fish able to be caught and the activity of the enviroments differ on the time of day
@@ -107,8 +110,13 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 
 ## Stretch Goals (10%)
 
-* Add 2 items that enhances the players ability to catch a fish (5%)
+* Add 2 items that enhances the players ability to catch a fish (3%)
   * A pair of polarized glasses to improve the odds of finding fish
   * A new rod to change how the players interacts with the physics
-* Add a legendary rarity fish (5%)
+* Add a legendary rarity fish (3%)
   * Much harder to catch and spawns less often than the other fish types
+*Debris (2%)
+  * increases tension when debris is caught
+* wild lures/items to find (2%)
+  * makes exploration rewarding by hiding collectable items/better lures in the game world. 
+
