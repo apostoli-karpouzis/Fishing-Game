@@ -69,10 +69,9 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 ## Final Goals
 
 ### General (40%)
-* Multiple line types (braided, monofilament) (8%)
+* Multiple line types (braided, monofilament) (10%)
 * 3 different lure types (10%)
-* 5x5 game world grid (2%)
-* Expanded collection of fish types and behaviors (10%)
+* 5x5 game world grid (10%)
 * multiple ponds/lakes that have a chance of spawning different fish (5%)
 * In water elements affecting spawning such as lily pads in ponds or rocks in water (5%)
 
