@@ -31,7 +31,7 @@ We are making a top-down Fishing and exploration game. The player will explore t
 
 ### Advanced Physics/Fluid Dynamics
 
-Since our game is primarly played with a top down view, the physics will focus on the x and y axis with some z axis calculations for the baits (i.e. surface baits vs underwater baits). The translational and rotational motion of the fish will be calculated based on player actions, fish characteristics, and fishing rod characteristics. Fluid-dynamic drag will factor into the motion. Projectile motion will be incorpoated for lure casting based on the lure weight and rod strength. The tensile strength of the fishing rod and line will be taken into account for visuals and line snapping. For example, the rod will bend more when there is more tension on the line. Environmental factors like water currents and debris will affect tension on the line and increase drag.
+We will create a 3D simulation of body of water to best simulate the real world. There will be waves that are dispered when surface tension is broken and different lures will act differently in the water. The translational and rotational motion of the fish will be calculated based on player actions, fish characteristics, and fishing rod characteristics. Fluid-dynamic drag will factor into the motion. Projectile motion will be incorpoated for lure casting based on the lure weight and rod strength. The tensile strength of the fishing rod and line will be taken into account for visuals and line snapping. For example, the rod will bend more when there is more tension on the line. Environmental factors like water currents and debris will affect tension on the line and increase drag.
 
 ### Bayesian Networks (AI)
 
@@ -51,21 +51,12 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 
 
 ### Physics
-* Calculate fish drag force
-  * Physical characteristics
-    * Mass
-    * Size
-    * Shape
-  * Motion
-    * Velocity
-    * Rotation
-* Calculate force exerted by fish
-   * Strength
-   * Aggressiveness
-* Implement player-fish-rod interaction
-   * Reeling
-   * Orientation of player and fish
-    
+* Implement 3D simulation of water. 
+  * Waves will disperse when surface tension is broken
+    * When bait is casted into water
+    * When reeling in bait
+* We will implement projectile calculation to determine casting distance of lure.
+
 ### Bayesian Networks
 * Create one fishing environment
   * Defined model for introduction and removal of fish into environment
@@ -90,11 +81,17 @@ Our goal with AI is to simulate the existence of how many fish are in the pond, 
 * Fishing rod (8%)
   * Line breaking when too much tension is reached
   * Rod bending based on amount of tension on line
-* Lure (8%)
-  * Weight - Heavier lures will be in the water column not on the surface
-  * Size - Larger lures will have more drag than smaller ones
-* Water current - affects tension on line (4%)
-* Full 3D simulation of fluid dynamics for the body of water, lures and fish should be influenced by it. 
+* Calculate fish drag force(8%)
+  * Physical characteristics
+    * Mass
+    * Size
+    * Shape
+  * Motion
+    * Velocity
+    * Rotation
+  * Different lures will act differently in water(4%)
+    * Heavier lures will sink and take longer to reel in due to water viscosity 
+    * Surface lures will float and create more waves when reeling
 
 
 ### Bayesian Networks (20%)
