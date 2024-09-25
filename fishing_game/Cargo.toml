@@ -1,0 +1,16 @@
+[package]
+name = "fishing_game"
+version = "0.1.0"
+edition = "2021"
+
+# Apply basic optimiations to our code in dev builds
+[profile.dev]
+opt-level = 1
+
+# Apply all optimiations to dependencies in dev builds
+[profile.dev.package."*"]
+opt-level = 3
+
+[dependencies]
+bevy = "0.14"
+rand = "0.8.5"
