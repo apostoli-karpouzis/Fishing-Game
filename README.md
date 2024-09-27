@@ -25,7 +25,6 @@ We are making a top-down fishing and exploration game. The player will explore t
 ![Artwork](src/assets/art/art2.png)
 ![Artwork](src/assets/art/art3.png)
 ![Artwork](src/assets/art/art4.png)
-![Artwork](src/assets/art/art5.png)
 
 
 ## Advanced Topic Description
