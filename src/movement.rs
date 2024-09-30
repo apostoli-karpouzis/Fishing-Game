@@ -94,8 +94,8 @@ fn setup(
         x_offset += WIN_W;
     }
 
-    let player_sheet_handle = asset_server.load("characters/angler-back-moving.png");
-    let player_layout = TextureAtlasLayout::from_grid(UVec2::splat(TILE_SIZE), 4, 1, None, None);
+    let player_sheet_handle = asset_server.load("characters/full-spritesheet-64x128-256x640.png");
+    let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
 
@@ -154,7 +154,9 @@ fn move_player(
 
     pv.velocity = if deltav.length() > 0. {
         (pv.velocity + (deltav.normalize_or_zero() * acc)).clamp_length_max(PLAYER_SPEED)
-    } else {
+    } /*else if pv.velocity.length() > acc {
+        pv.velocity + (pv.velocity.normalize_or_zero() * -acc)
+    }*/ else {
         Vec2::splat(0.)
     };
     let change = pv.velocity * deltat;
@@ -190,18 +192,24 @@ fn animate_player(
     let (v, mut texture_handle, mut texture_atlas, mut timer, frame_count, direction) = player.single_mut();
 
     // switch sprite sheets based on direction
+
+    let mut dir_add: usize = 4;
     match *direction {
         PlayerDirection::Front => {
-            *texture_handle = asset_server.load("characters/angler-front-moving.png");
+            // *texture_handle = asset_server.load("characters/angler-front-moving.png");
+            dir_add = 4;
         }
         PlayerDirection::Back => {
-            *texture_handle = asset_server.load("characters/angler-back-moving.png");
+            // *texture_handle = asset_server.load("characters/angler-back-moving.png");
+            dir_add = 12;
         }
         PlayerDirection::Left => {
-            *texture_handle = asset_server.load("characters/angler-left-moving.png");
+            // *texture_handle = asset_server.load("characters/angler-left-moving.png");
+            dir_add = 16;
         }
         PlayerDirection::Right => {
-            *texture_handle = asset_server.load("characters/angler-right-moving.png");
+            // *texture_handle = asset_server.load("characters/angler-right-moving.png");
+            dir_add = 8;
         }
     }
 
@@ -209,26 +217,27 @@ fn animate_player(
         // play correct animation based on direction
         timer.tick(time.delta());
         if timer.just_finished() {
-            texture_atlas.index = (texture_atlas.index + 1) % **frame_count;
+           // texture_atlas.index = (texture_atlas.index + 1) % **frame_count;
+           texture_atlas.index = ((texture_atlas.index + 1) % 4) + dir_add;
         }
     } else {
         // when stopped switch to stills
         match *direction {
             PlayerDirection::Front => {
-                *texture_handle = asset_server.load("characters/angler-front-still.png");
+                // *texture_handle = asset_server.load("characters/angler-front-still.png");
                 texture_atlas.index = 0;
             }
             PlayerDirection::Back => {
-                *texture_handle = asset_server.load("characters/angler-back-still.png");
-                texture_atlas.index = 0;
+                // *texture_handle = asset_server.load("characters/angler-back-still.png");
+                texture_atlas.index = 2;
             }
             PlayerDirection::Left => {
-                *texture_handle = asset_server.load("characters/angler-left-still.png");
-                texture_atlas.index = 0;
+                // *texture_handle = asset_server.load("characters/angler-left-still.png");
+                texture_atlas.index = 3;
             }
             PlayerDirection::Right => {
-                *texture_handle = asset_server.load("characters/angler-right-still.png");
-                texture_atlas.index = 0;
+                // *texture_handle = asset_server.load("characters/angler-right-still.png");
+                texture_atlas.index = 1;
             }
         }
     }
@@ -243,4 +252,3 @@ fn move_camera(
 
     ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
 }
-
