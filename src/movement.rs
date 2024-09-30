@@ -132,19 +132,19 @@ fn move_player(
     }
 
     // right
-    if input.pressed(KeyCode::KeyD) {
+    else if input.pressed(KeyCode::KeyD) {
         deltav.x += 1.;
         *direction = PlayerDirection::Right;
     }
 
     // up 
-    if input.pressed(KeyCode::KeyW) {
+    else if input.pressed(KeyCode::KeyW) {
         deltav.y += 1.;
         *direction = PlayerDirection::Back;
     }
 
     // down
-    if input.pressed(KeyCode::KeyS) {
+    else if input.pressed(KeyCode::KeyS) {
         deltav.y -= 1.;
         *direction = PlayerDirection::Front;
     }
@@ -154,8 +154,6 @@ fn move_player(
 
     pv.velocity = if deltav.length() > 0. {
         (pv.velocity + (deltav.normalize_or_zero() * acc)).clamp_length_max(PLAYER_SPEED)
-    } else if pv.velocity.length() > acc {
-        pv.velocity + (pv.velocity.normalize_or_zero() * -acc)
     } else {
         Vec2::splat(0.)
     };
