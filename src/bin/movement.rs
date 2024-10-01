@@ -14,6 +14,9 @@ const LEVEL_LEN: f32 = 5000.;
 
 const ANIM_TIME: f32 = 0.125; // 8 fps
 
+const PLAYER_WIDTH: f32 = 64.;
+const PLAYER_HEIGHT: f32 = 128.;
+
 #[derive(Component)]
 struct Player;
 
@@ -30,6 +33,10 @@ struct Background;
 struct Velocity {
     velocity: Vec2,
 }
+
+#[derive(Component)]
+struct Collision;
+
 
 impl Velocity {
     fn new() -> Self {
@@ -98,7 +105,8 @@ fn setup(
     let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
-
+    let tree_sheet_handle: Handle<Image> = asset_server.load("tree.png"); 
+    
     commands.spawn((
         SpriteBundle {
             texture: player_sheet_handle,
@@ -115,12 +123,30 @@ fn setup(
         Player,
         PlayerDirection::Back, // Default direction facing back
     ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: tree_sheet_handle,
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(69., 200., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+    ));
+
 }
 
 fn move_player(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection), With<Player>>,
+    collision_query: Query<(&Transform), (With<Collision>, Without<Player>, Without<Background>)>,
 ) {
     let (mut pt, mut pv, mut direction) = player.single_mut();
     let mut deltav = Vec2::splat(0.);
@@ -166,16 +192,37 @@ fn move_player(
     if new_pos.x >= -(WIN_W / 2.) + (TILE_SIZE as f32) / 2.
         && new_pos.x <= LEVEL_LEN - (WIN_W / 2. + (TILE_SIZE as f32) / 2.)
     {
-        pt.translation = new_pos;
+        if collision_detection(&collision_query, new_pos){
+            pt.translation = new_pos;
+        }
     }
 
     let new_pos = pt.translation + Vec3::new(0., change.y, 0.);
     if new_pos.y >= -(WIN_H / 2.) + ((TILE_SIZE as f32) * 1.5)
         && new_pos.y <= WIN_H / 2. - (TILE_SIZE as f32) / 2.
     {
-        pt.translation = new_pos;
+        if collision_detection(&collision_query, new_pos){
+            pt.translation = new_pos;
+        }
     }
 }
+
+
+fn collision_detection(
+    collision_query: &Query<(&Transform), (With<Collision>, Without<Player>, Without<Background>)>,
+    player_pos: Vec3,
+) -> bool {
+    
+    for object in collision_query.iter() {
+        if player_pos.x < object.translation.x + (TILE_SIZE as f32) && player_pos.x + PLAYER_WIDTH > object.translation.x && 
+        player_pos.y < object.translation.y + (TILE_SIZE as f32) && player_pos.y + PLAYER_HEIGHT > object.translation.y
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 fn animate_player(
     time: Res<Time>,
