@@ -106,7 +106,7 @@ fn setup(
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
     let tree_sheet_handle: Handle<Image> = asset_server.load("tree.png"); 
-    
+
     commands.spawn((
         SpriteBundle {
             texture: player_sheet_handle,
@@ -214,12 +214,16 @@ fn collision_detection(
 ) -> bool {
     
     for object in collision_query.iter() {
-        if player_pos.x < object.translation.x + (TILE_SIZE as f32) && player_pos.x + PLAYER_WIDTH > object.translation.x && 
-        player_pos.y < object.translation.y + (TILE_SIZE as f32) && player_pos.y + PLAYER_HEIGHT > object.translation.y
+        if  player_pos.y - PLAYER_HEIGHT/2. > object.translation.y + (TILE_SIZE as f32)/2. ||
+            player_pos.y + PLAYER_HEIGHT/2. < object.translation.y - (TILE_SIZE as f32)/2. || 
+            player_pos.x + PLAYER_WIDTH/2. < object.translation.x - (TILE_SIZE as f32)/2.  ||
+            player_pos.x - PLAYER_WIDTH/2. > object.translation.x + (TILE_SIZE as f32)/2.
         {
-            return false;
+            continue;
         }
+        return false;
     }
+
     return true;
 }
 
