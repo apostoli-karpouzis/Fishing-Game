@@ -297,13 +297,13 @@ fn move_camera(
     } else {
         let offset: Vec3;
 
-        if pt.translation.x + PLAYER_WIDTH / 2. > ct.translation.x + WIN_W / 2. {
+        if *direction == PlayerDirection::Right && pt.translation.x + PLAYER_WIDTH / 2. >= ct.translation.x + WIN_W / 2. {
             offset = Vec3::new(WIN_W, 0., 0.)
-        } else if pt.translation.x - PLAYER_WIDTH / 2. < ct.translation.x - WIN_W / 2. {
+        } else if *direction == PlayerDirection::Left && pt.translation.x - PLAYER_WIDTH / 2. <= ct.translation.x - WIN_W / 2. {
             offset = Vec3::new(-WIN_W, 0., 0.)
-        } else if pt.translation.y + PLAYER_HEIGHT / 2. > ct.translation.y + WIN_H / 2. {
+        } else if *direction == PlayerDirection::Back && pt.translation.y + PLAYER_HEIGHT / 2. >= ct.translation.y + WIN_H / 2. {
             offset = Vec3::new(0., WIN_H, 0.)
-        } else if pt.translation.y - PLAYER_HEIGHT / 2. < ct.translation.y - WIN_H / 2. {
+        } else if *direction == PlayerDirection::Front && pt.translation.y - PLAYER_HEIGHT / 2. <= ct.translation.y - WIN_H / 2. {
             offset = Vec3::new(0., -WIN_H, 0.)
         } else {
             return;
