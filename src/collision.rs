@@ -1,5 +1,9 @@
 use bevy::prelude::*;
+use crate::player::*;
 use crate::resources::*;
+
+#[derive(Component)]
+pub struct Collision;
 
 pub fn collision_detection(
     collision_query: &Query<&Transform, (With<Collision>, Without<Player>, Without<GrassTile>)>,
