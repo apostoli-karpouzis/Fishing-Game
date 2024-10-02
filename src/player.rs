@@ -10,7 +10,7 @@ pub fn move_player(
     mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection), With<Player>>,
     collision_query: Query<&Transform, (With<Collision>, Without<Player>, Without<GrassTile>)>,
 ) {
-    
+
     let (mut pt, mut pv, mut direction) = player.single_mut();
     let mut deltav = Vec2::splat(0.);
 
