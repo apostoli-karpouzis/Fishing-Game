@@ -97,18 +97,29 @@ pub fn animate_player(
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
     
     if start_fishing_animation.active {
-        *texture_handle = asset_server.load("characters/angler-back-fishing.png");
+
+        // *texture_handle = asset_server.load("characters/angler-back-fishing.png");
 
         timer.tick(time.delta());
 
         if timer.just_finished() {
-            texture_atlas.index = (texture_atlas.index + 1) % **frame_count;
-            start_fishing_animation.active = false;
+            // *texture_handle = asset_server.load("characters/angler-back-moving.png");
+            // texture_atlas.index = (texture_atlas.index + 1) % **frame_count;
         }
-
+        
         fishing_timer.0.tick(time.delta());
         if !fishing_timer.0.finished() {
             return; 
+        }
+        
+        
+        start_fishing_animation.active = false;
+        start_fishing_animation.button_control_active = true;
+        // *texture_handle = asset_server.load("characters/angler-back-moving.png");
+
+        //fix this
+        for mut visibility in &mut button_query {
+            *visibility = Visibility::Visible;
         }
     }
 
