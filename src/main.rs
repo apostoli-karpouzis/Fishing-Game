@@ -158,7 +158,7 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(69., 200., 900.),
+                translation: Vec3::new(100., 100., 900.),
                 ..default()
             },
             ..default()
