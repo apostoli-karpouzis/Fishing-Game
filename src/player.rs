@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use super::resources::*;
 use super::collision::collision_detection;
-use super::button::*;
 use std::time::Duration;
 
 pub fn move_player(
@@ -79,7 +78,7 @@ pub fn move_player(
 
 pub fn animate_player(
     time: Res<Time>,
-    asset_server: Res<AssetServer>,
+    _asset_server: Res<AssetServer>,
     mut start_fishing_animation: ResMut<StartFishingAnimation>,
     mut fishing_timer: ResMut<FishingAnimationDuration>,
     mut button_query: Query<&mut Visibility, With<Button>>,
@@ -92,7 +91,8 @@ pub fn animate_player(
         &PlayerDirection,
     )>,
 ) {
-    let (v, mut texture_handle, mut texture_atlas, mut timer, frame_count, direction) = player.single_mut();
+    //texture handle and frame count not used
+    let (v, _texture_handle, mut texture_atlas, mut timer, _frame_count, direction) = player.single_mut();
         
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
     
