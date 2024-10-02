@@ -1,8 +1,43 @@
 use bevy::prelude::*;
-
+use super::collision::*;
 use super::resources::*;
-use super::collision::collision_detection;
 use std::time::Duration;
+
+pub const PLAYER_WIDTH: f32 = 64.;
+pub const PLAYER_HEIGHT: f32 = 128.;
+
+const PLAYER_SPEED: f32 = 200.;
+const ACCEL_RATE: f32 = 400.;
+
+#[derive(Component)]
+pub struct Player;
+
+#[derive(Component)]
+pub struct Velocity {
+    pub velocity: Vec2,
+}
+
+impl Velocity {
+    pub fn new() -> Self {
+        Self {
+            velocity: Vec2::splat(0.),
+        }
+    }
+}
+
+impl From<Vec2> for Velocity {
+    fn from(velocity: Vec2) -> Self {
+        Self { velocity }
+    }
+}
+
+#[derive(Component, PartialEq)]
+pub enum PlayerDirection {
+    Front,
+    Back,
+    Left,
+    Right,
+}
 
 pub fn move_player(
     time: Res<Time>,
@@ -128,19 +163,15 @@ pub fn animate_player(
     let dir_add;
     match *direction {
         PlayerDirection::Front => {
-            //*texture_handle = asset_server.load("characters/angler-front-moving.png");
             dir_add = 4;
         }
         PlayerDirection::Back => {
-            //*texture_handle = asset_server.load("characters/angler-back-moving.png");
             dir_add = 12;
         }
         PlayerDirection::Left => {
-            //*texture_handle = asset_server.load("characters/angler-left-moving.png");
             dir_add = 16;
         }
         PlayerDirection::Right => {
-            //*texture_handle = asset_server.load("characters/angler-right-moving.png");
             dir_add = 8;
         }
     }
@@ -155,19 +186,15 @@ pub fn animate_player(
         // when stopped switch to stills
         match *direction {
             PlayerDirection::Front => {
-                //*texture_handle = asset_server.load("characters/angler-front-still.png");
                 texture_atlas.index = 0;
             }
             PlayerDirection::Back => {
-                //*texture_handle = asset_server.load("characters/angler-back-still.png");
                 texture_atlas.index = 2;
             }
             PlayerDirection::Left => {
-                //*texture_handle = asset_server.load("characters/angler-left-still.png");
                 texture_atlas.index = 3;
             }
             PlayerDirection::Right => {
-                //*texture_handle = asset_server.load("characters/angler-right-still.png");
                 texture_atlas.index = 1;
             }
         }

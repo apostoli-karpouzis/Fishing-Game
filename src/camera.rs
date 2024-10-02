@@ -1,12 +1,25 @@
 use bevy::prelude::*;
+use crate::player::*;
 use crate::resources::*;
-//use crate::player::*;
 
-// if you have multiple states that must be set correctly,
-// don't forget to manage them all
+const MAP_TRANSITION_TIME: f32 = 1.5;
 
+#[derive(Component)]
+pub struct CameraAnimation {
+    pub start_time: f32,
+    pub start_position: Vec3,
+    pub motion: Vec3,
+}
 
-
+impl CameraAnimation {
+    pub fn new() -> Self {
+        Self {
+            start_time: 0.,
+            start_position: Vec3::default(),
+            motion: Vec3::default(),
+        }
+    }
+}
 
 pub fn move_camera(
     player: Query<(&PlayerDirection, &Transform), With<Player>>,
@@ -18,6 +31,7 @@ pub fn move_camera(
     let (direction, pt) = player.single();
     let (mut ct, mut animation) = camera.single_mut();
 
+    // Camera animation
     if state.eq(&GameState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
         
@@ -27,25 +41,34 @@ pub fn move_camera(
             ct.translation = animation.start_position + animation.motion;
             next_state.set(GameState::Normal);
         }
-    } else {
-        let offset: Vec3;
-        if *direction == PlayerDirection::Right && pt.translation.x + PLAYER_WIDTH / 2. >= ct.translation.x + WIN_W / 2. {
-            offset = Vec3::new(WIN_W, 0., 0.)
-        } else if *direction == PlayerDirection::Left && pt.translation.x - PLAYER_WIDTH / 2. <= ct.translation.x - WIN_W / 2. {
-            offset = Vec3::new(-WIN_W, 0., 0.)
-        } else if *direction == PlayerDirection::Back && pt.translation.y + PLAYER_HEIGHT / 2. >= ct.translation.y + WIN_H / 2. {
-            offset = Vec3::new(0., WIN_H, 0.)
-        } else if *direction == PlayerDirection::Front && pt.translation.y - PLAYER_HEIGHT / 2. <= ct.translation.y - WIN_H / 2. {
-            offset = Vec3::new(0., -WIN_H, 0.)
-        } else {
-            return;
-        }
 
-        next_state.set(GameState::MapTransition);
-        *animation = CameraAnimation {
-            start_time: time.elapsed_seconds(),
-            start_position: ct.translation,
-            motion: offset
-        }
+        return;
+    }
+    
+    // Check for edge collision
+    let offset: Vec3;
+
+    // Right side 
+    if *direction == PlayerDirection::Right && pt.translation.x + PLAYER_WIDTH / 2. >= ct.translation.x + WIN_W / 2. {
+        offset = Vec3::new(WIN_W, 0., 0.)
+    // Left side
+    } else if *direction == PlayerDirection::Left && pt.translation.x - PLAYER_WIDTH / 2. <= ct.translation.x - WIN_W / 2. {
+        offset = Vec3::new(-WIN_W, 0., 0.)
+    // Top side
+    } else if *direction == PlayerDirection::Back && pt.translation.y + PLAYER_HEIGHT / 2. >= ct.translation.y + WIN_H / 2. {
+        offset = Vec3::new(0., WIN_H, 0.)
+    // Bottom side
+    } else if *direction == PlayerDirection::Front && pt.translation.y - PLAYER_HEIGHT / 2. <= ct.translation.y - WIN_H / 2. {
+        offset = Vec3::new(0., -WIN_H, 0.)
+    // No edge collision
+    } else {
+        return;
+    }
+
+    next_state.set(GameState::MapTransition);
+    *animation = CameraAnimation {
+        start_time: time.elapsed_seconds(),
+        start_position: ct.translation,
+        motion: offset
     }
 }

@@ -7,12 +7,11 @@ mod collision;
 mod resources;
 mod button;
 
-use crate::resources::*;
 use crate::camera::*;
 use crate::player::*;
+use crate::collision::*;
+use crate::resources::*;
 use crate::button::*;
-
-//collision used within player
 
 fn main() {
     App::new()
@@ -166,15 +165,8 @@ fn setup(
         Collision,
     ));
 
-
-    //cam speed timer addition
-    commands.spawn(CameraSpeed::new(CAM_SPEED));
-
     //adding x and y
     commands.insert_resource(Location { i: 0, j: 0 });
-    commands.init_resource::<CameraDirection>();
-
-    //making cam direction
-
+    
     spawn_button(&mut commands, asset_server);
 }
