@@ -15,12 +15,36 @@ pub const TILE_SIZE: u32 = 100;
 //pub const LEVEL_LEN_H: f32 = 720.;
 
 pub const ANIM_TIME: f32 = 0.125; // 8 fps
+pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
 
 pub const CAM_SPEED: f32 = 0.005;
 
 pub const PLAYER_WIDTH: f32 = 64.;
 pub const PLAYER_HEIGHT: f32 = 128.;
 
+pub const MAP_TRANSITION_TIME: f32 = 2.;
+
+pub const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
+pub const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
+pub const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
+
+
+#[derive(Component)]
+pub struct Background;
+
+#[derive(Component)]
+pub struct ButtonVisible(pub bool);
+
+#[derive(Resource)]
+pub struct StartFishingAnimation {
+    pub active: bool,
+    pub button_control_active: bool, 
+}
+
+#[derive(Resource)]
+pub struct FishingAnimationDuration(pub Timer);
+
+//---------
 #[derive(Component)]
 pub struct Player;
 
@@ -36,6 +60,24 @@ impl AnimationTimer {
         }
     }
 }
+
+#[derive(Component)]
+pub struct CameraAnimation {
+    pub start_time: f32,
+    pub start_position: Vec3,
+    pub motion: Vec3,
+}
+
+impl CameraAnimation {
+    pub fn new() -> Self {
+        Self {
+            start_time: 0.,
+            start_position: Vec3::default(),
+            motion: Vec3::default(),
+        }
+    }
+}
+
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationFrameCount(pub usize);
@@ -53,11 +95,11 @@ impl CameraSpeed {
     }
 }
 
-#[derive(Default, Debug, Clone, States, Hash, PartialEq, Eq)]
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     #[default]
-    CamStill,
-    CamMove,
+    Normal,
+    MapTransition
 }
 
 // CAMERA MOVE STATE
@@ -109,3 +151,4 @@ pub enum CameraDirection {
     #[default]
     None,
 }
+

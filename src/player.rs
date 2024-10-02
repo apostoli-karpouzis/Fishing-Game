@@ -1,6 +1,9 @@
 use bevy::prelude::*;
+
 use super::resources::*;
 use super::collision::collision_detection;
+use super::button::*;
+use std::time::Duration;
 
 pub fn move_player(
     time: Res<Time>,
@@ -76,6 +79,10 @@ pub fn move_player(
 
 pub fn animate_player(
     time: Res<Time>,
+    asset_server: Res<AssetServer>,
+    mut start_fishing_animation: ResMut<StartFishingAnimation>,
+    mut fishing_timer: ResMut<FishingAnimationDuration>,
+    mut button_query: Query<&mut Visibility, With<Button>>,
     mut player: Query<(
         &Velocity,
         &mut Handle<Image>,
@@ -85,8 +92,25 @@ pub fn animate_player(
         &PlayerDirection,
     )>,
 ) {
-    let (v, _texture_handle, mut texture_atlas, mut timer, _frame_count, direction) =
-        player.single_mut();
+    let (v, mut texture_handle, mut texture_atlas, mut timer, frame_count, direction) = player.single_mut();
+        
+    timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
+    if start_fishing_animation.active {
+        *texture_handle = asset_server.load("characters/angler-back-fishing.png");
+
+        timer.tick(time.delta());
+
+        if timer.just_finished() {
+            texture_atlas.index = (texture_atlas.index + 1) % **frame_count;
+            start_fishing_animation.active = false;
+        }
+
+        fishing_timer.0.tick(time.delta());
+        if !fishing_timer.0.finished() {
+            return; 
+        }
+    }
+
 
     // switch sprite sheets based on direction
     let dir_add;

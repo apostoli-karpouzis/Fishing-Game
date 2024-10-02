@@ -5,15 +5,20 @@ mod camera;
 mod player; 
 mod collision; 
 mod resources;
+mod button;
 
 use crate::resources::*;
 use crate::camera::*;
 use crate::player::*;
+use crate::button::*;
+
 //collision used within player
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::Srgba(Srgba::gray(0.25))))
+        .insert_resource(StartFishingAnimation { active: false, button_control_active: true })
+        .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: TITLE.into(),
@@ -23,13 +28,14 @@ fn main() {
             }),
             ..default()
         }))
-        .insert_state(GameState::CamStill)
+        .init_state::<GameState>()
         .add_systems(Startup, setup)
+        .add_systems(Update, button_system.after(move_player))
+
         //updating state
         .add_systems(Update, move_player)
         .add_systems(Update, animate_player.after(move_player))
         .add_systems(Update, move_camera.after(move_player))
-        .add_systems(Update, pan_cam.after(move_player))
         .run();
 }
 
@@ -38,9 +44,10 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
-
-
+    commands.spawn((
+        Camera2dBundle::default(),
+        CameraAnimation::new()
+    ));
 
     //GRASS CODE V
     //let bg_texture_handle = asset_server.load("test_bg.png");
@@ -168,4 +175,6 @@ fn setup(
     commands.init_resource::<CameraDirection>();
 
     //making cam direction
+
+    spawn_button(&mut commands, asset_server);
 }
