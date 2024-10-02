@@ -46,10 +46,10 @@ pub fn spawn_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
         .spawn((
             NodeBundle {
                 style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
+                    width: Val::Percent(98.0),
+                    height: Val::Percent(98.0),
                     align_items: AlignItems::End,
-                    justify_content: JustifyContent::Center,
+                    justify_content: JustifyContent::Start,
                     ..default()
                 },
                 ..default()
@@ -60,7 +60,7 @@ pub fn spawn_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         justify_content: JustifyContent::Center,
