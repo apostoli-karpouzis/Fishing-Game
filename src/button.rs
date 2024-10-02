@@ -22,7 +22,8 @@ pub fn button_system(
             Interaction::Pressed => {
                 text.sections[0].value = "Throw Rod".to_string();
                 *color = PRESSED_BUTTON.into();
-                start_fishing_animation.active = true;
+                //start_fishing_animation.active = true;
+                
                 start_fishing_animation.button_control_active = false;
                 fishing_timer.0.reset();
                 *visibility = Visibility::Hidden;

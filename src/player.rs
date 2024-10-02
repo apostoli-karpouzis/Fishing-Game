@@ -95,6 +95,7 @@ pub fn animate_player(
     let (v, mut texture_handle, mut texture_atlas, mut timer, frame_count, direction) = player.single_mut();
         
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
+    
     if start_fishing_animation.active {
         *texture_handle = asset_server.load("characters/angler-back-fishing.png");
 
