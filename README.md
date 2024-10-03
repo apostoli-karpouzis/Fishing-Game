@@ -21,10 +21,10 @@ by fishing game
 We are making a top-down fishing and exploration game. The player will explore the game world looking for new bodies of water to catch fish in. Along the way players will obtain new equiptment, sell their catches for money, and work towards catching the biggest fish they can. The gameplay will have two main advanced topics to give some realism to the fishing. Fluid dynamics will simulate casting the bait, using the lure, then dragging the fish in. It will simulate realistic fluic dynamics to give an accurate simulation of fishing. Once a fish is on the line the player will have to sucessfully reel a fish in without the fish snapping the line. The other advanced topic is sophisticated fish AI. There will be a determined number of fish in each water source. The fish in the game will all behave differently depending on species, ex: catfish staying exclusivly at the bottom, or trout only fishing against a streams current. New fish will spawn on a cycle to simulate fish reaching maturity or dying in order to simulate a target population. Enviornmental aspects and lure use will simulate catching fish, better lure use or casting into an ideal location will influence the fish to get hooked more often. 
 
 ### Concept Art:
-![Artwork](src/assets/art/art1.png)
-![Artwork](src/assets/art/art2.png)
-![Artwork](src/assets/art/art3.png)
-![Artwork](src/assets/art/art4.png)
+![Artwork](assets/art/art1.png)
+![Artwork](assets/art/art2.png)
+![Artwork](assets/art/art3.png)
+![Artwork](assets/art/art4.png)
 
 
 ## Advanced Topic Description
