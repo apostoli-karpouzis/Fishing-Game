@@ -52,24 +52,24 @@ fn setup(
     //let bg_texture_handle = asset_server.load("test_bg.png");
     let grass_sheet_handle = asset_server.load("ground_sheet.png");
     let grass_layout =
-        TextureAtlasLayout::from_grid(UVec2::splat(TILE_SIZE_GRASS), 6, 5, None, None);
+        TextureAtlasLayout::from_grid(UVec2::splat(TILE_SIZE), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
     println!("grasslayout.len {}", grass_layout_len);
     let grass_layout_handle = texture_atlases.add(grass_layout);
 
     let mut rng = rand::thread_rng();
-    let x_bound = WIN_W / 2. - (TILE_SIZE_GRASS as f32) / 2.;
-    let y_bound = WIN_H / 2. - (TILE_SIZE_GRASS as f32) / 2.;
+    let x_bound = WIN_W / 2. - (TILE_SIZE as f32) / 2.;
+    let y_bound = WIN_H / 2. - (TILE_SIZE as f32) / 2.;
     println!("window w {}", (-WIN_H));
 
     let mut j = 0.;
-    while (j as f32) * (TILE_SIZE_GRASS as f32) - y_bound < WIN_H * 2. {
+    while (j as f32) * (TILE_SIZE as f32) - y_bound < WIN_H * 2. {
         //println!("rinning j");
         let mut i = 0;
-        let mut t = Vec3::new(-x_bound, (TILE_SIZE_GRASS as f32 * j) + (-y_bound), 0.);
-        println!("spawning at {}", (TILE_SIZE_GRASS as f32 * j) + y_bound);
-        while (i as f32) * (TILE_SIZE_GRASS as f32) < WIN_W {
+        let mut t = Vec3::new(-x_bound, (TILE_SIZE as f32 * j) + (-y_bound), 0.);
+        println!("spawning at {}", (TILE_SIZE as f32 * j) + y_bound);
+        while (i as f32) * (TILE_SIZE as f32) < WIN_W {
             //println!("rinning i");
             //IF THE SPRITE SHEET FOR BACKGROUND IS MADE LARGER, THIS NEEDS TO GROW
             let mut random_index = rng.gen_range(0..29);
@@ -94,7 +94,7 @@ fn setup(
                 GrassTile,
             ));
             //second time
-            t += Vec3::new(TILE_SIZE_GRASS as f32, 0., 0.);
+            t += Vec3::new(TILE_SIZE as f32, 0., 0.);
             commands.spawn((
                 SpriteBundle {
                     texture: grass_sheet_handle.clone(),
@@ -116,13 +116,39 @@ fn setup(
             //do this twice uhhhhhh....
 
             i += 1;
-            t += Vec3::new(TILE_SIZE_GRASS as f32, 0., 0.);
+            t += Vec3::new(TILE_SIZE as f32, 0., 0.);
             println!("{}", t);
         }
         j += 1.0;
     }
     // ^ END OF GRASS CODE
 
+
+    //start of water code
+    let water_sheet_handle = asset_server.load("water.png");
+    for y in -10..0 {
+        for x in -10..0{
+            commands.spawn((
+                SpriteBundle {
+                    texture: water_sheet_handle.clone(),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(64.,64.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(x as f32 * TILE_SIZE as f32,  y as f32 * TILE_SIZE as f32, 900.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                TileBundle{
+                    collision_size: Vec2::new(64.0,64.0),   
+                    tile_type: CollisionType::WATER,     
+                },
+                Collision,
+            ));
+        }
+    }
 
     //PLAYER
 
@@ -151,7 +177,7 @@ fn setup(
     //tree collision hold
     commands.spawn((
         SpriteBundle {
-            texture: tree_sheet_handle,
+            texture: tree_sheet_handle.clone(),
                 sprite: Sprite {
                 custom_size: Some(Vec2::new(100.,100.)),
                 ..default()
@@ -161,6 +187,10 @@ fn setup(
                 ..default()
             },
             ..default()
+        },
+        TileBundle{
+            collision_size: Vec2::new(50.0,80.0),   
+            tile_type: CollisionType::NORMAL,     
         },
         Collision,
     ));
