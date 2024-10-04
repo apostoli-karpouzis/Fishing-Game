@@ -43,7 +43,7 @@ pub fn move_player(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection), With<Player>>,
-    collision_query: Query<&Transform, (With<Collision>, Without<Player>, Without<GrassTile>)>,
+     collision_query: Query<(&Transform, &TileBundle), (With<Collision>, Without<Player>, Without<GrassTile>)>,
 ) {
 
     let (mut pt, mut pv, mut direction) = player.single_mut();

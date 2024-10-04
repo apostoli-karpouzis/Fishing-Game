@@ -4,9 +4,6 @@ pub const TITLE: &str = "movement";
 pub const WIN_W: f32 = 1280.;
 pub const WIN_H: f32 = 720.;
 
-pub const TILE_SIZE_GRASS: u32 = 64;
-pub const TILE_SIZE: u32 = 100;
-
 pub const ANIM_TIME: f32 = 0.125; // 8 fps
 pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
 
@@ -50,3 +47,4 @@ pub struct StartFishingAnimation {
 
 #[derive(Resource)]
 pub struct FishingAnimationDuration(pub Timer);
+
