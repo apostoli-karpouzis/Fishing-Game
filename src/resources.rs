@@ -23,20 +23,30 @@ impl AnimationTimer {
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationFrameCount(pub usize);
 
+#[derive(Component)]
+pub struct Animation {
+    pub start_time: f32,
+    pub duration: f32,
+    pub start_position: Vec3,
+    pub motion: Vec3,
+}
+
+impl Animation {
+    pub fn new() -> Self {
+        Self {
+            start_time: 0.,
+            duration: 0.,
+            start_position: Vec3::default(),
+            motion: Vec3::default(),
+        }
+    }
+}
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     #[default]
     Normal,
     MapTransition
-}
-
-#[derive(Component)]
-pub struct GrassTile;
-
-#[derive(Resource)]
-pub struct Location {
-    pub i: i32,
-    pub j: i32,
 }
 
 #[derive(Resource)]
