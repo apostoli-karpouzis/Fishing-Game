@@ -157,8 +157,7 @@ fn setup(
     // MAP
     let map: Map = Map {
         width: 4,
-        height: 4,
-        areas: None
+        height: 4
     };
 
     //PLAYER

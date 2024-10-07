@@ -22,12 +22,11 @@ pub struct Location {
 pub struct Map {
     pub width: usize,
     pub height: usize,
-    pub areas: Option<[[Area; MAP_HEIGHT]; MAP_WIDTH]>
 }
 
 impl Map {
-    pub fn new(width: usize, height: usize, areas: Option<[[Area; MAP_HEIGHT]; MAP_WIDTH]>) -> Self {
-        Self { width, height, areas }
+    pub fn new(width: usize, height: usize) -> Self {
+        Self { width, height }
     }
 }
 
