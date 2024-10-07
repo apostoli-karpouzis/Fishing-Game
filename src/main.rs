@@ -1,19 +1,22 @@
+use bevy::window::EnabledButtons;
 use bevy::{prelude::*, window::PresentMode};
 use rand::Rng;
 
 mod camera; 
 mod player; 
-mod collision; 
+mod map; 
 mod resources;
 mod button;
 mod gameday;
 
 use crate::camera::*;
 use crate::player::*;
-use crate::collision::*;
+use crate::map::*;
 use crate::resources::*;
 use crate::button::*;
 use crate::gameday::*;
+
+const OLD_TILE_SIZE: f32 = 64.;
 
 fn main() {
     App::new()
@@ -24,6 +27,11 @@ fn main() {
             primary_window: Some(Window {
                 title: TITLE.into(),
                 resolution: (WIN_W, WIN_H).into(),
+                resizable: false,
+                enabled_buttons: EnabledButtons {
+                    maximize: false,
+                    ..default()
+                },
                 present_mode: PresentMode::Fifo,
                 ..default()
             }),
@@ -48,31 +56,31 @@ fn setup(
 ) {
     commands.spawn((
         Camera2dBundle::default(),
-        CameraAnimation::new()
+        Animation::new()
     ));
 
     //GRASS CODE V
     //let bg_texture_handle = asset_server.load("test_bg.png");
     let grass_sheet_handle = asset_server.load("ground_sheet.png");
     let grass_layout =
-        TextureAtlasLayout::from_grid(UVec2::splat(TILE_SIZE_GRASS), 6, 5, None, None);
+        TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
     println!("grasslayout.len {}", grass_layout_len);
     let grass_layout_handle = texture_atlases.add(grass_layout);
 
     let mut rng = rand::thread_rng();
-    let x_bound = WIN_W / 2. - (TILE_SIZE_GRASS as f32) / 2.;
-    let y_bound = WIN_H / 2. - (TILE_SIZE_GRASS as f32) / 2.;
+    let x_bound = WIN_W / 2. - OLD_TILE_SIZE / 2.;
+    let y_bound = WIN_H / 2. - OLD_TILE_SIZE / 2.;
     println!("window w {}", (-WIN_H));
 
     let mut j = 0.;
-    while (j as f32) * (TILE_SIZE_GRASS as f32) - y_bound < WIN_H * 2. {
+    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 2. {
         //println!("rinning j");
         let mut i = 0;
-        let mut t = Vec3::new(-x_bound, (TILE_SIZE_GRASS as f32 * j) + (-y_bound), 0.);
-        println!("spawning at {}", (TILE_SIZE_GRASS as f32 * j) + y_bound);
-        while (i as f32) * (TILE_SIZE_GRASS as f32) < WIN_W {
+        let mut t = Vec3::new(-x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
+        println!("spawning at {}", (OLD_TILE_SIZE * j) + y_bound);
+        while (i as f32) * OLD_TILE_SIZE < WIN_W {
             //println!("rinning i");
             //IF THE SPRITE SHEET FOR BACKGROUND IS MADE LARGER, THIS NEEDS TO GROW
             let mut random_index = rng.gen_range(0..29);
@@ -93,11 +101,10 @@ fn setup(
                     //implement random function.
                     index: random_index,
                     layout: grass_layout_handle.clone(),
-                },
-                GrassTile,
+                }
             ));
             //second time
-            t += Vec3::new(TILE_SIZE_GRASS as f32, 0., 0.);
+            t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
             commands.spawn((
                 SpriteBundle {
                     texture: grass_sheet_handle.clone(),
@@ -112,14 +119,13 @@ fn setup(
                     //implement random function.
                     index: (random_index + 1),
                     layout: grass_layout_handle.clone(),
-                },
-                GrassTile,
+                }
             ));
             //
             //do this twice uhhhhhh....
 
             i += 1;
-            t += Vec3::new(TILE_SIZE_GRASS as f32, 0., 0.);
+            t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
             println!("{}", t);
         }
         j += 1.0;
@@ -127,18 +133,47 @@ fn setup(
     // ^ END OF GRASS CODE
 
 
+    //start of water code
+    let water_sheet_handle = asset_server.load("tiles/water.png");
+    for y in -10..0 {
+        for x in -10..0{
+            commands.spawn((
+                SpriteBundle {
+                    texture: water_sheet_handle.clone(),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(x as f32 * 16.,  y as f32 * 16., 900.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Tile::WATER,
+                Collision,
+            ));
+        }
+    }
+
+    // MAP
+    let map: Map = Map {
+        width: 4,
+        height: 4
+    };
+
     //PLAYER
 
     let player_sheet_handle = asset_server.load("characters/full-spritesheet-64x128-256x640.png");
     let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
-    let tree_sheet_handle: Handle<Image> = asset_server.load("tree.png"); 
+    let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
 
     commands.spawn((
         SpriteBundle {
             texture: player_sheet_handle,
-            transform: Transform::from_xyz(0., -(WIN_H / 2.) + ((TILE_SIZE as f32) * 1.5), 900.),
+            transform: Transform::from_xyz(0., -(WIN_H / 2.) + (OLD_TILE_SIZE * 1.5), 900.),
             ..default()
         },
         TextureAtlas {
@@ -150,11 +185,17 @@ fn setup(
         Velocity::new(),
         Player,
         PlayerDirection::Back, // Default direction facing back
+        Location {
+            map: map,
+            x: 0,
+            y: 0
+        },
+        Animation::new()
     ));
     //tree collision hold
     commands.spawn((
         SpriteBundle {
-            texture: tree_sheet_handle,
+            texture: tree_sheet_handle.clone(),
                 sprite: Sprite {
                 custom_size: Some(Vec2::new(100.,100.)),
                 ..default()
@@ -165,11 +206,9 @@ fn setup(
             },
             ..default()
         },
+        Tile::TREE,
         Collision,
     ));
-
-    //adding x and y
-    commands.insert_resource(Location { i: 0, j: 0 });
     
     spawn_button(&mut commands, asset_server);
 

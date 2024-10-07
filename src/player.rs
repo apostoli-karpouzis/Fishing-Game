@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use super::collision::*;
+use super::map::*;
 use super::resources::*;
 use std::time::Duration;
 
@@ -42,12 +42,25 @@ pub enum PlayerDirection {
 pub fn move_player(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection), With<Player>>,
-    collision_query: Query<&Transform, (With<Collision>, Without<Player>, Without<GrassTile>)>,
+    mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection, &Location, &Animation), With<Player>>,
+    collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
+    state: Res<State<GameState>>,
 ) {
-
-    let (mut pt, mut pv, mut direction) = player.single_mut();
+    let (mut pt, mut pv, mut direction, location, animation) = player.single_mut();
     let mut deltav = Vec2::splat(0.);
+
+    // Move player during area transition
+    if state.eq(&GameState::MapTransition) {
+        let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
+        
+        if elapsed < animation.duration {
+            pt.translation = animation.start_position + elapsed / animation.duration * animation.motion;
+        } else {
+            pt.translation = animation.start_position + animation.motion;
+        }
+
+        return;
+    }
 
     // left
     if input.pressed(KeyCode::KeyA) {
@@ -85,30 +98,21 @@ pub fn move_player(
     };
     let change = pv.velocity * deltat;
 
+    let min_pos = Vec3::new(location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2., location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2., 900.);
+    let max_pos = Vec3::new(location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2., location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2., 900.);
+
     // update position with bounds checking
-
-    //update lower bounds to be + tile size
-    let new_pos = pt.translation + Vec3::new(change.x, 0., 0.);
+    let new_pos = (pt.translation + Vec3::new(change.x, 0., 0.)).clamp(min_pos, max_pos);
     
-    if collision_detection(&collision_query, new_pos){
+    if !collision_detection(&collision_query, new_pos){
         pt.translation = new_pos;
     }
-    // if new_pos.x >= -(WIN_W / 2.) + (TILE_SIZE as f32) / 4.
-    //     && new_pos.x <= 1280. - (WIN_W / 2. + (TILE_SIZE as f32) / 4.)
-    // {
-    //     pt.translation = new_pos;
-    // }
 
-    let new_pos = pt.translation + Vec3::new(0., change.y, 0.);
+    let new_pos = (pt.translation + Vec3::new(0., change.y, 0.)).clamp(min_pos, max_pos);
     
-    if collision_detection(&collision_query, new_pos){
+    if !collision_detection(&collision_query, new_pos){
         pt.translation = new_pos;
     }
-    // if new_pos.y >= -(WIN_H / 2.) + ((TILE_SIZE as f32) * 0.5)
-    //     && new_pos.y <= WIN_H / 2. - (TILE_SIZE as f32) / 2.
-    // {
-    //     pt.translation = new_pos;
-    // }
 }
 
 pub fn animate_player(
