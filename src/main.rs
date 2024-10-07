@@ -37,12 +37,13 @@ fn main() {
         }))
         .init_state::<GameState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, button_system.after(move_player))
-
+        
         //updating state
         .add_systems(Update, move_player)
         .add_systems(Update, animate_player.after(move_player))
+        .add_systems(Update, button_system.after(move_player))
         .add_systems(Update, move_camera.after(move_player))
+        .add_systems(Update, screen_edge_collision.after(move_player))
         .run();
 }
 
