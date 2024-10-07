@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod player;
-pub mod map;
+pub mod collision;
 pub mod resources;
 pub mod button;
+pub mod gameday;
