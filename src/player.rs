@@ -11,7 +11,6 @@ const PLAYER_SPEED: f32 = 200.;
 #[derive(Component)]
 pub struct Player;
 
-
 #[derive(Component, PartialEq)]
 pub enum PlayerDirection {
     Front,
@@ -28,7 +27,6 @@ pub fn move_player(
     state: Res<State<GameState>>,
 ) {
     let (mut pt, mut direction, location, animation) = player.single_mut();
-    let mut deltav = Vec2::splat(0.);
 
     // Move player during area transition
     if state.eq(&GameState::MapTransition) {
@@ -39,62 +37,65 @@ pub fn move_player(
         } else {
             pt.translation = animation.start_position + animation.motion;
         }
-
         return;
     }
 
+    let up = input.pressed(KeyCode::KeyW) || input.pressed(KeyCode::ArrowUp);
+    let left = input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft);
+    let down = input.pressed(KeyCode::KeyS) || input.pressed(KeyCode::ArrowDown);
+    let right = input.pressed(KeyCode::KeyD) || input.pressed(KeyCode::ArrowRight);
+    //let run = input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight);
+
+    let mut change_direction = Vec2::ZERO;
+
     // left
-    if input.pressed(KeyCode::KeyA) {
-        deltav.x -= 1.;
+    //why does speed not matter
+    if left {
+        change_direction.x -= PLAYER_SPEED;
         *direction = PlayerDirection::Left;
     }
 
     // right
-    else if input.pressed(KeyCode::KeyD) {
-        deltav.x += 1.;
+    else if right {
+        change_direction.x += PLAYER_SPEED;
         *direction = PlayerDirection::Right;
     }
 
     // up
-    else if input.pressed(KeyCode::KeyW) {
-        deltav.y += 1.;
+    else if up {
+        change_direction.y += PLAYER_SPEED;
         *direction = PlayerDirection::Back;
     }
 
     // down
-    else if input.pressed(KeyCode::KeyS) {
-        deltav.y -= 1.;
+    else if down {
+        change_direction.y -= PLAYER_SPEED;
         *direction = PlayerDirection::Front;
     }
 
-    let deltat = time.delta_seconds();
-    let acc = ACCEL_RATE * deltat;
+    let change_direction = change_direction.normalize();
 
-    pv.velocity = if deltav.length() > 0. {
-        (pv.velocity + (deltav.normalize_or_zero() * acc)).clamp_length_max(PLAYER_SPEED)
-    }/* else if pv.velocity.length() > acc {
-        pv.velocity + (pv.velocity.normalize_or_zero() * -acc)
-    }*/ else {
-        Vec2::splat(0.)
-    };
-    let change = pv.velocity * deltat;
+    if change_direction.length() > 0. {
+        //update lower bounds to be + tile size
 
-    let min_pos = Vec3::new(location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2., location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2., pt.translation.z);
-    let max_pos = Vec3::new(location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2., location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2., pt.translation.z);
+        let min_pos = Vec3::new(location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2., location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2., pt.translation.z);
+        let max_pos = Vec3::new(location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2., location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2., pt.translation.z);
 
-    // update position with bounds checking
-    let new_pos = (pt.translation + Vec3::new(change.x, 0., 0.)).clamp(min_pos, max_pos);
-    
-    if !collision_detection(&collision_query, new_pos){
-        pt.translation = new_pos;
-    }
+        // update position with bounds checking
+        let new_pos = (pt.translation + Vec3::new(change_direction.x, 0., 0.)).clamp(min_pos, max_pos);
+        
+        if !collision_detection(&collision_query, new_pos){
+            pt.translation = new_pos;
+        }
 
-    let new_pos = (pt.translation + Vec3::new(0., change.y, 0.)).clamp(min_pos, max_pos);
-    
-    if !collision_detection(&collision_query, new_pos){
-        pt.translation = new_pos;
+        let new_pos = (pt.translation + Vec3::new(0., change_direction.y, 0.)).clamp(min_pos, max_pos);
+        
+        if !collision_detection(&collision_query, new_pos){
+            pt.translation = new_pos;
+        }
     }
 }
+
 
 pub fn animate_player(
     time: Res<Time>,
@@ -103,7 +104,6 @@ pub fn animate_player(
     mut fishing_timer: ResMut<FishingAnimationDuration>,
     mut button_query: Query<&mut Visibility, With<Button>>,
     mut player: Query<(
-        &Velocity,
         &mut Handle<Image>,
         &mut TextureAtlas,
         &mut AnimationTimer,
@@ -112,7 +112,7 @@ pub fn animate_player(
     )>,
 ) {
     //texture handle and frame count not used
-    let (v, _texture_handle, mut texture_atlas, mut timer, _frame_count, direction) = player.single_mut();
+    let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction) = player.single_mut();
         
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
     
@@ -161,13 +161,13 @@ pub fn animate_player(
         }
     }
 
-    if v.velocity.cmpne(Vec2::ZERO).any() {
-        // play correct animation based on direction
-        timer.tick(time.delta());
-        if timer.just_finished() {
-            texture_atlas.index = ((texture_atlas.index + 1) % 4) + dir_add;
-        }
-    } else {
+    
+    // play correct animation based on direction
+    timer.tick(time.delta());
+    if timer.just_finished() {
+        texture_atlas.index = ((texture_atlas.index + 1) % 4) + dir_add;
+    }
+    else {
         // when stopped switch to stills
         match *direction {
             PlayerDirection::Front => {
@@ -185,4 +185,3 @@ pub fn animate_player(
         }
     }
 }
-
