@@ -7,29 +7,10 @@ pub const PLAYER_WIDTH: f32 = 64.;
 pub const PLAYER_HEIGHT: f32 = 128.;
 
 const PLAYER_SPEED: f32 = 200.;
-const ACCEL_RATE: f32 = 400.;
 
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Component)]
-pub struct Velocity {
-    pub velocity: Vec2,
-}
-
-impl Velocity {
-    pub fn new() -> Self {
-        Self {
-            velocity: Vec2::splat(0.),
-        }
-    }
-}
-
-impl From<Vec2> for Velocity {
-    fn from(velocity: Vec2) -> Self {
-        Self { velocity }
-    }
-}
 
 #[derive(Component, PartialEq)]
 pub enum PlayerDirection {
@@ -42,11 +23,11 @@ pub enum PlayerDirection {
 pub fn move_player(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&mut Transform, &mut Velocity, &mut PlayerDirection, &Location, &Animation), With<Player>>,
+    mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
     state: Res<State<GameState>>,
 ) {
-    let (mut pt, mut pv, mut direction, location, animation) = player.single_mut();
+    let (mut pt, mut direction, location, animation) = player.single_mut();
     let mut deltav = Vec2::splat(0.);
 
     // Move player during area transition
