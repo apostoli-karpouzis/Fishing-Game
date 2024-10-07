@@ -7,17 +7,20 @@ mod player;
 mod map; 
 mod resources;
 mod button;
+mod weather;
 
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
 use crate::resources::*;
 use crate::button::*;
+use crate::weather::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
 fn main() {
     App::new()
+        .insert_resource(WeatherState::default())
         .insert_resource(ClearColor(Color::Srgba(Srgba::gray(0.25))))
         .insert_resource(StartFishingAnimation { active: false, button_control_active: true })
         .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
@@ -36,6 +39,7 @@ fn main() {
             ..default()
         }))
         .init_state::<GameState>()
+        .init_state::<Weather>()
         .add_systems(Startup, setup)
         .add_systems(Update, button_system.after(move_player))
 
@@ -43,6 +47,7 @@ fn main() {
         .add_systems(Update, move_player)
         .add_systems(Update, animate_player.after(move_player))
         .add_systems(Update, move_camera.after(move_player))
+        .add_systems(Update, update_weather)
         .run();
 }
 
