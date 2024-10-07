@@ -98,8 +98,8 @@ pub fn move_player(
     };
     let change = pv.velocity * deltat;
 
-    let min_pos = Vec3::new(location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2., location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2., 900.);
-    let max_pos = Vec3::new(location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2., location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2., 900.);
+    let min_pos = Vec3::new(location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2., location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2., pt.translation.z);
+    let max_pos = Vec3::new(location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2., location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2., pt.translation.z);
 
     // update position with bounds checking
     let new_pos = (pt.translation + Vec3::new(change.x, 0., 0.)).clamp(min_pos, max_pos);
