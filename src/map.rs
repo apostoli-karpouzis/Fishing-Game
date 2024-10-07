@@ -16,17 +16,18 @@ const MAP_TRANSITION_TIME: f32 = 1.5;
 pub struct Location {
     pub map: Map,
     pub x: usize,
-    pub y: usize
+    pub y: usize,
 }
 
 pub struct Map {
     pub width: usize,
-    pub height: usize
+    pub height: usize,
+    pub areas: Option<[[Area; MAP_HEIGHT]; MAP_WIDTH]>
 }
 
 impl Map {
-    pub fn new(width: usize, height: usize) -> Self {
-        Self { width, height }
+    pub fn new(width: usize, height: usize, areas: Option<[[Area; MAP_HEIGHT]; MAP_WIDTH]>) -> Self {
+        Self { width, height, areas }
     }
 }
 
