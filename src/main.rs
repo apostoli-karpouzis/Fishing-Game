@@ -20,7 +20,6 @@ const OLD_TILE_SIZE: f32 = 64.;
 
 fn main() {
     App::new()
-        .insert_resource(WeatherState::default())
         .insert_resource(ClearColor(Color::Srgba(Srgba::gray(0.25))))
         .insert_resource(StartFishingAnimation { active: false, button_control_active: true })
         .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
@@ -40,7 +39,8 @@ fn main() {
         }))
         .init_state::<GameState>()
         .init_state::<Weather>()
-        .add_systems(Startup, setup)
+        .init_resource::<WeatherState>()
+        .add_systems(Startup, (setup, spawn_weather_tint_overlay))
         .add_systems(Update, button_system.after(move_player))
 
         //updating state
@@ -48,6 +48,7 @@ fn main() {
         .add_systems(Update, animate_player.after(move_player))
         .add_systems(Update, move_camera.after(move_player))
         .add_systems(Update, update_weather)
+        .add_systems(Update, update_weather_tint.after(update_weather))
         .run();
 }
 
