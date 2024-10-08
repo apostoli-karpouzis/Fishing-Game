@@ -82,34 +82,6 @@ impl Object {
 #[derive(Component)]
 pub struct Collision;
 
-pub fn collision_detection(
-    collision_query: &Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    new_pos: Vec3,
-) -> bool {
-    for object in collision_query.iter() {
-        let (transform, tile) = object;
-
-        if new_pos.y - PLAYER_HEIGHT / 2. > transform.translation.y + tile.hitbox.y / 2. 
-            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2. 
-            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
-            || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
-        {
-            continue;
-        }
-
-        if tile.interactable {
-            match tile {
-                &Tile::WATER => println!("Collided with water"),
-                _ => {}
-            }
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
 pub fn screen_edge_collision (
     mut player: Query<(&mut Location, &Transform, &PlayerDirection, &mut Animation), With<Player>>,
     mut camera: Query<(&mut Transform, &mut Animation), (With<Camera>, Without<Player>)>,
