@@ -184,8 +184,8 @@ fn setup(
         },
         AnimationTimer::new(ANIM_TIME),  // Use the constructor
         AnimationFrameCount(player_layout_len), // Use the public field
-        Velocity::new(),
         Player,
+        InputStack::default(),
         PlayerDirection::Back, // Default direction facing back
         Location {
             map: map,

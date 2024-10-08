@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-#[derive(Resource)] //idk if this is a resource
+#[derive(Default)] 
 pub struct Fish {
     pub id: u32,                        //fish id 
     pub species: String,                //type of fish
@@ -14,6 +14,9 @@ pub struct Fish {
     pub depth: (f32, f32),              //preferred depth range
     pub is_alive: bool                  //to track deaths
 }
+
+//do we want to pregenerate dif fish or start all at same or what
+
 
 impl Fish {
     //check if time is preffered
@@ -51,6 +54,16 @@ impl Fish {
     pub fn fish_anger(&mut self) {
         self.age * self.hunger;
     }
+    pub fn fish_weight(&mut self) {
+        self.age * self.hunger;
+    }
+
+    pub fn fish_shape(&mut self) {
+        //do some calculation based on length width maybe
+        //prob a task for physics 
+        self.length;
+        self.width;
+    }
 }
 
 #[derive(Default)]
@@ -71,22 +84,3 @@ impl Pond {
         }
     }
 }
-
-//smthn like this...
-
-//i think we pregenerate an array of MAX_POND_SIZE
-
-//we also pre generate an array of MAX_FISH ODDS size for each fish 
-//we have separate arrays for all the individual species
-//each array has all individual fish with their own traits
-
-/*
-if bayesian determines a 10% chance of catching bass, we select 10 
-of the bass instances from the bass population array with highest hunger (or random if tie)
-and populate the pond array at cast time.
-same goes for all species.
-
-if a fish is caught, increase age, decrease hunger dramatically
-
-every in game day, increase both age and hunger
-*/
