@@ -77,6 +77,7 @@ pub fn spawn_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
                     border_color: BorderColor(Color::BLACK),
                     border_radius: BorderRadius::MAX,
                     background_color: NORMAL_BUTTON.into(),
+                    visibility: Visibility::Hidden,
                     ..default()
                 })
                 .with_children(|parent| {
