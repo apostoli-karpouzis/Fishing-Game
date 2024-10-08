@@ -9,6 +9,12 @@ pub const PLAYER_HEIGHT: f32 = 128.;
 const PLAYER_SPEED: f32 = 70.;
 const RUN_SPEED: f32 = 240.; // Added RUN_SPEED for running
 
+const UP: KeyCode = KeyCode::KeyW;
+const LEFT: KeyCode = KeyCode::KeyA;
+const DOWN: KeyCode = KeyCode::KeyS;
+const RIGHT: KeyCode = KeyCode::KeyD;
+const RUN: KeyCode = KeyCode::ShiftRight;
+
 #[derive(Component)]
 pub struct Player;
 
@@ -42,14 +48,17 @@ impl InputStack {
 }
 
 pub fn move_player(
+    state: Res<State<GameState>>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    state: Res<State<GameState>>,
+    mut button: Query<&mut Visibility, With<Button>>
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
+    let mut button_visibility = button.single_mut();
 
+    // Map transition
     if state.eq(&GameState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
         
@@ -62,93 +71,113 @@ pub fn move_player(
         return;
     }
 
-    let up = KeyCode::KeyW;
-    let left = KeyCode::KeyA;
-    let down = KeyCode::KeyS;
-    let right = KeyCode::KeyD;
-    let run = KeyCode::ShiftRight;
+    // Update key press list
+    let is_running = input.pressed(RUN); 
 
-    let is_running = input.pressed(run); 
-
-    if input.pressed(up) {
-        input_stack.push(up);
+    if input.pressed(UP) {
+        input_stack.push(UP);
     } else {
-        input_stack.remove(up);
+        input_stack.remove(UP);
     }
 
-    if input.pressed(left) {
-        input_stack.push(left);
+    if input.pressed(LEFT) {
+        input_stack.push(LEFT);
     } else {
-        input_stack.remove(left);
+        input_stack.remove(LEFT);
     }
 
-    if input.pressed(down) {
-        input_stack.push(down);
+    if input.pressed(DOWN) {
+        input_stack.push(DOWN);
     } else {
-        input_stack.remove(down);
+        input_stack.remove(DOWN);
     }
 
-    if input.pressed(right) {
-        input_stack.push(right);
+    if input.pressed(RIGHT) {
+        input_stack.push(RIGHT);
     } else {
-        input_stack.remove(right);
+        input_stack.remove(RIGHT);
     }
 
-    let mut change_direction = Vec2::ZERO;
-
-    if let Some(last_key) = input_stack.last() {
+    // Determine velocity vector
+    let mut change_direction = if let Some(last_key) = input_stack.last() {
         match last_key {
             KeyCode::KeyW => {
-                change_direction.y += PLAYER_SPEED;
                 *direction = PlayerDirection::Back;
-            }
-            KeyCode::KeyA => {
-                change_direction.x -= PLAYER_SPEED;
-                *direction = PlayerDirection::Left;
+                Vec2::new(0., 1.)
             }
             KeyCode::KeyS => {
-                change_direction.y -= PLAYER_SPEED;
                 *direction = PlayerDirection::Front;
+                Vec2::new(0., -1.)
+            }
+            KeyCode::KeyA => {
+                *direction = PlayerDirection::Left;
+                Vec2::new(-1., 0.)
             }
             KeyCode::KeyD => {
-                change_direction.x += PLAYER_SPEED;
                 *direction = PlayerDirection::Right;
+                Vec2::new(1., 0.)
             }
-            _ => {}
+            _ => Vec2::ZERO
         }
-    }
-
-    // Adjust movement speed based on running
-    let speed = if is_running { RUN_SPEED } else { PLAYER_SPEED };
-
-    let change_direction = if change_direction != Vec2::ZERO {
-        change_direction.normalize_or_zero() * speed * time.delta_seconds()
     } else {
         Vec2::ZERO
     };
 
-    if change_direction.length() > 0. {
-        let min_pos = Vec3::new(
-            location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2.,
-            location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2.,
-            pt.translation.z,
-        );
-        let max_pos = Vec3::new(
-            location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2.,
-            location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2.,
-            pt.translation.z,
-        );
+    // Adjust movement speed based on running
+    let speed = if is_running { RUN_SPEED } else { PLAYER_SPEED };
 
-        let new_pos = (pt.translation + Vec3::new(change_direction.x, 0., 0.)).clamp(min_pos, max_pos);
-        if !collision_detection(&collision_query, new_pos) {
-            pt.translation = new_pos;
-        }
-
-        let new_pos = (pt.translation + Vec3::new(0., change_direction.y, 0.)).clamp(min_pos, max_pos);
-        if !collision_detection(&collision_query, new_pos) {
-            pt.translation = new_pos;
-        }
+    if change_direction != Vec2::ZERO {
+        change_direction = speed * time.delta_seconds() * change_direction
     }
+
+    if change_direction.length() == 0. {
+        return;
+    }
+
+    // Calculate new position
+    let min_pos = Vec3::new(
+        location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2.,
+        location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2.,
+        pt.translation.z,
+    );
+    let max_pos = Vec3::new(
+        location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2.,
+        location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2.,
+        pt.translation.z,
+    );
+
+    let new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
+
+    // Check for collisions
+    for object in collision_query.iter() {
+        let (transform, tile) = object;
+
+        if new_pos.y - PLAYER_HEIGHT / 2. > transform.translation.y + tile.hitbox.y / 2.
+            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2. 
+            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
+            || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
+        {
+            continue;
+        }
+        
+        // Collision detected
+        if tile.interactable {
+            match tile {
+                &Tile::WATER => {
+                    *button_visibility = Visibility::Visible;
+                }
+                _ => {
+                    *button_visibility = Visibility::Hidden;
+                }
+            }
+        }
+
+        return;
+    }
+
+    // No collision
+    *button_visibility = Visibility::Hidden;
+    pt.translation = new_pos;
 }
 
 pub fn animate_player(
