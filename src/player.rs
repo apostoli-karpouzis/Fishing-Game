@@ -6,7 +6,8 @@ use std::time::Duration;
 pub const PLAYER_WIDTH: f32 = 64.;
 pub const PLAYER_HEIGHT: f32 = 128.;
 
-const PLAYER_SPEED: f32 = 200.;
+const PLAYER_SPEED: f32 = 70.;
+const RUN_SPEED: f32 = 240.; // Added RUN_SPEED for running
 
 #[derive(Component)]
 pub struct Player;
@@ -19,8 +20,6 @@ pub enum PlayerDirection {
     Right,
 }
 
-//stack to store movement input to avoid priorit movement
-//last key pressed is looked at
 #[derive(Default, Component)]
 pub struct InputStack {
     stack: Vec<KeyCode>,
@@ -51,7 +50,6 @@ pub fn move_player(
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
 
-    // Move player during area transition
     if state.eq(&GameState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
         
@@ -68,8 +66,10 @@ pub fn move_player(
     let left = KeyCode::KeyA;
     let down = KeyCode::KeyS;
     let right = KeyCode::KeyD;
+    let run = KeyCode::ShiftRight;
 
-    // Add pressed keys to stack
+    let is_running = input.pressed(run); 
+
     if input.pressed(up) {
         input_stack.push(up);
     } else {
@@ -94,7 +94,6 @@ pub fn move_player(
         input_stack.remove(right);
     }
 
-    // Get last key for direction
     let mut change_direction = Vec2::ZERO;
 
     if let Some(last_key) = input_stack.last() {
@@ -115,12 +114,15 @@ pub fn move_player(
                 change_direction.x += PLAYER_SPEED;
                 *direction = PlayerDirection::Right;
             }
-            _ => {} //ignore rest
+            _ => {}
         }
     }
 
+    // Adjust movement speed based on running
+    let speed = if is_running { RUN_SPEED } else { PLAYER_SPEED };
+
     let change_direction = if change_direction != Vec2::ZERO {
-        change_direction.normalize_or_zero()
+        change_direction.normalize_or_zero() * speed * time.delta_seconds()
     } else {
         Vec2::ZERO
     };
@@ -137,7 +139,6 @@ pub fn move_player(
             pt.translation.z,
         );
 
-        // Update position with bounds checking
         let new_pos = (pt.translation + Vec3::new(change_direction.x, 0., 0.)).clamp(min_pos, max_pos);
         if !collision_detection(&collision_query, new_pos) {
             pt.translation = new_pos;
@@ -150,9 +151,9 @@ pub fn move_player(
     }
 }
 
-
 pub fn animate_player(
     time: Res<Time>,
+    input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(
         &mut Handle<Image>,
         &mut TextureAtlas,
@@ -164,7 +165,7 @@ pub fn animate_player(
 ) {
     let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction, input_stack) = player.single_mut();
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
-    //if stack isnt empt player is moving
+
     let is_moving = input_stack.stack.len() > 0;
 
     let dir_add = match *direction {
@@ -182,15 +183,15 @@ pub fn animate_player(
         }
     };
 
-    //loop frames if moving
-    timer.tick(time.delta());
+    let is_running = input.pressed(KeyCode::ShiftRight); 
+    let anim_speed = if is_running {time.delta()*3} else {time.delta()};
+
+    timer.tick(anim_speed);
     if is_moving {
         if timer.just_finished() {
-            //cycle 4 frames
             texture_atlas.index = ((texture_atlas.index + 1) % 4) + dir_add;
         }
     } else {
-        //reset to still frame when stopped
         texture_atlas.index = dir_add;
     }
 }
