@@ -7,6 +7,7 @@ mod player;
 mod map; 
 mod resources;
 mod button;
+mod gameday;
 mod weather;
 
 use crate::camera::*;
@@ -14,6 +15,7 @@ use crate::player::*;
 use crate::map::*;
 use crate::resources::*;
 use crate::button::*;
+use crate::gameday::*;
 use crate::weather::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
@@ -42,11 +44,14 @@ fn main() {
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
         .add_systems(Update, button_system.after(move_player))
+        .add_systems(Update, run_game_timer)
 
         //updating state
         .add_systems(Update, move_player)
         .add_systems(Update, animate_player.after(move_player))
+        .add_systems(Update, button_system.after(move_player))
         .add_systems(Update, move_camera.after(move_player))
+        .add_systems(Update, screen_edge_collision.after(move_player))
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
         .run();
@@ -185,8 +190,8 @@ fn setup(
         },
         AnimationTimer::new(ANIM_TIME),  // Use the constructor
         AnimationFrameCount(player_layout_len), // Use the public field
-        Velocity::new(),
         Player,
+        InputStack::default(),
         PlayerDirection::Back, // Default direction facing back
         Location {
             map: map,
@@ -214,4 +219,9 @@ fn setup(
     ));
     
     spawn_button(&mut commands, asset_server);
+
+    //Time of day timer
+    commands.insert_resource(
+        GameDayTimer::new(30.),
+    );
 }

@@ -58,3 +58,24 @@ pub struct StartFishingAnimation {
 #[derive(Resource)]
 pub struct FishingAnimationDuration(pub Timer);
 
+#[derive(Component, PartialEq)]
+pub enum TimePeriod{
+    Morning,
+    Afternoon,
+    Night,
+}
+
+#[derive(Resource)]
+pub struct GameDayTimer{
+    pub timer: Timer,
+    pub time_period: TimePeriod,
+}
+
+impl GameDayTimer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Repeating),
+            time_period: TimePeriod::Morning,
+        }
+    }    
+} 
