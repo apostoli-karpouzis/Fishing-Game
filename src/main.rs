@@ -7,12 +7,14 @@ mod player;
 mod map; 
 mod resources;
 mod button;
+mod gameday;
 
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
 use crate::resources::*;
 use crate::button::*;
+use crate::gameday::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -37,7 +39,9 @@ fn main() {
         }))
         .init_state::<GameState>()
         .add_systems(Startup, setup)
-        
+        .add_systems(Update, button_system.after(move_player))
+        .add_systems(Update, run_game_timer)
+
         //updating state
         .add_systems(Update, move_player)
         .add_systems(Update, animate_player.after(move_player))
@@ -209,4 +213,9 @@ fn setup(
     ));
     
     spawn_button(&mut commands, asset_server);
+
+    //Time of day timer
+    commands.insert_resource(
+        GameDayTimer::new(30.),
+    );
 }

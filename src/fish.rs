@@ -17,6 +17,7 @@ pub struct Fish {
 
 //do we want to pregenerate dif fish or start all at same or what
 
+
 impl Fish {
     //check if time is preffered
     pub fn is_preferred_time(&self, hour: u32) -> bool {
@@ -53,7 +54,6 @@ impl Fish {
     pub fn fish_anger(&mut self) {
         self.age * self.hunger;
     }
-
     pub fn fish_weight(&mut self) {
         self.age * self.hunger;
     }
@@ -84,5 +84,3 @@ impl Pond {
         }
     }
 }
-
-//smthn like this...
