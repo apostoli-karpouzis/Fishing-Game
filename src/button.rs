@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 use crate::resources::*;
+use crate::fishingView::*;
+
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
@@ -21,7 +23,9 @@ pub fn button_system(
     >,
     mut text_query: Query<&mut Text>,
     mut start_fishing_animation: ResMut<StartFishingAnimation>,
-    mut fishing_timer: ResMut<FishingAnimationDuration>,        
+    mut fishing_timer: ResMut<FishingAnimationDuration>,      
+    mut next: ResMut<NextState<FishingMode>>,
+    state: Res<State<FishingMode>>  
 ) {
     for (interaction, mut color, mut border_color, mut visibility, children) in &mut interaction_query {
         let mut text = text_query.get_mut(children[0]).unwrap();
@@ -33,6 +37,8 @@ pub fn button_system(
                 start_fishing_animation.button_control_active = false;
                 fishing_timer.0.reset();
                 *visibility = Visibility::Hidden;
+                next.set(state.get().next()); 
+
             }
             Interaction::Hovered => {
                 text.sections[0].value = "Throw Rod".to_string();
