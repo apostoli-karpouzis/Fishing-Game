@@ -54,7 +54,7 @@ fn main() {
 
         //updating state
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
-        .add_systems(Update, button_system.after(move_player))
+        //.add_systems(Update, button_system.after(move_player))
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         //player rotation
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))

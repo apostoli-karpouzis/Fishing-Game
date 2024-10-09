@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::resources::*;
+//use crate::button::*;
 
 #[derive(Component)]
 pub struct Bar;
@@ -131,16 +132,17 @@ pub fn switch_mode(
     input: Res<ButtonInput<KeyCode>>,
     state: Res<State<FishingMode>>
 ){
-    if state.eq(&FishingMode::Overworld){
-        if input.just_pressed(KeyCode::KeyX){
-            next.set(state.get().next());
-            println!("switching to fising");
-        }
-    }
-    else if state.eq(&FishingMode::Fishing){
+    // if state.eq(&FishingMode::Overworld){
+    //     if input.just_pressed(KeyCode::KeyX){
+    //         next.set(state.get().next());
+    //         println!("switching to fising");
+    //     }
+    // }
+    if state.eq(&FishingMode::Fishing){
         if input.just_pressed(KeyCode::KeyX){
             next.set(state.get().next());
             println!("switching to overworld");
         }
     }
 }
+
