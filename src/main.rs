@@ -7,6 +7,8 @@ mod player;
 mod map; 
 mod resources;
 mod button;
+mod gameday;
+mod weather;
 mod fishingView;
 
 use crate::camera::*;
@@ -14,6 +16,8 @@ use crate::player::*;
 use crate::map::*;
 use crate::resources::*;
 use crate::button::*;
+use crate::gameday::*;
+use crate::weather::*;
 use crate::fishingView::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
@@ -23,7 +27,6 @@ fn main() {
         .insert_resource(ClearColor(Color::Srgba(Srgba::gray(0.25))))
         .insert_resource(StartFishingAnimation { active: false, button_control_active: true })
         .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
-        
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: TITLE.into(),
@@ -39,23 +42,31 @@ fn main() {
             ..default()
         }))
         .init_state::<GameState>()
+        .init_state::<Weather>()
         .init_state::<FishingMode>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, button_system.after(move_player))
-
+        .init_resource::<WeatherState>()
+        .add_systems(Startup, (setup, spawn_weather_tint_overlay))
+        
+        .add_systems(Update, run_game_timer)
 
         .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
+
         //updating state
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
-        //move powerbar
+        .add_systems(Update, button_system.after(move_player))
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         //player rotation
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
-        .add_systems(Update, animate_player.after(move_player).run_if(run_if_in_overworld))
-        .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
-        .add_systems(Update, switch_mode)
+
+        .add_systems(Update, animate_player.after(move_player))
         
+        .add_systems(Update, button_system.after(move_player).run_if(run_if_in_overworld))
+        .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
+        .add_systems(Update, screen_edge_collision.after(move_player))
+        .add_systems(Update, update_weather)
+        .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, switch_mode)
         .run();
 }
 
@@ -68,10 +79,10 @@ fn setup(
         Camera2dBundle::default(),
         Animation::new()
     ));
-    //sets up resources for camera returns 
-    commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
 
+    commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
     //GRASS CODE V
+    
     //let bg_texture_handle = asset_server.load("test_bg.png");
     let grass_sheet_handle = asset_server.load("ground_sheet.png");
     let grass_layout =
@@ -194,8 +205,9 @@ fn setup(
         },
         AnimationTimer::new(ANIM_TIME),  // Use the constructor
         AnimationFrameCount(player_layout_len), // Use the public field
-        Velocity::new(),
+        //Velocity::new(),
         Player,
+        InputStack::default(),
         PlayerDirection::Back, // Default direction facing back
         Location {
             map: map,
@@ -221,17 +233,23 @@ fn setup(
         Tile::TREE,
         Collision,
     ));
+    
+    //spawn_button(&mut commands, asset_server);
+    //spawn_button(&mut commands, asset_server);
+
+    //Time of day timer
+    commands.insert_resource(
+        GameDayTimer::new(30.),
+    );
 
 
-    //other screen
-
-
-    //let grass_sheet_handle = asset_server.load("ground_sheet.png");
-    let fishing_sheet_handle = asset_server.load("fishingView.png");
+    //let fishing_sheet_handle = asset_server.load("fishingView.png");
 
     //let grass_layout_len = grass_layout.textures.len();
     
-    
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
+    //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+
     commands.spawn((
         SpriteBundle {
             texture: fishing_sheet_handle.clone(),
@@ -246,9 +264,9 @@ fn setup(
         },
         
     ));
-
+    
     //powerbar view
-    let bar_sheet_handle = asset_server.load("powerBar.png");
+    let bar_sheet_handle = asset_server.load("fishingStuff/powerBar.png");
     commands.spawn((
         SpriteBundle {
             texture: bar_sheet_handle.clone(),
@@ -269,7 +287,7 @@ fn setup(
         },
     ));
 
-    let bar_sheet_handle = asset_server.load("backFishingSprite.png");
+    let bar_sheet_handle = asset_server.load("fishingStuff/backFishingSprite.png");
     commands.spawn((
         SpriteBundle {
             texture: bar_sheet_handle.clone(),
@@ -285,7 +303,7 @@ fn setup(
         },
     ));
 
-    let bar_sheet_handle = asset_server.load("fishingRod.png");
+    let bar_sheet_handle = asset_server.load("fishingStuff/fishingRod.png");
     commands.spawn((
         SpriteBundle {
             texture: bar_sheet_handle.clone(),
