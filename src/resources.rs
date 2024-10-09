@@ -1,15 +1,11 @@
 use bevy::prelude::*;
 
-
 pub const TITLE: &str = "movement";
 pub const WIN_W: f32 = 1280.;
 pub const WIN_H: f32 = 720.;
 
 pub const ANIM_TIME: f32 = 0.125; // 8 fps
 pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
-
-pub const FISHINGROOMX: f32 = 8960.;
-pub const FISHINGROOMY: f32 = 3600.;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer {
@@ -53,31 +49,6 @@ pub enum GameState {
     MapTransition
 }
 
-//GAMESTATE for switching the game world to the fishing mode
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FishingMode {
-    #[default]
-    Overworld,
-    Fishing
-}
-
-impl FishingMode{
-    pub fn next(&self) -> Self {
-        match self {
-            FishingMode::Overworld => FishingMode::Fishing,
-            FishingMode::Fishing => FishingMode::Overworld,
-        }
-    }
-}
-
-
-
-#[derive(Resource)]
-pub struct PlayerReturnPos {
-    pub player_save_x: f32,
-    pub player_save_y: f32, 
-}
-
 #[derive(Resource)]
 pub struct StartFishingAnimation {
     pub active: bool,
@@ -87,3 +58,24 @@ pub struct StartFishingAnimation {
 #[derive(Resource)]
 pub struct FishingAnimationDuration(pub Timer);
 
+#[derive(Component, PartialEq)]
+pub enum TimePeriod{
+    Morning,
+    Afternoon,
+    Night,
+}
+
+#[derive(Resource)]
+pub struct GameDayTimer{
+    pub timer: Timer,
+    pub time_period: TimePeriod,
+}
+
+impl GameDayTimer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Repeating),
+            time_period: TimePeriod::Morning,
+        }
+    }    
+} 
