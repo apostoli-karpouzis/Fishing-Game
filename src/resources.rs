@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+
 pub const TITLE: &str = "movement";
 pub const WIN_W: f32 = 1280.;
 pub const WIN_H: f32 = 720.;
@@ -72,6 +73,15 @@ pub struct PlayerReturnPos {
     pub player_save_y: f32, 
 }
 
+//GAMESTATE for switching the game world to the fishing mode
+
+
+
+
+
+
+
+
 #[derive(Resource)]
 pub struct StartFishingAnimation {
     pub active: bool,
@@ -80,6 +90,7 @@ pub struct StartFishingAnimation {
 
 #[derive(Resource)]
 pub struct FishingAnimationDuration(pub Timer);
+
 
 #[derive(Component, PartialEq)]
 pub enum TimePeriod{
