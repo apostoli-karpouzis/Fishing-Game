@@ -46,27 +46,30 @@ fn main() {
         .init_state::<FishingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
-        
+
+        // Run the game timer
         .add_systems(Update, run_game_timer)
 
+        // Handle transitions when entering and exiting FishingMode
         .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
 
-        //updating state
-        .add_systems(Update, move_player.run_if(run_if_in_overworld))
-        //.add_systems(Update, button_system.after(move_player))
-        .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
-        //player rotation
-        .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
+        // Run the button system in both FishingMode and Overworld
+        .add_systems(Update, button_system)
 
+        // Overworld systems (player movement, animations)
+        .add_systems(Update, move_player.run_if(run_if_in_overworld))
         .add_systems(Update, animate_player.after(move_player))
-        
-        .add_systems(Update, button_system.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, screen_edge_collision.after(move_player))
+
+        // FishingMode systems (power bar and rod rotation)
+        .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
+        .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
+
+        // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-        .add_systems(Update, switch_mode)
         .run();
 }
 
