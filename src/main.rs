@@ -9,6 +9,7 @@ mod resources;
 mod button;
 mod gameday;
 mod weather;
+mod fishingView;
 
 use crate::camera::*;
 use crate::player::*;
@@ -17,6 +18,7 @@ use crate::resources::*;
 use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
+use crate::fishingView::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -41,19 +43,29 @@ fn main() {
         }))
         .init_state::<GameState>()
         .init_state::<Weather>()
+        .init_state::<FishingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
         .add_systems(Update, button_system.after(move_player))
         .add_systems(Update, run_game_timer)
 
+        .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
+        .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
+
         //updating state
-        .add_systems(Update, move_player)
+        .add_systems(Update, move_player.run_if(run_if_in_overworld))
+
+        .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
+        //player rotation
+        .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
+
         .add_systems(Update, animate_player.after(move_player))
-        .add_systems(Update, button_system.after(move_player))
-        .add_systems(Update, move_camera.after(move_player))
+        .add_systems(Update, button_system.after(move_player).run_if(run_if_in_overworld))
+        .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, screen_edge_collision.after(move_player))
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, switch_mode)
         .run();
 }
 
@@ -67,7 +79,9 @@ fn setup(
         Animation::new()
     ));
 
+    commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
     //GRASS CODE V
+    
     //let bg_texture_handle = asset_server.load("test_bg.png");
     let grass_sheet_handle = asset_server.load("ground_sheet.png");
     let grass_layout =
@@ -218,10 +232,93 @@ fn setup(
         Collision,
     ));
     
-    spawn_button(&mut commands, asset_server);
+    //spawn_button(&mut commands, asset_server);
 
     //Time of day timer
     commands.insert_resource(
         GameDayTimer::new(30.),
     );
+
+
+    //let fishing_sheet_handle = asset_server.load("fishingView.png");
+
+    //let grass_layout_len = grass_layout.textures.len();
+    
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
+    //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fishing_sheet_handle.clone(),
+                        sprite: Sprite {
+                        ..default()
+                    },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                ..default()
+            },
+            ..default()
+        },
+        
+    ));
+    
+    //powerbar view
+    let bar_sheet_handle = asset_server.load("fishingStuff/powerBar.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bar_sheet_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX+575., FISHINGROOMY-308., 899.),
+                ..default()
+            },
+            ..default()
+        },
+        Bar,
+        Power {
+            meter: 0,
+            released: false,
+        },
+    ));
+
+    let bar_sheet_handle = asset_server.load("fishingStuff/backFishingSprite.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bar_sheet_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+
+    let bar_sheet_handle = asset_server.load("fishingStuff/fishingRod.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bar_sheet_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Rotatable, 
+        RotationObj{
+            rot: 0.,
+        }
+    ));
+    
+    spawn_button(&mut commands, asset_server);
 }
