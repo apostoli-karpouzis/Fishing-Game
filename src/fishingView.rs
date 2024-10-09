@@ -127,22 +127,4 @@ pub fn run_if_in_fishing(state: Res<State<FishingMode>>) -> bool{
     state.eq(&FishingMode::Fishing)
 }
 
-pub fn switch_mode(
-    mut next: ResMut<NextState<FishingMode>>,
-    input: Res<ButtonInput<KeyCode>>,
-    state: Res<State<FishingMode>>
-){
-    // if state.eq(&FishingMode::Overworld){
-    //     if input.just_pressed(KeyCode::KeyX){
-    //         next.set(state.get().next());
-    //         println!("switching to fising");
-    //     }
-    // }
-    if state.eq(&FishingMode::Fishing){
-        if input.just_pressed(KeyCode::KeyX){
-            next.set(state.get().next());
-            println!("switching to overworld");
-        }
-    }
-}
 
