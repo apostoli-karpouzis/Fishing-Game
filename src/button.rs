@@ -10,7 +10,7 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 pub struct ButtonVisible(pub bool);
 
 
-pub fn button_system(
+pub fn fishing_button_system(
     input: Res<ButtonInput<KeyCode>>,   
     mut button_query: Query<(&mut BackgroundColor, &mut BorderColor, &Children), (With<Button>,)>,
     mut visibility_query: Query<&mut Visibility, With<Button>>, 
@@ -32,11 +32,11 @@ pub fn button_system(
             if state.eq(&FishingMode::Overworld) {
                 text.sections[0].value = "Throw Rod(X)".to_string(); 
             } else if state.eq(&FishingMode::Fishing) {
-                text.sections[0].value = "Exit(X)".to_string(); 
+                text.sections[0].value = "Exit(ESC)".to_string(); 
             }
 
             
-            if input.pressed(KeyCode::KeyX) {
+            if input.pressed(KeyCode::KeyX) && state.eq(&FishingMode::Overworld) {
                 *color = HOVERED_BUTTON.into();  
                 border_color.0 = Color::WHITE;
             } else {
@@ -56,7 +56,7 @@ pub fn button_system(
                 println!("Switching to fishing mode");
 
             
-            } else if input.just_pressed(KeyCode::KeyX) && state.eq(&FishingMode::Fishing) {
+            } else if input.just_pressed(KeyCode::Escape) && state.eq(&FishingMode::Fishing) {
                 println!("Exiting fishing mode");
                 *color = NORMAL_BUTTON.into();  
                 start_fishing_animation.active = false;
@@ -73,7 +73,7 @@ pub fn button_system(
 
 
 
-pub fn spawn_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
+pub fn spawn_fishing_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             NodeBundle {
@@ -117,4 +117,5 @@ pub fn spawn_button(commands: &mut Commands, asset_server: Res<AssetServer>) {
                 });
         });
 }
+
 
