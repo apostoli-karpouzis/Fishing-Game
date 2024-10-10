@@ -55,7 +55,7 @@ fn main() {
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
 
         // Run the button system in both FishingMode and Overworld
-        .add_systems(Update, button_system)
+        .add_systems(Update, fishing_button_system)
 
         // Overworld systems (player movement, animations)
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
@@ -326,5 +326,5 @@ fn setup(
         }
     ));
     
-    spawn_button(&mut commands, asset_server);
+    spawn_fishing_button(&mut commands, asset_server);
 }
