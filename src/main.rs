@@ -10,6 +10,7 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+//mod species;
 
 use crate::camera::*;
 use crate::player::*;
@@ -19,6 +20,7 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+//use crate::species::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
