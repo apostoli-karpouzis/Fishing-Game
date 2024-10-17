@@ -2,6 +2,8 @@ use bevy::window::EnabledButtons;
 use bevy::{prelude::*, window::PresentMode};
 use rand::Rng;
 
+mod physics;
+mod fish;
 mod camera; 
 mod player; 
 mod map; 
@@ -12,6 +14,8 @@ mod weather;
 mod fishingView;
 //mod species;
 
+use crate::physics::*;
+use crate::fish::*;
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
@@ -72,6 +76,7 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, simulate_fish.after(update_weather))
         .run();
 }
 
@@ -197,6 +202,7 @@ fn setup(
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
 
     commands.spawn((
         SpriteBundle {
@@ -222,6 +228,25 @@ fn setup(
         Animation::new()
     ));
     //tree collision hold
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(-100., -100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Fish::default(),
+        FishHooked,
+        FishState::new(-100.,-100., 0.),
+    ));
+
+    //spawn example fish
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),
