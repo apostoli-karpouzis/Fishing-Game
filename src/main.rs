@@ -2,6 +2,8 @@ use bevy::window::EnabledButtons;
 use bevy::{prelude::*, window::PresentMode};
 use rand::Rng;
 
+mod physics;
+mod fish;
 mod camera; 
 mod player; 
 mod map; 
@@ -10,7 +12,10 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+//mod species;
 
+use crate::physics::*;
+use crate::fish::*;
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
@@ -19,6 +24,7 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+//use crate::species::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -55,7 +61,7 @@ fn main() {
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
 
         // Run the button system in both FishingMode and Overworld
-        .add_systems(Update, button_system)
+        .add_systems(Update, fishing_button_system)
 
         // Overworld systems (player movement, animations)
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
@@ -70,6 +76,7 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, simulate_fish.after(update_weather))
         .run();
 }
 
@@ -195,6 +202,7 @@ fn setup(
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
 
     commands.spawn((
         SpriteBundle {
@@ -220,6 +228,25 @@ fn setup(
         Animation::new()
     ));
     //tree collision hold
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(-100., -100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Fish::default(),
+        FishHooked,
+        FishState::new(-100.,-100., 0.),
+    ));
+
+    //spawn example fish
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),
@@ -326,5 +353,5 @@ fn setup(
         }
     ));
     
-    spawn_button(&mut commands, asset_server);
+    spawn_fishing_button(&mut commands, asset_server);
 }

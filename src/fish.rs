@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-#[derive(Default)] 
+use bevy::{prelude::Component, utils::HashMap};
+
+#[derive(Default, Component)] 
 pub struct Fish {
     pub id: u32,                        //fish id 
     pub species: String,                //type of fish
@@ -51,8 +53,8 @@ impl Fish {
         self.hunger -= 1.0;        //hunger increases hourly
     }
     //calc fish anger
-    pub fn fish_anger(&mut self) {
-        self.age * self.hunger;
+    pub fn fish_anger(&mut self) -> f32 {
+        return self.age * self.hunger;
     }
     pub fn fish_weight(&mut self) {
         self.age * self.hunger;
