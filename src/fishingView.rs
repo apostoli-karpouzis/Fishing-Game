@@ -1,6 +1,12 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
 use crate::resources::*;
 //use crate::button::*;
+
+#[derive(Component)]
+pub struct RectangleSize {
+    pub width: f32,
+    pub height: f32,
+}
 
 #[derive(Component)]
 pub struct Bar;
@@ -12,6 +18,9 @@ pub struct RotationObj{
 
 #[derive(Component)]
 pub struct Rotatable;
+
+#[derive(Component)]
+pub struct FishingLine;
 
 
 #[derive(Component)]
@@ -27,8 +36,8 @@ pub fn fishing_transition(
     mut rod: Query<(&mut Transform, &mut RotationObj), (Without<Camera>, Without<Bar>, With<Rotatable>)>,
 ){
     let mut ct = camera.single_mut();
-    
-    
+
+
     return_val.player_save_x = ct.translation.x;
     return_val.player_save_y = ct.translation.y;
 
@@ -51,6 +60,7 @@ pub fn fishing_transition(
     //new movmemnt system, rotation then space hold.
     //powerbar is space A, D are rotational
     
+    
 }
 
 pub fn overworld_transition(
@@ -71,8 +81,10 @@ pub fn overworld_transition(
 
 
 pub fn power_bar_cast(
+    mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>,
     mut power_bar: Query<(&mut Transform, &mut Power), With<Bar>>,
+    mut line: Query<(&mut Transform, &mut RectangleSize, &mut Mesh2dHandle), (With<FishingLine>, Without<Camera>, Without<Bar>, Without<Rotatable>)> 
 ){
     let (mut pb, mut power) = power_bar.single_mut();
     if power.meter <= 245{
@@ -82,23 +94,36 @@ pub fn power_bar_cast(
             power.meter += 5;
         }
         if input.just_released(KeyCode::KeyP){
+            let (mut transform, mut RectangleSize, mut mesh_handle  )= line.single_mut();
+            transform.translation.x = FISHINGROOMX-90.;
+            transform.translation.y = FISHINGROOMY-(WIN_H/2.)+200.;
+            transform.translation.z = 901.;
+            *mesh_handle = Mesh2dHandle(meshes.add(Rectangle::new(2.5, 250.0 + power.meter as f32 * 3.)));
             println!("you have released the P button");
             power.released = true;
         }
     }
     else if power.released == true {
-        println!("filled");
+        println!("filled1");
     }
     else{
-        println!("filled");
+        let (mut transform, mut RectangleSize, mut mesh_handle  )= line.single_mut();
+        transform.translation.x = FISHINGROOMX-90.;
+        transform.translation.y = FISHINGROOMY-(WIN_H/2.)+100.;
+        transform.translation.z = 901.;
+        *mesh_handle = Mesh2dHandle(meshes.add(Rectangle::new(2.5, 250.0 + power.meter as f32 * 3.)));
+        println!("filled2");
         power.released = true;
     }
 }
 pub fn rod_rotate(
     input: Res<ButtonInput<KeyCode>>,
     mut rod: Query<(&mut Transform, &mut RotationObj), With<Rotatable>>,
+    mut line: Query<&mut Transform, (With<FishingLine>, Without<Rotatable>)> ,
+
 ){
     let (mut rd, mut rot_obj) = rod.single_mut();
+    let (mut fish_line ) = line.single_mut();
     //let 
     //rod.rotation
 
@@ -107,6 +132,7 @@ pub fn rod_rotate(
             println!("{}", rot_obj.rot);
             rot_obj.rot += 0.02;
             rd.rotation = Quat::from_rotation_z(rot_obj.rot);
+            fish_line.rotation = Quat::from_rotation_z(rot_obj.rot);
         }
     
     }
@@ -115,6 +141,7 @@ pub fn rod_rotate(
             println!("{}", rot_obj.rot);
             rot_obj.rot -= 0.02;
             rd.rotation = Quat::from_rotation_z(rot_obj.rot);
+            fish_line.rotation = Quat::from_rotation_z(rot_obj.rot);
         }
     }
 }

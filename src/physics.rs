@@ -56,9 +56,9 @@ pub fn simulate_fish(
     
     // Calculate fish force
     let fish_force: Vec3 = -anger * fish_velocity.normalize_or_zero(); //opposed velocity
-    println!("anger: {}", anger);
-    println!("fish_velocity normal: {}", fish_velocity.normalize_or_zero()); 
-    println!("fish_velocity: {}", fish_velocity);
+    //println!("anger: {}", anger);
+    //println!("fish_velocity normal: {}", fish_velocity.normalize_or_zero()); 
+    //println!("fish_velocity: {}", fish_velocity);
     
     // Calculate net force and acceleration 
     let net_force = drag_force + player_force + fish_force; // fish force works against player drag force works against motion of fish
@@ -67,7 +67,7 @@ pub fn simulate_fish(
     //fish_velocity += acceleration * time.delta_seconds();
 
     f_state.velocity = (f_state.velocity + acceleration * time.delta_seconds()).clamp_length_max(FISH_SPEED);
-    println!("velocity: {}", f_state.velocity);
+    //println!("velocity: {}", f_state.velocity);
     // Bounds check
     let mut offset = fish_velocity * time.delta_seconds();
     offset.z = 0.;
