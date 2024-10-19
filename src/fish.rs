@@ -1,6 +1,5 @@
 use std::collections::HashSet;
-
-use bevy::{prelude::Component, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 
 #[derive(Default, Component)] 
 pub struct Fish {
@@ -16,6 +15,24 @@ pub struct Fish {
     pub depth: (f32, f32),              //preferred depth range
     pub is_alive: bool                  //to track deaths
 }
+
+#[derive(Component, Default)]
+pub struct FishState {
+    pub velocity: Vec3,
+    pub position: Vec3,
+}
+
+impl FishState {
+    pub fn new(x: f32, y: f32, z: f32 ) -> Self {
+        Self {
+            velocity: Vec3::splat(0.),
+            position: Vec3::new(x,y,z),
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct FishHooked;
 
 //do we want to pregenerate dif fish or start all at same or what
 
