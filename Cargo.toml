@@ -14,3 +14,4 @@ opt-level = 3
 [dependencies]
 bevy = "0.14"
 rand = "0.8.5"
+bevy_prototype_lyon = "0.12"
