@@ -1,6 +1,7 @@
 use bevy::window::EnabledButtons;
-use bevy::{prelude::*, window::PresentMode};
+use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
 use rand::Rng;
+use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
 
 mod physics;
 mod fish;
@@ -53,7 +54,7 @@ fn main() {
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
-        // Run the game timer
+        //Run the game timer
         .add_systems(Update, run_game_timer)
 
         // Handle transitions when entering and exiting FishingMode
@@ -69,9 +70,10 @@ fn main() {
         .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, screen_edge_collision.after(move_player))
 
-        // FishingMode systems (power bar and rod rotation)
+        // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
+        .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
 
         // Weather updates
         .add_systems(Update, update_weather)
@@ -84,6 +86,8 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn((
         Camera2dBundle::default(),
@@ -95,8 +99,7 @@ fn setup(
     
     //let bg_texture_handle = asset_server.load("test_bg.png");
     let grass_sheet_handle = asset_server.load("ground_sheet.png");
-    let grass_layout =
-        TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
+    let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
     println!("grasslayout.len {}", grass_layout_len);
@@ -236,14 +239,23 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(-100., -100., 900.),
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
             },
             ..default()
         },
-        Fish::default(),
-        FishHooked,
-        FishState::new(-100.,-100., 0.),
+        FishSpecies::default(),
+        FishState {
+            id: 0,
+            is_alive: true,
+            weight: 2.0,
+            age: 2.0,
+            hunger: 10.0,
+            velocity: Vec3::ZERO,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
+            forces: Forces::default()
+        },
+        FishHooked
     ));
 
     //spawn example fish
@@ -310,17 +322,16 @@ fn setup(
             },
             ..default()
         },
-        Bar,
-        Power {
+        PowerBar {
             meter: 0,
             released: false,
         },
     ));
 
-    let bar_sheet_handle = asset_server.load("fishingStuff/backFishingSprite.png");
+    let player_fishing_handle = asset_server.load("fishingStuff/backFishingSprite.png");
     commands.spawn((
         SpriteBundle {
-            texture: bar_sheet_handle.clone(),
+            texture: player_fishing_handle.clone(),
                         sprite: Sprite{
                         ..default() 
                         },
@@ -333,10 +344,10 @@ fn setup(
         },
     ));
 
-    let bar_sheet_handle = asset_server.load("fishingStuff/fishingRod.png");
+    let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
     commands.spawn((
         SpriteBundle {
-            texture: bar_sheet_handle.clone(),
+            texture: fishing_rod_handle.clone(),
                         sprite: Sprite{
                         ..default() 
                         },
@@ -347,11 +358,47 @@ fn setup(
             },
             ..default()
         },
-        Rotatable, 
+        FishingRod {
+            length: 300.
+        },
+        Rotatable,
         RotationObj{
             rot: 0.,
         }
     ));
+
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle::new(2.5, 250.0))),
+            material: materials.add(Color::hsl(100.,1., 1.)),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   901.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        FishingLine {
+            length: 250.
+        }
+    ));
+
+
+    // let start = Vec2::new(0.0, 0.0);
+    // let end = Vec2::new(900.0, 900.0);
+
+    // let shape = shapes::Line(start, end);
+
+    // commands.spawn((
+    //     ShapeBundle {
+    //         path: GeometryBuilder::build_as(&shape),
+    //         spatial: SpatialBundle {
+    //             transform: Transform::from_xyz(0., 0., 900.),
+    //             ..default()
+    //         },
+    //         ..default()
+    //     },
+    //     Fill::color(DARK_CYAN),
+    //     Stroke::new(WHITE, 10.0),
+    //     FishingLine,
+    // ));
     
     spawn_fishing_button(&mut commands, asset_server);
 }
