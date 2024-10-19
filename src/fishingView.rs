@@ -143,7 +143,7 @@ pub fn rod_rotate(
 
 pub fn animate_fishing_line(
     mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
-    mut fish: Query<(&Fish, &FishState), With<FishHooked>>,
+    mut fish: Query<(&FishSpecies, &FishState), With<FishHooked>>,
     mut line: Query<(&mut Transform, &Visibility, &mut Mesh2dHandle, &FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<&PowerBar, With<PowerBar>>,
     mut meshes: ResMut<Assets<Mesh>>
