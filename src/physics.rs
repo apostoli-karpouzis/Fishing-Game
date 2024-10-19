@@ -1,32 +1,16 @@
 use bevy::{prelude::*};
-use crate::{fish::*, map::Collision};
-
-#[derive(Component, Default)]
-pub struct FishState {
-    pub velocity: Vec3,
-    pub position: Vec3,
-}
-
-impl FishState {
-    pub fn new(x: f32, y: f32, z: f32 ) -> Self {
-        Self {
-            velocity: Vec3::splat(0.),
-            position: Vec3::new(x,y,z),
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct FishHooked;
+use crate::resources::*;
+use crate::fish::*;
 
 const FISH_SPEED: f32 = 250.;
 
 pub fn simulate_fish(
     time: Res<Time>,
-    mut fish_info: Query<(&mut Fish, &mut FishState, &mut Transform), With<FishHooked>>,
+    mut fish_info: Query<(&mut Fish, &mut FishState, &mut Transform), With<FishHooked>>
 ) {
 
     let (mut fish_traits,mut f_state, mut f_pos) = fish_info.single_mut();
+
     //let weight: f32 = fish_traits.weight;
     //let anger: f32 = fish_traits.fish_anger();
     //let width: f32 = fish_traits.width;
@@ -37,7 +21,7 @@ pub fn simulate_fish(
     let fish_position: Vec3 = f_state.position; 
     let fish_velocity: Vec3 = f_state.velocity; 
 
-    let player_position = Vec3::new(0., 0., 0.);
+    let player_position = Vec3::new(FISHINGROOMX - 100., FISHINGROOMY - WIN_H / 2., 901.);
     let reeling = true;
     
     // Calculate drag
