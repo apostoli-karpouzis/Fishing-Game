@@ -244,9 +244,18 @@ fn setup(
             },
             ..default()
         },
-        Fish::default(),
-        FishHooked,
-        FishState::new(FISHINGROOMX, FISHINGROOMY, 0.),
+        FishSpecies::default(),
+        FishState {
+            id: 0,
+            is_alive: true,
+            weight: 2.0,
+            age: 2.0,
+            hunger: 10.0,
+            velocity: Vec3::ZERO,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
+            forces: Forces::default()
+        },
+        FishHooked
     ));
 
     //spawn example fish
