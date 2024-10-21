@@ -3,6 +3,7 @@ use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
 
+
 const REEL: KeyCode = KeyCode::KeyO;
 
 pub fn simulate_fish(
@@ -17,6 +18,13 @@ pub fn simulate_fish(
     // Calculate drag
     let p = -fish.position.z;
     let sa = fish.width * fish.width;
+
+    println!("z position: {}", -p);
+    println!("fish_species coef: {}", fish_species.cd);
+    println!("fish sa: {}", sa);
+    println!("velo: {}", fish.velocity);
+
+
     let drag_force = -p * fish_species.cd * sa * fish.velocity * fish.velocity; //Force exerted onto the fish by the water
 
     fish.forces.drag = drag_force;
@@ -41,13 +49,28 @@ pub fn simulate_fish(
     let net_force = drag_force + player_force + fish_force; // fish force works against player drag force works against motion of fish
     let acceleration = net_force / fish.weight;
     fish.velocity = fish.velocity + acceleration * time.delta_seconds();
-    println!("{}", acceleration.to_string());
+    //println!("{}", acceleration.to_string());
 
     // Bounds check
     let mut new_pos = fish.position + fish.velocity * time.delta_seconds();
     
     if new_pos.z > 0. {
         new_pos.z = 0.;
+    }
+    
+    //check for collisions to make sure fish stays on screen
+    if new_pos.x < FISHINGROOMX - (WIN_W/2.) + (fish.width) / 2.
+    || new_pos.x > FISHINGROOMX + (460.) - (fish.width) / 2.
+    {
+        println!("conflictx");
+        new_pos.x = fish_transform.translation.x;
+    }
+    
+    if new_pos.y > FISHINGROOMY + (WIN_H/2.) - (fish.width) / 2.
+    || new_pos.y < FISHINGROOMY - (220.) + (fish.width) / 2.
+    {
+        println!("conflicty");
+        new_pos.y = fish_transform.translation.y;
     }
 
     fish.position = new_pos;
