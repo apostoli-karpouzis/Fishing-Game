@@ -4,14 +4,11 @@ use bevy::{prelude::*, sprite::Mesh2dHandle};
 use crate::map::Collision;
 use crate::resources::*;
 use crate::fish::*;
-<<<<<<< HEAD
 use crate::weather::*;
 
 extern crate rand;
 use rand::Rng;
-=======
 use crate::species::*;
->>>>>>> main
 
 const MAX_CAST_DISTANCE: f32 = 400.;
 
