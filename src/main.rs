@@ -426,6 +426,27 @@ fn setup(
         Wave,
         //Animation::new()
     ));
+
+    let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bobber_handle.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        Tile::BOBBER,
+        Collision,
+        Bobber,
+
+    ));
     
     spawn_fishing_button(&mut commands, asset_server);
 }

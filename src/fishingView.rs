@@ -8,6 +8,10 @@ use crate::species::*;
 const MAX_CAST_DISTANCE: f32 = 400.;
 
 #[derive(Component)]
+
+pub struct Bobber;
+
+#[derive(Component)]
 pub struct FishingRod {
     pub length: f32
 }
@@ -167,6 +171,7 @@ pub fn animate_fishing_line(
     mut meshes: ResMut<Assets<Mesh>>,
     mut splash: Query<(&mut TextureAtlas, &mut AnimationTimer, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility),(With<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut bobber: Query<(&mut Transform, &mut Visibility), (With<Bobber>, Without<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
 ) {
@@ -176,12 +181,15 @@ pub fn animate_fishing_line(
     let mut power_info = power_bar.single_mut();
     let (mut texture, mut timer, mut Visibility ) = splash.single_mut();
     let(mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
+    let(mut bobber_transform, mut bobber_visibility) = bobber.single_mut();
 
     if line_visibility == Visibility::Hidden {
         return;
     }
+    
+    *bobber_visibility = Visibility::Visible;
 
-    let fish_hooked = true;
+    let fish_hooked = false;
     
     let line_length: f32;
     let line_rotation: f32;
@@ -216,6 +224,8 @@ pub fn animate_fishing_line(
             }else{
                 *wave_visibility = Visibility::Hidden;
             }
+            bobber_transform.translation =  Vec3::new(rod_end.x + line_length * f32::cos(line_rotation - PI / 2.) ,rod_end.y + line_length * f32::sin(line_rotation - PI / 2.), 950.);
+
 
         }
     } else {
@@ -236,9 +246,9 @@ pub fn animate_fishing_line(
             }
             line_length = line_info.length;
         }
-
         line_rotation = rod_rotation.rot;
         line_pos = Vec2::new(rod_transform.translation.x + (rod_info.length + line_length) / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + (rod_info.length + line_length) / 2. * f32::sin(rod_rotation.rot + PI / 2.));
+        bobber_transform.translation =  Vec3::new(rod_transform.translation.x + (rod_info.length + 2. * line_info.length)/2. * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length + 2. * line_info.length)/2. * f32::sin(rod_rotation.rot + PI / 2.), 950.);
     }
 
     if texture.index < 3{
