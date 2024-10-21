@@ -19,12 +19,6 @@ pub fn simulate_fish(
     let p = -fish.position.z;
     let sa = fish.width * fish.width;
 
-    println!("z position: {}", -p);
-    println!("fish_species coef: {}", fish_species.cd);
-    println!("fish sa: {}", sa);
-    println!("velo: {}", fish.velocity);
-
-
     let drag_force = -p * fish_species.cd * sa * fish.velocity * fish.velocity; //Force exerted onto the fish by the water
 
     fish.forces.drag = drag_force;
