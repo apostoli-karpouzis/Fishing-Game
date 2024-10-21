@@ -5,6 +5,7 @@ use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
 
 mod physics;
 mod fish;
+mod species;
 mod camera; 
 mod player; 
 mod map; 
@@ -17,6 +18,7 @@ mod fishingView;
 
 use crate::physics::*;
 use crate::fish::*;
+use crate::species::*;
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
@@ -244,12 +246,14 @@ fn setup(
             },
             ..default()
         },
-        FishSpecies::default(),
-        FishState {
+        BASS,
+        Fish {
             id: 0,
             is_alive: true,
+            length: 8.0,
+            width: 2.0,
             weight: 2.0,
-            age: 2.0,
+            age: 6.0,
             hunger: 10.0,
             velocity: Vec3::ZERO,
             position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
