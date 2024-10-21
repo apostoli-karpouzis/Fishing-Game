@@ -13,6 +13,9 @@ pub struct FishingRod {
 }
 
 #[derive(Component)]
+pub struct Wave;
+
+#[derive(Component)]
 pub struct Splash;
 
 #[derive(Component)]
@@ -162,7 +165,8 @@ pub fn animate_fishing_line(
     mut line: Query<(&mut Transform, &Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<&mut PowerBar, With<PowerBar>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut splash: Query<(&mut TextureAtlas, &mut AnimationTimer, &mut Transform, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut splash: Query<(&mut TextureAtlas, &mut AnimationTimer, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility),(With<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
 ) {
@@ -170,13 +174,14 @@ pub fn animate_fishing_line(
     let (fish_attributes, fish_state) = fish.single();
     let (mut line_transform, line_visibility, mut line_mesh,mut line_info) = line.single_mut();
     let mut power_info = power_bar.single_mut();
-    let (mut texture, mut timer, mut Transform, mut Visibility ) = splash.single_mut();
+    let (mut texture, mut timer, mut Visibility ) = splash.single_mut();
+    let(mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
 
     if line_visibility == Visibility::Hidden {
         return;
     }
 
-    let fish_hooked = false;
+    let fish_hooked = true;
     
     let line_length: f32;
     let line_rotation: f32;
@@ -196,6 +201,22 @@ pub fn animate_fishing_line(
             line_length = Vec2::distance(rod_end, fish_pos);
             line_rotation = f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
             line_pos = (rod_end + fish_pos) / 2.;
+            if input.pressed(KeyCode::KeyO){//if reeling in
+                *wave_visibility = Visibility::Visible;
+                wave_transform.translation = Vec3::new(rod_end.x + line_length * f32::cos(line_rotation - PI / 2.) ,rod_end.y + line_length * f32::sin(line_rotation - PI / 2.), 950.);
+                let magnitude = fish_state.velocity.x.powf(2.) + fish_state.velocity.x.powf(2.);
+                println!("str: {}" , magnitude);
+                if magnitude < 120. {
+                    wave_texture.index = 1;
+                }if magnitude >= 120. && magnitude < 160. {
+                    wave_texture.index = 2;
+                }if magnitude >= 160. {
+                    wave_texture.index = 3;
+                }
+            }else{
+                *wave_visibility = Visibility::Hidden;
+            }
+
         }
     } else {
         if power_info.just_released
@@ -205,9 +226,13 @@ pub fn animate_fishing_line(
             line_info.length = line_length;
         }else {
             if input.pressed(KeyCode::KeyO) {
-                if (line_info.length >= 1.) {
+                if line_info.length >= 1. {
                     line_info.length -= 1.;
+                    *wave_visibility = Visibility::Visible;
+                    wave_transform.translation = Vec3::new(rod_transform.translation.x + (rod_info.length + 2. * line_info.length)/2. * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length + 2. * line_info.length)/2. * f32::sin(rod_rotation.rot + PI / 2.), 950.);
                 }
+            }else{
+                *wave_visibility = Visibility::Hidden;
             }
             line_length = line_info.length;
         }
