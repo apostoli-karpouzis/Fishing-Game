@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod physics;
 mod fish;
+mod species;
 mod camera; 
 mod player; 
 mod map; 
@@ -22,6 +23,7 @@ mod fishingView;
 
 use crate::physics::*;
 use crate::fish::*;
+use crate::species::*;
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
@@ -260,12 +262,14 @@ fn setup(
             },
             ..default()
         },
-        FishSpecies::default(),
-        FishState {
+        BASS,
+        Fish {
             id: 0,
             is_alive: true,
+            length: 8.0,
+            width: 2.0,
             weight: 2.0,
-            age: 2.0,
+            age: 6.0,
             hunger: 10.0,
             velocity: Vec3::ZERO,
             position: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 0.),
@@ -384,6 +388,7 @@ fn setup(
         PowerBar {
             meter: 0,
             released: false,
+            just_released: false,
         },
     ));
 
@@ -435,9 +440,31 @@ fn setup(
             ..default()
         },
         FishingLine {
-            length: 250.
+            length: 0.
         }
     ));
+
+    let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
+    let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
+    let splash_layout_len = splash_layout.textures.len();
+    let splash_layout_handle = texture_atlases.add(splash_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: splashes_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: splash_layout_handle.clone(),
+            index: 0,
+        },
+        AnimationTimer::new(0.2), 
+        AnimationFrameCount(splash_layout_len), //number of different frames that we have
+        Splash,
+        Animation::new()
+    ));
+
 
 
     // let start = Vec2::new(0.0, 0.0);

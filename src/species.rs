@@ -5,13 +5,14 @@ use crate::resources::*;
 
 
 //Species struct
-#[derive(Component, Debug)]
+#[derive(Component)]
 pub struct Species{
-    pub name: String,
+    pub name: &'static str,
     pub fish_id: i32,
-    pub length: (i32, i32),
-    pub width: (i32, i32),
-    pub weight: (i32, i32),
+    pub length: (f32, f32),
+    pub width: (f32, f32),
+    pub weight: (f32, f32),
+    pub cd: f32,
     pub time_of_day: (usize, usize),
     pub weather: Weather,
     //bounds
@@ -23,13 +24,14 @@ pub struct Species{
     pub catch_prob: i32,
 }
 
-/*impl<'a> Species<'a> {
+impl Species {
     pub const fn new
-        (in_name: &'a str, 
+        (in_name: &'static str, 
         in_fish_id: i32,
-        in_length: (i32, i32), 
-        in_width: (i32, i32), 
-        in_weight: (i32,i32), 
+        in_length: (f32, f32), 
+        in_width: (f32, f32), 
+        in_weight: (f32,f32), 
+        in_cd: f32,
         in_tod: (usize, usize), 
         in_weather: Weather, 
         in_depth: (i32, i32),
@@ -42,6 +44,7 @@ pub struct Species{
                 length: in_length,
                 width: in_width,
                 weight: in_weight,
+                cd: in_cd,
                 time_of_day: in_tod,
                 weather: in_weather,
                 depth: in_depth,
@@ -51,20 +54,13 @@ pub struct Species{
             }
     }
 }
-
-impl<'a>Species<'a> {
-    pub fn fish_id(&self) -> i32{
-        self.fish_id
-    }
-}
-*/
 //SpeciesTable
-//#[derive(Resource)]
-/*pub struct SpeciesTable<'a>{
-    sp_table: Vec<Species<'a>>,
+#[derive(Resource)]
+pub struct SpeciesTable {
+    sp_table: Vec<Species>,
 }
-
-impl<'a> SpeciesTable<'a> {
+/*
+impl SpeciesTable {
     pub fn new() -> Self{
         let table: Vec<Species> = vec![BASS, CATFISH];
         Self{
@@ -74,6 +70,7 @@ impl<'a> SpeciesTable<'a> {
 }
 
 */
+
 //#[derive(Hash, Component, Eq, PartialEq, Debug)]
 //pub struct FishHash(HashMap<String, Species>);
 
@@ -92,7 +89,6 @@ impl<'a> SpeciesTable<'a> {
     }
 }
 */
-
 
 //Fish library starts here
 
