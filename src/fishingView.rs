@@ -3,6 +3,7 @@ use f32::consts::PI;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use crate::resources::*;
 use crate::fish::*;
+use crate::species::*;
 
 const MAX_CAST_DISTANCE: f32 = 400.;
 
@@ -88,7 +89,6 @@ pub fn overworld_transition(
 }
 
 pub fn power_bar_cast(
-    mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>,
     mut power_bar: Query<(&mut Transform, &mut PowerBar), With<PowerBar>>,
     mut line: Query<&mut Visibility, With<FishingLine>> 
@@ -97,12 +97,10 @@ pub fn power_bar_cast(
     let mut line_visibility = line.single_mut();
 
     if power.meter == PowerBar::MAX_POWER {
-        if power.released == true {
-            println!("filled1");
-        }
-        else{
+        if power.released != true {
             *line_visibility = Visibility::Visible;
             println!("you have released the P button");
+            println!("filled1");
             power.released = true;
         }
     } else {
@@ -143,7 +141,7 @@ pub fn rod_rotate(
 
 pub fn animate_fishing_line(
     mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
-    mut fish: Query<(&FishSpecies, &FishState), With<FishHooked>>,
+    mut fish: Query<(&Species, &Fish), With<FishHooked>>,
     mut line: Query<(&mut Transform, &Visibility, &mut Mesh2dHandle, &FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<&PowerBar, With<PowerBar>>,
     mut meshes: ResMut<Assets<Mesh>>
