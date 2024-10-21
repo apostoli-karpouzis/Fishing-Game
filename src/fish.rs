@@ -1,38 +1,24 @@
-use std::collections::HashSet;
+use bevy::{prelude::*, utils::HashMap};
 
-use bevy::{prelude::Component, utils::HashMap};
-
-#[derive(Default, Component)] 
+#[derive(Component)]
 pub struct Fish {
-    pub id: u32,                        //fish id 
-    pub species: String,                //type of fish
-    pub length: f32,                    //fish length
-    pub width: f32,                     //fish aerodynamix
-    pub weight: f32,                    //fish weight
-    pub age: f32,                       //age (will increase constantly, and more when hooked/caught)
-    pub hunger: f32,                    //hunger level
-    pub time_of_day: HashSet<u32>,      //all the hours they prefer (o1) 0-23
-    pub weather: HashSet<String>,       //all the weathers they prefer (o1)
-    pub depth: (f32, f32),              //preferred depth range
-    pub is_alive: bool                  //to track deaths
+    pub id: u32,
+    pub is_alive: bool,
+    pub length: f32,
+    pub width: f32,
+    pub weight: f32,
+    pub age: f32,
+    pub hunger: f32,
+    pub velocity: Vec3,
+    pub position: Vec3,
+    pub forces: Forces
 }
 
-//do we want to pregenerate dif fish or start all at same or what
-
-
 impl Fish {
-    //check if time is preffered
-    pub fn is_preferred_time(&self, hour: u32) -> bool {
-        self.time_of_day.contains(&hour)
+    pub fn new(id: u32, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32, velocity: Vec3, position: Vec3, forces: Forces) -> Self {
+        Self { id, is_alive, length, width, weight, age, hunger, velocity, position, forces }
     }
-    //check if weather is preferred
-    pub fn is_preferred_weather(&self, weather: &str) -> bool {
-        self.weather.contains(weather)
-    }
-    //check if depth is preferred for fish
-    pub fn is_preferred_depth(&self, depth: f32) -> bool {
-        depth >= self.depth.0 && depth <= self.depth.1
-    }
+    
     //call when fish die
     pub fn die(&self) {
         println!("fish {} is swimming to fish heaven", self.id);
@@ -56,17 +42,20 @@ impl Fish {
     pub fn fish_anger(&mut self) -> f32 {
         return self.age * self.hunger;
     }
-    pub fn fish_weight(&mut self) {
-        self.age * self.hunger;
-    }
-
-    pub fn fish_shape(&mut self) {
-        //do some calculation based on length width maybe
-        //prob a task for physics 
-        self.length;
-        self.width;
+    pub fn fish_weight(&mut self) -> f32 {
+        return self.age * self.hunger;
     }
 }
+
+#[derive(Default)]
+pub struct Forces {
+    pub player: Vec3,
+    pub currents: Vec3,
+    pub drag: Vec3
+}
+
+#[derive(Component)]
+pub struct FishHooked;
 
 #[derive(Default)]
 pub struct Pond {
