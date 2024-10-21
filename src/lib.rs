@@ -5,11 +5,7 @@ pub mod resources;
 pub mod button;
 pub mod gameday;
 pub mod weather;
-<<<<<<< HEAD
 pub mod species;
-=======
 pub mod fish;
-
->>>>>>> main
 pub mod fishingView;
 //pub mod species;

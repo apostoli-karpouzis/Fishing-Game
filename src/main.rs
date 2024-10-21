@@ -2,6 +2,10 @@ use bevy::window::EnabledButtons;
 use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
 use rand::Rng;
 use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
+use std::collections::HashMap;
+
+
+
 
 mod physics;
 mod fish;
@@ -14,6 +18,7 @@ mod gameday;
 mod weather;
 mod fishingView;
 //mod species;
+
 
 use crate::physics::*;
 use crate::fish::*;
@@ -54,6 +59,8 @@ fn main() {
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
+        
+
         //Run the game timer
         .add_systems(Update, run_game_timer)
 
@@ -74,6 +81,7 @@ fn main() {
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
         .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
+        
 
         // Weather updates
         .add_systems(Update, update_weather)
@@ -82,6 +90,8 @@ fn main() {
         .run();
 }
 
+
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -89,12 +99,19 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let mut rng = rand::thread_rng();
+
     commands.spawn((
         Camera2dBundle::default(),
         Animation::new()
     ));
 
     commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
+
+
+    //let mut fish: HashMap<String, Species> = HashMap::new();
+
+    
     //GRASS CODE V
     
     //let bg_texture_handle = asset_server.load("test_bg.png");
@@ -230,7 +247,6 @@ fn setup(
         },
         Animation::new()
     ));
-    //tree collision hold
     commands.spawn((
         SpriteBundle {
             texture: fish_bass_handle.clone(),
@@ -239,7 +255,7 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 901.),
                 ..default()
             },
             ..default()
@@ -252,13 +268,56 @@ fn setup(
             age: 2.0,
             hunger: 10.0,
             velocity: Vec3::ZERO,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 0.),
             forces: Forces::default()
         },
         FishHooked
     ));
-
+    
     //spawn example fish
+    //BEMMY
+    //BASS
+    let cool_fish_handle: Handle<Image> = asset_server.load("awesomeFishy.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Bass1",
+            fish_id: 1,
+            length: rng.gen_range(4..8),
+            width: rng.gen_range(1..3),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (FISHINGROOMX as i32 +30, FISHINGROOMY as i32+70),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            catch_prob: 10.,
+        },
+        InPond,
+        IsBass,
+        Collision,
+    ));
+    /*
+    
+    
+        MAKE THE FISH STRUCT HERE :(
+    
+     */
+
+    
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),

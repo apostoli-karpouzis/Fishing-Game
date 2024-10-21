@@ -1,8 +1,13 @@
 use std::f32;
 use f32::consts::PI;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
+use crate::map::Collision;
 use crate::resources::*;
 use crate::fish::*;
+use crate::weather::*;
+
+extern crate rand;
+use rand::Rng;
 
 const MAX_CAST_DISTANCE: f32 = 400.;
 
@@ -36,6 +41,49 @@ pub struct PowerBar {
 
 impl PowerBar {
     pub const MAX_POWER: i32 = 250;
+}
+#[derive(Component)]
+pub struct InPond;
+
+#[derive(Component)]
+pub struct IsBass;
+//FISH THING 
+#[derive(Component)]
+pub struct FishDetails{
+    pub name: &'static str,
+    pub fish_id: i32,
+    pub length: i32,
+    pub width: i32,
+    pub weight: i32,
+    pub time_of_day: (usize, usize),
+    pub weather: Weather,
+    //bounds
+    pub depth: (i32, i32),
+    //x, y, z
+    pub position: (i32, i32),
+    //length, width, depth
+    pub bounds: (i32, i32),
+    pub catch_prob: f32,
+}
+
+impl FishDetails {
+    pub fn new(name: &'static str, fish_id: i32, length: i32, width: i32, weight: i32, time_of_day: (usize, usize), weather: Weather, depth: (i32, i32), position: (i32, i32), bounds: (i32, i32), catch_prob: f32) -> Self{
+        Self {
+            name, fish_id, length, width, weight, time_of_day, weather, depth, position, bounds, catch_prob
+        }
+    }
+}
+
+pub fn move_fish(
+    mut fish_details: Query<(&FishDetails, &Transform), (With<InPond>, With<Collision>)>
+)
+    {
+    let(mut fish_details, mut fish_pos) = fish_details.single_mut();
+    let mut rng = rand::thread_rng();
+    let x: i32 = rng.gen_range(-1..1);
+    let y: i32 = rng.gen_range(-1..1);
+
+        //return (self.position.0 + x, self.position.1+y)
 }
 
 pub fn fishing_transition(
