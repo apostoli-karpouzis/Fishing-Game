@@ -38,16 +38,6 @@ impl FishingLine {
 }
 
 #[derive(Component)]
-pub struct PowerBar {
-    pub meter: i32,
-    pub released: bool,
-    pub just_released: bool
-}
-
-impl PowerBar {
-    pub const MAX_POWER: i32 = 250;
-}
-#[derive(Component)]
 pub struct InPond;
 
 #[derive(Component)]
@@ -89,6 +79,19 @@ pub fn move_fish(
     let y: i32 = rng.gen_range(-1..1);
 
         //return (self.position.0 + x, self.position.1+y)
+}
+
+
+
+#[derive(Component)]
+pub struct PowerBar {
+    pub meter: i32,
+    pub released: bool,
+    pub just_released: bool
+}
+
+impl PowerBar {
+    pub const MAX_POWER: i32 = 250;
 }
 
 pub fn fishing_transition(
