@@ -249,6 +249,7 @@ fn setup(
         BASS,
         Fish {
             id: 0,
+            is_caught: false,
             is_alive: true,
             length: 8.0,
             width: 2.0,
