@@ -1,7 +1,10 @@
+use std::f32;
 use bevy::prelude::*;
 use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
+use fishing_game::fishingView::*;
+use f32::consts::PI;
 
 
 const REEL: KeyCode = KeyCode::KeyO;
@@ -9,9 +12,11 @@ const REEL: KeyCode = KeyCode::KeyO;
 pub fn simulate_fish(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut fish_info: Query<(&Species, &mut Fish, &mut Transform), With<FishHooked>>
+    mut fish_info: Query<(&Species, &mut Fish, &mut Transform), With<FishHooked>>,
+   // mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>, Without<FishHooked>)>,
 ) {
     let (fish_species, mut fish, mut fish_transform) = fish_info.single_mut();
+    //let (rod_info, rod_transform, rod_rotation) = rod.single();
 
     let player_position = Vec3::new(FISHINGROOMX - 100., FISHINGROOMY - WIN_H / 2., 901.);
     
@@ -71,11 +76,16 @@ pub fn simulate_fish(
 
     fish_transform.translation.x = fish.position.x;
     fish_transform.translation.y = fish.position.y;
-    
-    let dist = (fish.position - player_position).length();
 
-    if dist < 5.0
-    {
-        println!("caught fish!");
-    }
+
+    //let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
+    //let fishxy = Vec2::new(fish.position.x, fish.position.y);
+
+    // let dist = (fishxy - rod_end).length();
+
+    // if dist < 5.0
+    // {
+    //     fish.is_caught = true;
+    //     println!("caught fish!");
+    // }
 }
