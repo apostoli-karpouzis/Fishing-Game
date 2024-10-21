@@ -13,6 +13,9 @@ pub struct FishingRod {
 }
 
 #[derive(Component)]
+pub struct Splash;
+
+#[derive(Component)]
 pub struct RotationObj{
     pub rot: f32,
 }
@@ -32,7 +35,8 @@ impl FishingLine {
 #[derive(Component)]
 pub struct PowerBar {
     pub meter: i32,
-    pub released: bool 
+    pub released: bool,
+    pub just_released: bool
 }
 
 impl PowerBar {
@@ -91,17 +95,25 @@ pub fn overworld_transition(
 pub fn power_bar_cast(
     input: Res<ButtonInput<KeyCode>>,
     mut power_bar: Query<(&mut Transform, &mut PowerBar), With<PowerBar>>,
-    mut line: Query<&mut Visibility, With<FishingLine>> 
+    mut line: Query<&mut Visibility, With<FishingLine>>,
+    mut splash: Query<(&mut Transform, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<PowerBar>)>,
+    rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>, Without<PowerBar>, Without<Splash>)>, 
 ){
     let (mut pb, mut power) = power_bar.single_mut();
     let mut line_visibility = line.single_mut();
+    let (mut splash_transform, mut splash_visibility ) = splash.single_mut();
+    let (rod_info, rod_transform, rod_rotation) = rod.single();
 
     if power.meter == PowerBar::MAX_POWER {
         if power.released != true {
             *line_visibility = Visibility::Visible;
             println!("you have released the P button");
             println!("filled1");
+            let line_length = power.meter as f32 / PowerBar::MAX_POWER as f32 * MAX_CAST_DISTANCE;
+            *splash_visibility = Visibility::Visible;
+            splash_transform.translation = Vec3::new(rod_transform.translation.x + (rod_info.length + 2. * line_length)/2. * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length + 2. * line_length)/2. * f32::sin(rod_rotation.rot + PI / 2.), 950.);
             power.released = true;
+            power.just_released = true;
         }
     } else {
         if input.pressed(KeyCode::KeyP) && power.released == false{
@@ -112,7 +124,12 @@ pub fn power_bar_cast(
         if input.just_released(KeyCode::KeyP){
             *line_visibility = Visibility::Visible;
             println!("you have released the P button");
+            let line_length = power.meter as f32 / PowerBar::MAX_POWER as f32 * MAX_CAST_DISTANCE;
+            *splash_visibility = Visibility::Visible;
+            splash_transform.translation = Vec3::new(rod_transform.translation.x + (rod_info.length + 2. * line_length)/2. * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length + 2. * line_length)/2. * f32::sin(rod_rotation.rot + PI / 2.), 950.);
             power.released = true;
+            power.just_released = true;
+
         }
     }
 }
@@ -142,20 +159,24 @@ pub fn rod_rotate(
 pub fn animate_fishing_line(
     mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
     mut fish: Query<(&Species, &Fish), With<FishHooked>>,
-    mut line: Query<(&mut Transform, &Visibility, &mut Mesh2dHandle, &FishingLine), (With<FishingLine>, Without<Rotatable>)>,
-    mut power_bar: Query<&PowerBar, With<PowerBar>>,
-    mut meshes: ResMut<Assets<Mesh>>
+    mut line: Query<(&mut Transform, &Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
+    mut power_bar: Query<&mut PowerBar, With<PowerBar>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut splash: Query<(&mut TextureAtlas, &mut AnimationTimer, &mut Transform, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    time: Res<Time>,
+    input: Res<ButtonInput<KeyCode>>,
 ) {
     let (rod_info, rod_transform, rod_rotation) = rod.single();
     let (fish_attributes, fish_state) = fish.single();
-    let (mut line_transform, line_visibility, mut line_mesh, line_info) = line.single_mut();
-    let power_info = power_bar.single();
+    let (mut line_transform, line_visibility, mut line_mesh,mut line_info) = line.single_mut();
+    let mut power_info = power_bar.single_mut();
+    let (mut texture, mut timer, mut Transform, mut Visibility ) = splash.single_mut();
 
     if line_visibility == Visibility::Hidden {
         return;
     }
 
-    let fish_hooked = true;
+    let fish_hooked = false;
     
     let line_length: f32;
     let line_rotation: f32;
@@ -177,10 +198,37 @@ pub fn animate_fishing_line(
             line_pos = (rod_end + fish_pos) / 2.;
         }
     } else {
-        line_length = power_info.meter as f32 / PowerBar::MAX_POWER as f32 * MAX_CAST_DISTANCE;
+        if power_info.just_released
+        {        
+            line_length = power_info.meter as f32 / PowerBar::MAX_POWER as f32 * MAX_CAST_DISTANCE;
+            power_info.just_released = false;
+            line_info.length = line_length;
+        }else {
+            if input.pressed(KeyCode::KeyO) {
+                if (line_info.length >= 1.) {
+                    line_info.length -= 1.;
+                }
+            }
+            line_length = line_info.length;
+        }
+
         line_rotation = rod_rotation.rot;
         line_pos = Vec2::new(rod_transform.translation.x + (rod_info.length + line_length) / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + (rod_info.length + line_length) / 2. * f32::sin(rod_rotation.rot + PI / 2.));
     }
+
+    if texture.index < 3{
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            if(texture.index == 2)
+            {
+                *Visibility = Visibility::Hidden;
+            }else{
+                println!("finished!");
+                texture.index += 1;
+            }    
+
+        }
+    } 
 
     line_transform.translation = Vec3::new(line_pos.x, line_pos.y, 901.);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
