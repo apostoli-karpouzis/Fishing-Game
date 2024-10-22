@@ -24,6 +24,11 @@ pub struct Splash;
 pub struct RotationObj{
     pub rot: f32,
 }
+#[derive(Resource)]
+pub struct directionTimer{
+    pub timer: Timer,
+}
+
 
 #[derive(Component)]
 pub struct Rotatable;
@@ -70,14 +75,68 @@ impl FishDetails {
 }
 
 pub fn move_fish(
-    mut fish_details: Query<(&FishDetails, &Transform), (With<InPond>, With<Collision>)>
+    mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
+    time: Res<Time>,
+    mut config: ResMut<directionTimer>,
 )
     {
     let(mut fish_details, mut fish_pos) = fish_details.single_mut();
-    let mut rng = rand::thread_rng();
-    let x: i32 = rng.gen_range(-1..1);
-    let y: i32 = rng.gen_range(-1..1);
 
+    let mut rng = rand::thread_rng();
+    let mut change_x: Vec3 = Vec3::new(0.,0.,0.);
+    let mut change_y: Vec3 = Vec3::new(0.,0.,0.);
+    config.timer.tick(time.delta());
+    if config.timer.finished() {
+        let dir: i32 = rng.gen_range(0..9);
+        if dir == 1{
+            change_x = Vec3::new(0.,0.,0.);
+            change_y = Vec3::new(0. ,1., 0.);
+        }
+        else if dir == 2{
+            change_x = Vec3::new(1.,0.,0.);
+            change_y = Vec3::new(0. ,1., 0.);
+        }
+        else if dir == 3{
+            change_x = Vec3::new(1.,0.,0.);
+            change_y =  Vec3::new(0. ,0., 0.);
+        }
+        else if dir == 4{
+            change_x = Vec3::new(1.,0.,0.);
+            change_y = Vec3::new(0. ,-1., 0.);
+        }
+        else if dir == 5{
+            change_x = Vec3::new(0.,0.,0.);
+            change_y = Vec3::new(0. ,-1., 0.);
+        }
+        else if dir == 6{
+            change_x =  Vec3::new(-1.,0.,0.);
+            change_y = Vec3::new(0. ,-1., 0.);
+        }
+        else if dir == 7{
+            change_x = Vec3::new(-1.,0.,0.);
+            change_y = Vec3::new(0. ,0., 0.);
+        }
+        else if dir == 8{
+            change_x = Vec3::new(-1.,0.,0.);
+            change_y = Vec3::new(0. ,1., 0.);
+        }
+        
+           
+    }
+        //match it then set up the vector for the next tree seconds, keep the stuff about borders 
+    
+
+    
+    //println!("fish pos x {}, fish pos y {}", change_x, change_y);
+    //CHANGE THESE TO CONSTANTS LATER!!!!!
+    if (fish_pos.translation.x - 1.) >= (8320. + 160.) && (fish_pos.translation.x + 1.) <= (9391. - 160.){
+        fish_pos.translation += change_x;
+    }
+    if (fish_pos.translation.y - 1.) >= (3286. + 90.) && (fish_pos.translation.y + 1.) <= (3960. - 90.){
+        fish_pos.translation += change_y;
+        
+    }
+    //fish_pos.translation += change_y;
         //return (self.position.0 + x, self.position.1+y)
 }
 

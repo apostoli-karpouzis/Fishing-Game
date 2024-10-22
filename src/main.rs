@@ -3,6 +3,7 @@ use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{Ma
 use rand::Rng;
 use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
 use std::collections::HashMap;
+use std::time::Duration;
 
 
 
@@ -82,13 +83,13 @@ fn main() {
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
-        .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
+        .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate).run_if(run_if_in_fishing))
         
-
+        .add_systems(Update, move_fish.run_if(run_if_in_fishing))
         // Weather updates
-        .add_systems(Update, update_weather)
-        .add_systems(Update, update_weather_tint.after(update_weather))
-        .add_systems(Update, simulate_fish.after(update_weather))
+        .add_systems(Update, update_weather.run_if(run_if_in_overworld))
+        .add_systems(Update, update_weather_tint.after(update_weather).run_if(run_if_in_overworld))
+        .add_systems(Update, simulate_fish.after(update_weather).run_if(run_if_in_overworld))
         .run();
 }
 
@@ -110,7 +111,10 @@ fn setup(
 
     commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
 
-
+    commands.insert_resource(directionTimer{
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
+    });
     //let mut fish: HashMap<String, Species> = HashMap::new();
 
     
@@ -305,7 +309,7 @@ fn setup(
             weather: Weather::Sunny,
             depth: (0,5),
             //x, y, z
-            position: (FISHINGROOMX as i32 +30, FISHINGROOMY as i32+70),
+            position: (8320, 3960),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
             catch_prob: 10.,

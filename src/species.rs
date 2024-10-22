@@ -38,6 +38,8 @@ impl Species {
         in_position: (i32, i32),
         in_bounds: (i32, i32),
         in_catch_prob: i32) -> Self{
+            
+
             Self{
                 name: in_name,
                 fish_id: in_fish_id,
@@ -59,7 +61,7 @@ impl Species {
 pub struct SpeciesTable {
     sp_table: Vec<Species>,
 }
-/*
+
 impl SpeciesTable {
     pub fn new() -> Self{
         let table: Vec<Species> = vec![BASS, CATFISH];
@@ -69,7 +71,7 @@ impl SpeciesTable {
     }
 }
 
-*/
+
 
 //#[derive(Hash, Component, Eq, PartialEq, Debug)]
 //pub struct FishHash(HashMap<String, Species>);
@@ -93,14 +95,15 @@ impl<'a> SpeciesTable<'a> {
 //Fish library starts here
 
 //Bass
-/* 
+
 pub const BASS: Species = Species::new(
             "Bass", 
             1,
-            (10,15), 
-            (5,7), 
-            (20,40), 
-            (7,12), 
+            (10.,15.), 
+            (5.,7.), 
+            (20.,40.), 
+            6.,
+            (0,22),
             Weather::Sunny, 
             (0,20),
             (FISHINGROOMX as i32 + 90, FISHINGROOMY as i32 + 50),
@@ -113,14 +116,14 @@ pub const BASS: Species = Species::new(
 pub const CATFISH: Species = Species::new(
             "Catfish", 
             2,
-            (15,25), 
-            (10,12), 
-            (50, 70), 
-            (18,24), 
+            (15.,25.), 
+            (10.,12.), 
+            (50., 70.), 
+            5., 
+            (0,18),
             Weather::Rainy, 
             (20,40),
             (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
             (5, 4),
             2,
         );
-*/
