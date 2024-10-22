@@ -5,6 +5,7 @@ use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
 
 mod physics;
 mod fish;
+mod species;
 mod camera; 
 mod player; 
 mod map; 
@@ -19,6 +20,7 @@ mod money;
 
 use crate::physics::*;
 use crate::fish::*;
+use crate::species::*;
 use crate::camera::*;
 use crate::player::*;
 use crate::map::*;
@@ -258,12 +260,14 @@ fn setup(
             },
             ..default()
         },
-        FishSpecies::default(),
-        FishState {
+        BASS,
+        Fish {
             id: 0,
             is_alive: true,
+            length: 8.0,
+            width: 2.0,
             weight: 2.0,
-            age: 2.0,
+            age: 6.0,
             hunger: 10.0,
             velocity: Vec3::ZERO,
             position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
@@ -374,6 +378,7 @@ fn setup(
         PowerBar {
             meter: 0,
             released: false,
+            just_released: false,
         },
     ));
 
@@ -425,29 +430,72 @@ fn setup(
             ..default()
         },
         FishingLine {
-            length: 250.
+            length: 0.
         }
     ));
 
+    let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
+    let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
+    let splash_layout_len = splash_layout.textures.len();
+    let splash_layout_handle = texture_atlases.add(splash_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: splashes_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: splash_layout_handle.clone(),
+            index: 0,
+        },
+        AnimationTimer::new(0.2), 
+        AnimationFrameCount(splash_layout_len), //number of different frames that we have
+        Splash,
+        Animation::new()
+    ));
 
-    // let start = Vec2::new(0.0, 0.0);
-    // let end = Vec2::new(900.0, 900.0);
+    let waves_sheet_handle: Handle<Image> = asset_server.load("waves/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_len = wave_layout.textures.len();
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: waves_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: wave_layout_handle.clone(),
+            index: 0,
+        },
+        //AnimationTimer::new(0.2), 
+        AnimationFrameCount(wave_layout_len), //number of different frames that we have
+        Wave,
+        //Animation::new()
+    ));
 
-    // let shape = shapes::Line(start, end);
+    let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bobber_handle.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        Tile::BOBBER,
+        Collision,
+        Bobber,
 
-    // commands.spawn((
-    //     ShapeBundle {
-    //         path: GeometryBuilder::build_as(&shape),
-    //         spatial: SpatialBundle {
-    //             transform: Transform::from_xyz(0., 0., 900.),
-    //             ..default()
-    //         },
-    //         ..default()
-    //     },
-    //     Fill::color(DARK_CYAN),
-    //     Stroke::new(WHITE, 10.0),
-    //     FishingLine,
-    // ));
+    ));
     
     spawn_fishing_button(&mut commands, &asset_server);
     spawn_money_display(&mut commands, &asset_server);
