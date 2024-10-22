@@ -6,7 +6,6 @@ use crate::species::*;
 use fishing_game::fishingView::*;
 use f32::consts::PI;
 
-
 const REEL: KeyCode = KeyCode::KeyO;
 
 pub fn simulate_fish(
@@ -73,10 +72,6 @@ pub fn simulate_fish(
     }
 
     fish.position = new_pos;
-
-    fish_transform.translation.x = fish.position.x;
-    fish_transform.translation.y = fish.position.y;
-
 
     //let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
     //let fishxy = Vec2::new(fish.position.x, fish.position.y);
