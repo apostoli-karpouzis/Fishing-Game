@@ -61,7 +61,7 @@ impl SpeciesTable {
 //Bass
 pub const BASS: Species = Species::new(
             "Bass", 
-            Vec2::new(-32., 0.),
+            Vec2::new(-36., 0.),
             (10.,15.), 
             (5.,7.), 
             (20.,40.), 
@@ -74,7 +74,7 @@ pub const BASS: Species = Species::new(
 //Catfish
 pub const CATFISH: Species = Species::new(
             "Catfish", 
-            Vec2::new(-32., 0.),
+            Vec2::new(-36., 0.),
             (15.,25.), 
             (10.,12.), 
             (50., 70.), 
