@@ -13,6 +13,8 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+mod shop;
+mod money;
 //mod species;
 
 use crate::physics::*;
@@ -25,6 +27,8 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+use crate::shop::*;
+use crate::money::*;
 //use crate::species::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
@@ -51,6 +55,7 @@ fn main() {
         .init_state::<GameState>()
         .init_state::<Weather>()
         .init_state::<FishingMode>()
+        .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
@@ -61,8 +66,16 @@ fn main() {
         .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
 
+        .add_systems(OnEnter(ShopingMode::Shop), shop_transition) 
+        .add_systems(OnExit(ShopingMode::Shop), exit_shop_transition)
+
+
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
+        .add_systems(Update, shop_button_system)
+
+        .insert_resource(Money { amount: 100 }) 
+        .add_systems(Update, update_money_display)
 
         // Overworld systems (player movement, animations)
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
@@ -205,6 +218,7 @@ fn setup(
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+    let shop_sheet_handle: Handle<Image> = asset_server.load("shopStuff/map.png"); 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
 
     commands.spawn((
@@ -276,7 +290,7 @@ fn setup(
         Collision,
     ));
     
-    //spawn_button(&mut commands, asset_server);
+    // spawn_button(&mut commands, asset_server);
     //spawn_button(&mut commands, asset_server);
 
     //Time of day timer
@@ -288,7 +302,42 @@ fn setup(
     //let fishing_sheet_handle = asset_server.load("fishingView.png");
 
     //let grass_layout_len = grass_layout.textures.len();
-    
+
+    commands.spawn((
+        SpriteBundle {
+            texture: shop_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(500., 100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::Shop,
+        Collision,
+    ));
+
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("shopStuff/map.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fishing_sheet_handle.clone(),
+                        sprite: Sprite {
+                        ..default()
+                    },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                ..default()
+            },
+            ..default()
+        },
+        
+    ));
+
+
     let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
     //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
 
@@ -400,5 +449,7 @@ fn setup(
     //     FishingLine,
     // ));
     
-    spawn_fishing_button(&mut commands, asset_server);
+    spawn_fishing_button(&mut commands, &asset_server);
+    spawn_money_display(&mut commands, &asset_server);
 }
+

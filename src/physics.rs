@@ -6,7 +6,8 @@ const FISH_SPEED: f32 = 250.;
 
 pub fn simulate_fish(
     time: Res<Time>,
-    mut fish_info: Query<(&FishSpecies, &mut FishState, &mut Transform), With<FishHooked>>
+    mut fish_info: Query<(&FishSpecies, &mut FishState, &mut Transform), With<FishHooked>>,
+    mut money: ResMut<Money>,
 ) {
     let (fish_traits, mut fish_state, mut fish_transform) = fish_info.single_mut();
 
@@ -61,5 +62,6 @@ pub fn simulate_fish(
     if dist < 5.0
     {
         println!("caught fish!");
+        money.amount += 10;
     }
 }

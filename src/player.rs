@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use super::map::*;
 use super::resources::*;
+use bevy::prelude::*;
 use std::time::Duration;
 
 pub const PLAYER_WIDTH: f32 = 64.;
@@ -53,17 +53,20 @@ pub fn move_player(
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    mut button: Query<&mut Visibility, With<Button>>
+    mut fish_button: Query<&mut Visibility, (With<Button>, With<FishingButton>)>,
+    mut shop_button: Query<&mut Visibility, (With<Button>, With<ShopingButton>, Without<FishingButton>)>,
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
-    let mut button_visibility = button.single_mut();
+    let mut fish_button_visibility = fish_button.single_mut();
+    let mut shop_button_visibility = shop_button.single_mut();
 
     // Map transition
     if state.eq(&GameState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
-        
+
         if elapsed < animation.duration {
-            pt.translation = animation.start_position + elapsed / animation.duration * animation.motion;
+            pt.translation =
+                animation.start_position + elapsed / animation.duration * animation.motion;
         } else {
             pt.translation = animation.start_position + animation.motion;
         }
@@ -72,7 +75,7 @@ pub fn move_player(
     }
 
     // Update key press list
-    let is_running = input.pressed(RUN); 
+    let is_running = input.pressed(RUN);
 
     if input.pressed(UP) {
         input_stack.push(UP);
@@ -117,7 +120,7 @@ pub fn move_player(
                 *direction = PlayerDirection::Right;
                 Vec2::new(1., 0.)
             }
-            _ => Vec2::ZERO
+            _ => Vec2::ZERO,
         }
     } else {
         Vec2::ZERO
@@ -146,28 +149,36 @@ pub fn move_player(
         pt.translation.z,
     );
 
-    let new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
+    let new_pos = (pt.translation
+        + Vec3::new(change_direction.x, change_direction.y, pt.translation.z))
+    .clamp(min_pos, max_pos);
 
     // Check for collisions
     for object in collision_query.iter() {
         let (transform, tile) = object;
 
         if new_pos.y - PLAYER_HEIGHT / 2. > transform.translation.y + tile.hitbox.y / 2.
-            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2. 
-            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
+            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2.
+            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2.
             || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
         {
             continue;
         }
-        
+
         // Collision detected
         if tile.interactable {
             match tile {
                 &Tile::WATER => {
-                    *button_visibility = Visibility::Visible;
+                    *fish_button_visibility = Visibility::Visible;
+                    *shop_button_visibility = Visibility::Hidden;
+                }
+                &Tile::Shop => {
+                    *fish_button_visibility = Visibility::Hidden;
+                    *shop_button_visibility = Visibility::Visible;
                 }
                 _ => {
-                    *button_visibility = Visibility::Hidden;
+                    *fish_button_visibility = Visibility::Hidden;
+                    *shop_button_visibility = Visibility::Hidden;
                 }
             }
         }
@@ -176,7 +187,8 @@ pub fn move_player(
     }
 
     // No collision
-    *button_visibility = Visibility::Hidden;
+    *fish_button_visibility = Visibility::Visible;
+    *shop_button_visibility = Visibility::Visible;
     pt.translation = new_pos;
 }
 
@@ -189,31 +201,52 @@ pub fn animate_player(
         &mut AnimationTimer,
         &AnimationFrameCount,
         &PlayerDirection,
-        &InputStack
+        &InputStack,
     )>,
 ) {
-    let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction, input_stack) = player.single_mut();
+    let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction, input_stack) =
+        player.single_mut();
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
 
     let is_moving = input_stack.stack.len() > 0;
 
     let dir_add = match *direction {
         PlayerDirection::Front => {
-            if is_moving { 4 } else { 0 }
+            if is_moving {
+                4
+            } else {
+                0
+            }
         }
         PlayerDirection::Back => {
-            if is_moving { 12 } else { 2 }
+            if is_moving {
+                12
+            } else {
+                2
+            }
         }
         PlayerDirection::Left => {
-            if is_moving { 16 } else { 3 }
+            if is_moving {
+                16
+            } else {
+                3
+            }
         }
         PlayerDirection::Right => {
-            if is_moving { 8 } else { 1 }
+            if is_moving {
+                8
+            } else {
+                1
+            }
         }
     };
 
-    let is_running = input.pressed(KeyCode::ShiftRight); 
-    let anim_speed = if is_running {time.delta()*3} else {time.delta()};
+    let is_running = input.pressed(KeyCode::ShiftRight);
+    let anim_speed = if is_running {
+        time.delta() * 3
+    } else {
+        time.delta()
+    };
 
     timer.tick(anim_speed);
     if is_moving {

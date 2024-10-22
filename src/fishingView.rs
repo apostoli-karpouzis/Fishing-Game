@@ -91,7 +91,7 @@ pub fn power_bar_cast(
     mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>,
     mut power_bar: Query<(&mut Transform, &mut PowerBar), With<PowerBar>>,
-    mut line: Query<&mut Visibility, With<FishingLine>> 
+    mut line: Query<&mut Visibility, With<FishingLine>>,
 ){
     let (mut pb, mut power) = power_bar.single_mut();
     let mut line_visibility = line.single_mut();

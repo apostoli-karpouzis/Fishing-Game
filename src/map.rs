@@ -49,6 +49,8 @@ impl Area {
     }
 }
 
+
+
 const HITBOX_NO_COLLIDE: Vec2 = Vec2::new(0., 0.);
 const HITBOX_FULL_TILE: Vec2 = Vec2::new(TILE_SIZE, TILE_SIZE);
 
@@ -66,6 +68,7 @@ impl Tile {
 
     pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
+    pub const Shop: Tile = Tile::new("shop", true, Vec2::new(50., 80.));
 }
 
 pub struct Object {
