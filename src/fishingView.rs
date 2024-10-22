@@ -1,5 +1,5 @@
 use std::f32;
-use f32::consts::PI;
+use std::f32::consts::PI;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use crate::resources::*;
 use crate::fish::*;
@@ -12,20 +12,18 @@ const REEL: KeyCode = KeyCode::KeyO;
 const MAX_CAST_DISTANCE: f32 = 400.;
 
 #[derive(Component)]
+pub struct PowerBar {
+    pub meter: i32,
+    pub released: bool
+}
 
-pub struct Bobber;
+impl PowerBar {
+    pub const MAX_POWER: i32 = 250;
+}
 
 #[derive(Component)]
 pub struct FishingRod {
     pub length: f32
-}
-
-#[derive(Component)]
-pub struct Wave;
-
-#[derive(Component, Default)]
-pub struct Splash {
-    pub position: Vec3
 }
 
 #[derive(Component)]
@@ -38,10 +36,11 @@ pub struct Rotatable;
 
 #[derive(Component, Default)]
 pub struct FishingLine {
-    pub fishon: bool,
+    pub fish_on: bool,
     pub casting: bool,
     pub cast_distance: f32,
-    pub length: f32
+    pub length: f32,
+    pub mesh_handle: Handle<Mesh>
 }
 
 impl FishingLine {
@@ -49,13 +48,14 @@ impl FishingLine {
 }
 
 #[derive(Component)]
-pub struct PowerBar {
-    pub meter: i32,
-    pub released: bool
-}
+pub struct Bobber;
 
-impl PowerBar {
-    pub const MAX_POWER: i32 = 250;
+#[derive(Component)]
+pub struct Wave;
+
+#[derive(Component, Default)]
+pub struct Splash {
+    pub position: Vec3
 }
 
 pub fn fishing_transition(
@@ -161,9 +161,9 @@ pub fn rod_rotate(
 pub fn is_fish_caught(
     bobber: Query< (&Transform, &Tile),  With<Bobber>>,
     fish: Query<&Fish, With<FishHooked>>,
-    mut line: Query<(&mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
+    mut line: Query<&mut FishingLine, (With<FishingLine>, Without<Rotatable>)>,
 ){
-    let  fish_state = fish.single();
+    let fish_state = fish.single();
     let fish_position = fish_state.position;
     let (bobber_transform, tile) = bobber.single();
     let bobber_position = bobber_transform.translation;
@@ -177,7 +177,7 @@ pub fn is_fish_caught(
     }
 
     let mut line_state = line.single_mut();
-    line_state.fishon = true;
+    line_state.fish_on = true;
 }
 
 pub fn animate_fishing_line (
@@ -208,7 +208,7 @@ pub fn animate_fishing_line (
     let line_pos: Vec2;
 
     // Fish hooked
-    if line_info.fishon {
+    if line_info.fish_on {
         if fish_state.is_caught == true {
             *line_visibility = Visibility::Hidden;
             *bobber_visibility = Visibility::Hidden;
@@ -219,8 +219,9 @@ pub fn animate_fishing_line (
             return;
         }
 
-        let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
-        let fish_offset = fish_species.hook_pos.xy().rotate(-fish_state.velocity.xy().normalize_or_zero());
+        let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+        let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_state.rotation.z));
         let fish_pos = fish_state.position.xy() + fish_offset;
         let pos_delta = fish_pos - rod_end;
         
@@ -229,7 +230,7 @@ pub fn animate_fishing_line (
         line_rotation = f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
         line_pos = (rod_end + fish_pos) / 2.;
 
-        bobber_transform.translation =  Vec3::new(rod_end.x + line_info.length * f32::cos(line_rotation - PI / 2.) ,rod_end.y + line_info.length * f32::sin(line_rotation - PI / 2.), 950.);
+        bobber_transform.translation =  Vec3::new(fish_pos.x, fish_pos.y, 950.);
     } else {
         if line_info.casting
         {
@@ -243,7 +244,8 @@ pub fn animate_fishing_line (
 
                 // Splash animation
                 *splash_visibility = Visibility::Visible;
-                splash.position = Vec3::new(rod_transform.translation.x + (rod_info.length / 2. + line_info.length) * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length / 2. + line_info.length) * f32::sin(rod_rotation.rot + PI / 2.), 950.);
+                let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+                splash.position = rod_transform.translation + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.);
             } else {
                 // Casting
                 line_info.length = new_length;
@@ -267,13 +269,18 @@ pub fn animate_fishing_line (
         }
 
         line_rotation = rod_rotation.rot;
-        line_pos = Vec2::new(rod_transform.translation.x + (rod_info.length + line_info.length) / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + (rod_info.length + line_info.length) / 2. * f32::sin(rod_rotation.rot + PI / 2.));
-        bobber_transform.translation =  Vec3::new(rod_transform.translation.x + (rod_info.length + 2. * line_info.length) / 2. * f32::cos(rod_rotation.rot + PI / 2.) ,rod_transform.translation.y + (rod_info.length + 2. * line_info.length)/2. * f32::sin(rod_rotation.rot + PI / 2.), 950.);
+        let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+        line_pos = rod_transform.translation.xy() + (rod_info.length + line_info.length) / 2. * angle_vector;
+        bobber_transform.translation = rod_transform.translation + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.);
     }
 
-    line_transform.translation = Vec3::new(line_pos.x, line_pos.y, 901.);
+    // Draw fishing line
+    line_transform.translation = Vec3::new(line_pos.x, line_pos.y, 902.);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
-    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, line_info.length)));
+    
+    meshes.remove(&line_info.mesh_handle);
+    line_info.mesh_handle = meshes.add(Rectangle::new(FishingLine::WIDTH, line_info.length));
+    *line_mesh = Mesh2dHandle(line_info.mesh_handle.clone());
 }
 
 pub fn animate_fish (
@@ -283,11 +290,7 @@ pub fn animate_fish (
 
     fish_transform.translation.x = fish.position.x;
     fish_transform.translation.y = fish.position.y;
-
-    if fish.velocity.x != 0. || fish.velocity.y != 0. {
-        let angle = f32::atan2(fish.velocity.y, fish.velocity.x) + PI;
-        fish_transform.rotation = Quat::from_rotation_z(angle);
-    }
+    fish_transform.rotation = Quat::from_rotation_z(fish.rotation.z);
 }
 
 pub fn animate_splash (
@@ -324,16 +327,16 @@ pub fn animate_waves (
     let fish = fish_info.single_mut();
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
 
-    let magnitude = fish.velocity.length();
+    let magnitude = fish.forces.drag.length();
 
     if magnitude == 0. {
         *wave_visibility = Visibility::Hidden;
         return
     }
     
-    if magnitude < 40. {
+    if magnitude < 0.2 {
         wave_texture.index = 1;
-    } else if magnitude < 100. {
+    } else if magnitude < 0.4 {
         wave_texture.index = 2;
     } else {
         wave_texture.index = 3;

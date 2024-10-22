@@ -75,12 +75,12 @@ fn main() {
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
-        .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
-        .add_systems(Update, is_fish_caught.after(rod_rotate))
-        .add_systems(Update, simulate_fish.after(animate_fishing_line).after(update_weather))
-        .add_systems(Update, animate_fish.after(simulate_fish))
+        .add_systems(Update, simulate_fish.after(power_bar_cast).after(rod_rotate))
+        .add_systems(Update, is_fish_caught.after(simulate_fish))
+        .add_systems(Update, animate_fish.after(is_fish_caught))
+        .add_systems(Update, animate_fishing_line.after(animate_fish))
+        .add_systems(Update, animate_waves.after(animate_fish))
         .add_systems(Update, animate_splash.after(animate_fishing_line))
-        .add_systems(Update, animate_waves.after(animate_fishing_line))
 
         // Weather updates
         .add_systems(Update, update_weather)
@@ -202,8 +202,8 @@ fn setup(
 
     // MAP
     let map: Map = Map {
-        width: 4,
-        height: 4
+        width: MAP_WIDTH,
+        height: MAP_HEIGHT
     };
 
     //PLAYER
@@ -262,8 +262,9 @@ fn setup(
             weight: 2.0,
             age: 6.0,
             hunger: 10.0,
-            velocity: Vec3::ZERO,
             position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
+            rotation: Vec3::new(0., 0., 0.),
+            velocity: Vec3::ZERO,
             forces: Forces::default()
         },
         FishHooked
@@ -449,7 +450,6 @@ fn setup(
         Tile::BOBBER,
         Collision,
         Bobber,
-
     ));
     
     spawn_fishing_button(&mut commands, asset_server);
