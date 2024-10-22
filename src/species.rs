@@ -5,6 +5,7 @@ use crate::weather::*;
 #[derive(Component)]
 pub struct Species{
     pub name: &'static str,
+    pub hook_pos: Vec2,
     pub length: (f32, f32),
     pub width: (f32, f32),
     pub weight: (f32, f32),
@@ -17,6 +18,7 @@ pub struct Species{
 impl Species {
     pub const fn new
         (in_name: &'static str, 
+        in_hook_pos: Vec2,
         in_length: (f32, f32), 
         in_width: (f32, f32), 
         in_weight: (f32,f32), 
@@ -26,6 +28,7 @@ impl Species {
         in_depth: (f32, f32)) -> Self{
             Self{
                 name: in_name,
+                hook_pos: in_hook_pos,
                 length: in_length,
                 width: in_width,
                 weight: in_weight,
@@ -58,6 +61,7 @@ impl SpeciesTable {
 //Bass
 pub const BASS: Species = Species::new(
             "Bass", 
+            Vec2::new(-36., 0.),
             (10.,15.), 
             (5.,7.), 
             (20.,40.), 
@@ -70,6 +74,7 @@ pub const BASS: Species = Species::new(
 //Catfish
 pub const CATFISH: Species = Species::new(
             "Catfish", 
+            Vec2::new(-36., 0.),
             (15.,25.), 
             (10.,12.), 
             (50., 70.), 

@@ -76,11 +76,17 @@ fn main() {
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
         .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
+        .add_systems(Update, is_fish_caught.after(rod_rotate))
+        .add_systems(Update, simulate_fish.after(animate_fishing_line).after(update_weather))
+        .add_systems(Update, animate_fish.after(simulate_fish))
+        .add_systems(Update, animate_splash.after(animate_fishing_line))
+        .add_systems(Update, animate_waves.after(animate_fishing_line))
 
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-        .add_systems(Update, simulate_fish.after(update_weather))
+
+    
         .run();
 }
 
@@ -249,9 +255,10 @@ fn setup(
         BASS,
         Fish {
             id: 0,
+            is_caught: false,
             is_alive: true,
             length: 8.0,
-            width: 2.0,
+            width: 0.05,
             weight: 2.0,
             age: 6.0,
             hunger: 10.0,
@@ -328,8 +335,7 @@ fn setup(
         },
         PowerBar {
             meter: 0,
-            released: false,
-            just_released: false,
+            released: false
         },
     ));
 
@@ -380,9 +386,7 @@ fn setup(
             visibility: Visibility::Hidden,
             ..default()
         },
-        FishingLine {
-            length: 0.
-        }
+        FishingLine::default()
     ));
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
@@ -402,7 +406,7 @@ fn setup(
         },
         AnimationTimer::new(0.2), 
         AnimationFrameCount(splash_layout_len), //number of different frames that we have
-        Splash,
+        Splash::default(),
         Animation::new()
     ));
 
