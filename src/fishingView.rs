@@ -4,6 +4,7 @@ use bevy::{prelude::*, sprite::Mesh2dHandle};
 use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
+use crate::map::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -37,6 +38,7 @@ pub struct Rotatable;
 
 #[derive(Component, Default)]
 pub struct FishingLine {
+    pub fishon: bool,
     pub casting: bool,
     pub cast_distance: f32,
     pub length: f32
@@ -156,6 +158,29 @@ pub fn rod_rotate(
     }
 }
 
+pub fn is_fish_caught(
+    bobber: Query< (&Transform, &Tile),  With<Bobber>>,
+    fish: Query<&Fish, With<FishHooked>>,
+    mut line: Query<(&mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
+){
+    let  fish_state = fish.single();
+    let fish_position = fish_state.position;
+    let (bobber_transform, tile) = bobber.single();
+    let bobber_position = bobber_transform.translation;
+
+    if fish_position.y - fish_state.width / 2. > bobber_position.y + tile.hitbox.y / 2.
+    || fish_position.y + fish_state.width / 2. < bobber_position.y - tile.hitbox.y / 2. 
+    || fish_position.x + fish_state.width / 2. < bobber_position.x - tile.hitbox.x / 2. 
+    || fish_position.x - fish_state.width / 2. > bobber_position.x + tile.hitbox.x / 2.
+    {
+        println!("not colliding");
+        return;
+    }
+
+    let mut line_state = line.single_mut();
+    line_state.fishon = true;
+}
+
 pub fn animate_fishing_line (
     rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
     fish: Query<(&Species, &Fish), With<FishHooked>>,
@@ -182,13 +207,13 @@ pub fn animate_fishing_line (
     
     *bobber_visibility = Visibility::Visible;
 
-    let fish_hooked = false;
+    //let fish_hooked = false;
     
     let line_rotation: f32;
     let line_pos: Vec2;
 
     // Fish hooked
-    if fish_hooked {
+    if line_info.fishon {
         if fish_state.is_caught == true {
             *line_visibility = Visibility::Hidden;
             *wave_visibility = Visibility::Hidden;
