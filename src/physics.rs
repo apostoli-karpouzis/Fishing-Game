@@ -3,6 +3,8 @@ use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
 use crate::fishingView::*;
+use std::f32;
+use f32::consts::PI;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
@@ -17,7 +19,7 @@ pub fn simulate_fish(
     let line = line_info.single();
     //let (rod_info, rod_transform, rod_rotation) = rod.single();
 
-    let player_position = Vec3::new(FISHINGROOMX - 100., FISHINGROOMY - WIN_H / 2., 901.);
+    let player_position = Vec3::new(FISHINGROOMX - 100., FISHINGROOMY - WIN_H / 2., 100.);
     
     // Calculate drag
     let p = 1.0;
@@ -31,7 +33,7 @@ pub fn simulate_fish(
     let reeling = input.pressed(REEL);
 
     // Check that player is reeling and fish is attached to line
-    let player_force = if reeling && line.fishon {
+    let player_force = if reeling && line.fish_on {
         let delta = player_position - fish.position;
 
         100. * delta.normalize_or_zero()
@@ -53,16 +55,16 @@ pub fn simulate_fish(
     let acceleration = net_force / fish.weight;
     fish.velocity = fish.velocity + acceleration * time.delta_seconds();
 
-    println!("{}", fish.velocity.to_string());
-
     // Bounds check
     let mut new_pos = fish.position + fish.velocity * time.delta_seconds();
     
+    // Surface collision
     if new_pos.z > 0. {
         new_pos.z = 0.;
+        fish.velocity.z = 0.;
     }
     
-    //check for collisions to make sure fish stays on screen
+    // Side collision
     if new_pos.x < FISHINGROOMX - WIN_W / 2. + fish.width / 2.
     || new_pos.x > FISHINGROOMX + 460. - fish.width / 2.
     {
@@ -76,6 +78,11 @@ pub fn simulate_fish(
     }
 
     fish.position = new_pos;
+
+    // Calculate rotation
+    if fish.velocity.x != 0. || fish.velocity.y != 0. {
+        fish.rotation.z = f32::atan2(fish.velocity.y, fish.velocity.x) + PI;
+    }
 
     //let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
     //let fishxy = Vec2::new(fish.position.x, fish.position.y);
