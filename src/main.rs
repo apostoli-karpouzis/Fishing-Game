@@ -449,7 +449,7 @@ fn setup(
         },
         Tile::BOBBER,
         Collision,
-        Bobber,
+        Bobber::default(),
     ));
     
     spawn_fishing_button(&mut commands, asset_server);

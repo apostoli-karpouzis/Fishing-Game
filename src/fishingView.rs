@@ -47,8 +47,10 @@ impl FishingLine {
     pub const WIDTH: f32 = 3.;
 }
 
-#[derive(Component)]
-pub struct Bobber;
+#[derive(Component, Default)]
+pub struct Bobber {
+    pub position: Vec3
+}
 
 #[derive(Component)]
 pub struct Wave;
@@ -186,7 +188,7 @@ pub fn animate_fishing_line (
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
-    mut bobber: Query<(&mut Transform, &mut Visibility), (With<Bobber>, Without<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut bobber: Query<(&mut Bobber, &mut Transform, &mut Visibility), (With<Bobber>, Without<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>
 ) {
@@ -196,7 +198,7 @@ pub fn animate_fishing_line (
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
     
     let (mut splash, mut splash_texture, mut splash_visibility) = splash.single_mut();
-    let(mut bobber_transform, mut bobber_visibility) = bobber.single_mut();
+    let (mut bobber, mut bobber_transform, mut bobber_visibility) = bobber.single_mut();
 
     if *line_visibility == Visibility::Hidden {
         return;
@@ -230,7 +232,8 @@ pub fn animate_fishing_line (
         line_rotation = f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
         line_pos = (rod_end + fish_pos) / 2.;
 
-        bobber_transform.translation =  Vec3::new(fish_pos.x, fish_pos.y, 950.);
+        bobber.position = fish_state.position + fish_offset.extend(0.);
+        bobber_transform.translation =  Vec3::new(bobber.position.x, bobber.position.y, 950.);
     } else {
         if line_info.casting
         {
@@ -271,7 +274,8 @@ pub fn animate_fishing_line (
         line_rotation = rod_rotation.rot;
         let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
         line_pos = rod_transform.translation.xy() + (rod_info.length + line_info.length) / 2. * angle_vector;
-        bobber_transform.translation = rod_transform.translation + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.);
+        bobber.position = (rod_transform.translation + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.)).with_z(bobber.position.z);
+        bobber_transform.translation =  Vec3::new(bobber.position.x, bobber.position.y, 950.);
     }
 
     // Draw fishing line
