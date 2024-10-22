@@ -338,7 +338,9 @@ pub fn animate_waves (
         return
     }
     
-    if magnitude < 0.2 {
+    if magnitude < 0.1 {
+        wave_texture.index = 0;
+    } else if magnitude < 0.2 {
         wave_texture.index = 1;
     } else if magnitude < 0.4 {
         wave_texture.index = 2;
