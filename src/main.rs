@@ -79,7 +79,8 @@ fn main() {
         .add_systems(Update, is_fish_caught.after(rod_rotate))
         .add_systems(Update, simulate_fish.after(animate_fishing_line).after(update_weather))
         .add_systems(Update, animate_fish.after(simulate_fish))
-        .add_systems(Update, animate_splash)
+        .add_systems(Update, animate_splash.after(animate_fishing_line))
+        .add_systems(Update, animate_waves.after(animate_fishing_line))
 
         // Weather updates
         .add_systems(Update, update_weather)
@@ -257,7 +258,7 @@ fn setup(
             is_caught: false,
             is_alive: true,
             length: 8.0,
-            width: 2.0,
+            width: 0.05,
             weight: 2.0,
             age: 6.0,
             hunger: 10.0,
