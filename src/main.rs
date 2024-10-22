@@ -76,6 +76,7 @@ fn main() {
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
         .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate))
+        .add_systems(Update, is_fish_caught.after(rod_rotate))
         .add_systems(Update, simulate_fish.after(animate_fishing_line).after(update_weather))
         .add_systems(Update, animate_fish.after(simulate_fish))
         .add_systems(Update, animate_splash)
