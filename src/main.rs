@@ -498,6 +498,7 @@ fn setup(
     ));
     
     spawn_fishing_button(&mut commands, &asset_server);
+    // spawn_shop_button(&mut commands, &asset_server);
     spawn_money_display(&mut commands, &asset_server);
 }
 

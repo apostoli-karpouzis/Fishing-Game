@@ -11,7 +11,7 @@ pub fn spawn_money_display(commands: &mut Commands, asset_server: &Res<AssetServ
             TextStyle {
                 font: asset_server.load("pixel.ttf"),
                 font_size: 65.0,
-                color: Color::srgb(0.9, 0.9, 0.9),
+                color: Color::srgb(0.0,0.0,0.0),
             },
         )
         .with_style(Style {
