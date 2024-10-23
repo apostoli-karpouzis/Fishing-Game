@@ -7,6 +7,7 @@ pub mod gameday;
 pub mod weather;
 pub mod species;
 pub mod fish;
+pub mod money;
 pub mod fishingView;
 pub mod probCalc;
 //pub mod species;

@@ -22,7 +22,7 @@ mod fishingView;
 
 mod probCalc;
 mod shop;
-
+mod money;
 //mod species;
 
 
@@ -37,7 +37,11 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+
+use crate::money::*;
+//use crate::species::*;
 use crate::probCalc::*;
+
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -63,6 +67,7 @@ fn main() {
         .init_state::<GameState>()
         .init_state::<Weather>()
         .init_state::<FishingMode>()
+        .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
@@ -77,6 +82,10 @@ fn main() {
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
+        .add_systems(Update, shop_button_system)
+
+        .insert_resource(Money { amount: 100 }) 
+        .add_systems(Update, update_money_display)
 
         // Overworld systems (player movement, animations)
         .add_systems(Update, move_player.run_if(run_if_in_overworld))
@@ -566,5 +575,6 @@ fn setup(
         Bobber::default(),
     ));
     
-    spawn_fishing_button(&mut commands, asset_server);
+    spawn_fishing_button(&mut commands, &asset_server);
+    spawn_money_display(&mut commands, &asset_server);
 }
