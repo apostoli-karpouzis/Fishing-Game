@@ -356,7 +356,7 @@ pub fn animate_fishing_line(
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
-    mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility),(With<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut wave: Query<(&mut Transform, &mut Visibility),(With<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut bobber: Query<(&mut Bobber, &mut Transform, &mut Visibility), (With<Bobber>, Without<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>,
@@ -367,7 +367,7 @@ pub fn animate_fishing_line(
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
 
     let (mut splash, mut splash_texture, mut splash_visibility) = splash.single_mut();
-    let(mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
+    let(mut wave_transform, mut wave_visibility) = wave.single_mut();
     let (mut bobber, mut bobber_transform, mut bobber_visibility) = bobber.single_mut();
 
     if *line_visibility == Visibility::Hidden {
@@ -381,7 +381,7 @@ pub fn animate_fishing_line(
 
     // Fish hooked
     if line_info.fish_on {
-        if fish_state.is_caught == true {
+        if fish_state.is_caught {
             *line_visibility = Visibility::Hidden;
             *bobber_visibility = Visibility::Hidden;
             *wave_visibility = Visibility::Hidden;
@@ -440,7 +440,7 @@ pub fn animate_fishing_line(
                 if line_info.length >= 1. {
                     line_info.length -= 1.;
                     *wave_visibility = Visibility::Visible;
-                    wave_transform.translation = bobber.position.with_z(901.);
+                    wave_transform.translation = bobber.position.with_z(wave_transform.translation.z);
                 } else {
                     // Line fully reeled back in
                     *line_visibility = Visibility::Hidden;
@@ -456,7 +456,7 @@ pub fn animate_fishing_line(
                 *wave_visibility = Visibility::Hidden;
             }
         }
-
+        
         line_rotation = rod_rotation.rot;
         let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
         line_pos = rod_transform.translation.xy()
@@ -468,7 +468,7 @@ pub fn animate_fishing_line(
     }
 
     // Draw fishing line
-    line_transform.translation = Vec3::new(line_pos.x, line_pos.y, 902.);
+    line_transform.translation = Vec3::new(line_pos.x, line_pos.y, line_transform.translation.z);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
 
     meshes.remove(&line_info.mesh_handle);
