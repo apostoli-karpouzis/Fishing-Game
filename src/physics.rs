@@ -5,6 +5,8 @@ use crate::species::*;
 use crate::fishingView::*;
 use std::f32;
 use f32::consts::PI;
+use crate::money::*;
+
 
 const REEL: KeyCode = KeyCode::KeyO;
 
@@ -91,9 +93,12 @@ pub fn simulate_fish(
 
     println!("dist: {}", dist);
 
-    if dist < 150.0
-    {
+    if dist < 150.0 && !fish.is_caught {
         fish.is_caught = true;
-        println!("caught fish!");
+        println!("Caught fish!");
+
+        // Increase money by 100 when the fish is caught
+        money.amount += 100;
+        println!("Money increased! {}", money.amount);
     }
 }
