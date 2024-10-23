@@ -80,6 +80,8 @@ fn main() {
         .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, screen_edge_collision.after(move_player))
 
+            
+        .add_systems(Update, move_fish.run_if(run_if_in_fishing))
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
