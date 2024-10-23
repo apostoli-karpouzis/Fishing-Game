@@ -64,6 +64,7 @@ impl Tile {
         Self { id, interactable, hitbox }
     }
 
+    pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
     pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
 }

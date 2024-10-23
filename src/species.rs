@@ -8,7 +8,7 @@ use crate::resources::*;
 #[derive(Component)]
 pub struct Species{
     pub name: &'static str,
-    pub fish_id: i32,
+    pub hook_pos: Vec2,
     pub length: (f32, f32),
     pub width: (f32, f32),
     pub weight: (f32, f32),
@@ -27,7 +27,7 @@ pub struct Species{
 impl Species {
     pub const fn new
         (in_name: &'static str, 
-        in_fish_id: i32,
+        in_hook_pos: Vec2,
         in_length: (f32, f32), 
         in_width: (f32, f32), 
         in_weight: (f32,f32), 
@@ -42,7 +42,7 @@ impl Species {
 
             Self{
                 name: in_name,
-                fish_id: in_fish_id,
+                hook_pos: in_hook_pos,
                 length: in_length,
                 width: in_width,
                 weight: in_weight,
@@ -98,7 +98,7 @@ impl<'a> SpeciesTable<'a> {
 
 pub const BASS: Species = Species::new(
             "Bass", 
-            1,
+            Vec2::new(-36., 0.),
             (10.,15.), 
             (5.,7.), 
             (20.,40.), 
@@ -115,7 +115,7 @@ pub const BASS: Species = Species::new(
 //Catfish
 pub const CATFISH: Species = Species::new(
             "Catfish", 
-            2,
+            Vec2::new(-36., 0.),
             (15.,25.), 
             (10.,12.), 
             (50., 70.), 

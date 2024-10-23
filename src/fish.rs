@@ -3,20 +3,22 @@ use bevy::{prelude::*, utils::HashMap};
 #[derive(Component)]
 pub struct Fish {
     pub id: u32,
+    pub is_caught: bool,
     pub is_alive: bool,
     pub length: f32,
     pub width: f32,
     pub weight: f32,
     pub age: f32,
     pub hunger: f32,
-    pub velocity: Vec3,
     pub position: Vec3,
+    pub rotation: Vec3,
+    pub velocity: Vec3,
     pub forces: Forces
 }
 
 impl Fish {
-    pub fn new(id: u32, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32, velocity: Vec3, position: Vec3, forces: Forces) -> Self {
-        Self { id, is_alive, length, width, weight, age, hunger, velocity, position, forces }
+    pub fn new(id: u32, is_caught: bool, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
+        Self { id, is_caught, is_alive, length, width, weight, age, hunger, position, rotation, velocity, forces }
     }
     
     //call when fish die

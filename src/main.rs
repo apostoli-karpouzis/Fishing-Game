@@ -83,13 +83,18 @@ fn main() {
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
-        .add_systems(Update, animate_fishing_line.after(power_bar_cast).after(rod_rotate).run_if(run_if_in_fishing))
-        
-        .add_systems(Update, move_fish.run_if(run_if_in_fishing))
+        .add_systems(Update, simulate_fish.after(power_bar_cast).after(rod_rotate))
+        .add_systems(Update, is_fish_caught.after(simulate_fish))
+        .add_systems(Update, animate_fish.after(is_fish_caught))
+        .add_systems(Update, animate_fishing_line.after(animate_fish))
+        .add_systems(Update, animate_waves.after(animate_fish))
+        .add_systems(Update, animate_splash.after(animate_fishing_line))
+
         // Weather updates
-        .add_systems(Update, update_weather.run_if(run_if_in_overworld))
-        .add_systems(Update, update_weather_tint.after(update_weather).run_if(run_if_in_overworld))
-        .add_systems(Update, simulate_fish.after(update_weather).run_if(run_if_in_overworld))
+        .add_systems(Update, update_weather)
+        .add_systems(Update, update_weather_tint.after(update_weather))
+
+    
         .run();
 }
 
@@ -219,8 +224,8 @@ fn setup(
 
     // MAP
     let map: Map = Map {
-        width: 4,
-        height: 4
+        width: MAP_WIDTH,
+        height: MAP_HEIGHT
     };
 
     //PLAYER
@@ -271,14 +276,16 @@ fn setup(
         BASS,
         Fish {
             id: 0,
+            is_caught: false,
             is_alive: true,
             length: 8.0,
-            width: 2.0,
+            width: 0.05,
             weight: 2.0,
             age: 6.0,
             hunger: 10.0,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
+            rotation: Vec3::new(0., 0., 0.),
             velocity: Vec3::ZERO,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 0.),
             forces: Forces::default()
         },
         FishHooked
@@ -431,8 +438,7 @@ fn setup(
         },
         PowerBar {
             meter: 0,
-            released: false,
-            just_released: false,
+            released: false
         },
     ));
 
@@ -483,9 +489,7 @@ fn setup(
             visibility: Visibility::Hidden,
             ..default()
         },
-        FishingLine {
-            length: 0.
-        }
+        FishingLine::default()
     ));
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
@@ -505,30 +509,50 @@ fn setup(
         },
         AnimationTimer::new(0.2), 
         AnimationFrameCount(splash_layout_len), //number of different frames that we have
-        Splash,
+        Splash::default(),
         Animation::new()
     ));
 
+    let waves_sheet_handle: Handle<Image> = asset_server.load("waves/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_len = wave_layout.textures.len();
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: waves_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: wave_layout_handle.clone(),
+            index: 0,
+        },
+        //AnimationTimer::new(0.2), 
+        AnimationFrameCount(wave_layout_len), //number of different frames that we have
+        Wave,
+        //Animation::new()
+    ));
 
-
-    // let start = Vec2::new(0.0, 0.0);
-    // let end = Vec2::new(900.0, 900.0);
-
-    // let shape = shapes::Line(start, end);
-
-    // commands.spawn((
-    //     ShapeBundle {
-    //         path: GeometryBuilder::build_as(&shape),
-    //         spatial: SpatialBundle {
-    //             transform: Transform::from_xyz(0., 0., 900.),
-    //             ..default()
-    //         },
-    //         ..default()
-    //     },
-    //     Fill::color(DARK_CYAN),
-    //     Stroke::new(WHITE, 10.0),
-    //     FishingLine,
-    // ));
+    let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bobber_handle.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        Tile::BOBBER,
+        Collision,
+        Bobber::default(),
+    ));
     
     spawn_fishing_button(&mut commands, asset_server);
 }
