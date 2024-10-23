@@ -342,11 +342,11 @@ fn setup(
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            catch_prob: 10.,
+            hunger: 10.,
             touching_lure: false,
         },
         InPond,
-        IsBass,
+        BASS,
         Collision,
     ));
 
@@ -379,11 +379,11 @@ fn setup(
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            catch_prob: 2.,
+            hunger: 7.,
             touching_lure: false,
         },
         InPond,
-        IsBass,
+        CATFISH,
         Collision,
     ));
     /*

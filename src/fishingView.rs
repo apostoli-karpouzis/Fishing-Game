@@ -84,7 +84,7 @@ pub struct FishDetails {
     pub change_y: Vec3,
     //length, width, depth
     pub bounds: (i32, i32),
-    pub catch_prob: f32,
+    pub hunger: f32,
     pub touching_lure: bool,
 }
 
@@ -102,7 +102,7 @@ impl FishDetails {
         change_x: Vec3,
         change_y: Vec3,
         bounds: (i32, i32),
-        catch_prob: f32,
+        hunger: f32,
         touching_lure: bool,
     ) -> Self {
         Self {
@@ -118,7 +118,7 @@ impl FishDetails {
             change_x,
             change_y,
             bounds,
-            catch_prob,
+            hunger,
             touching_lure,
         }
     }
