@@ -7,6 +7,6 @@ pub mod gameday;
 pub mod weather;
 pub mod fish;
 pub mod species;
-
 pub mod fishingView;
+pub mod probCalc;
 //pub mod species;

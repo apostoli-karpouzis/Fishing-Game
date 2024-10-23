@@ -102,14 +102,14 @@ pub enum TimePeriod{
 #[derive(Resource)]
 pub struct GameDayTimer{
     pub timer: Timer,
-    pub time_period: TimePeriod,
+    pub hour: i32,
 }
 
 impl GameDayTimer {
     pub fn new(duration: f32) -> Self {
         Self {
             timer: Timer::from_seconds(duration, TimerMode::Repeating),
-            time_period: TimePeriod::Morning,
+            hour: 0,
         }
     }    
 } 
