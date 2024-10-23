@@ -82,6 +82,7 @@ fn main() {
 
             
         .add_systems(Update, move_fish.run_if(run_if_in_fishing))
+        .add_systems(Update, fish_area_bobber.run_if(run_if_in_fishing))
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
@@ -326,13 +327,14 @@ fn setup(
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
             catch_prob: 10.,
+            touching_lure: false,
         },
         InPond,
         IsBass,
         Collision,
     ));
 
-
+    //FISH BOX
     commands.spawn((
         SpriteBundle {
             texture: cool_fish_handle.clone(),
@@ -362,6 +364,7 @@ fn setup(
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
             catch_prob: 2.,
+            touching_lure: false,
         },
         InPond,
         IsBass,
