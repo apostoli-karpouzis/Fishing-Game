@@ -188,6 +188,7 @@ pub fn animate_fishing_line (
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
+    mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility),(With<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut bobber: Query<(&mut Bobber, &mut Transform, &mut Visibility), (With<Bobber>, Without<Wave>, Without<Splash>, Without<FishingLine>, Without<Rotatable>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     input: Res<ButtonInput<KeyCode>>
@@ -198,6 +199,7 @@ pub fn animate_fishing_line (
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
     
     let (mut splash, mut splash_texture, mut splash_visibility) = splash.single_mut();
+    let(mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
     let (mut bobber, mut bobber_transform, mut bobber_visibility) = bobber.single_mut();
 
     if *line_visibility == Visibility::Hidden {
@@ -258,6 +260,8 @@ pub fn animate_fishing_line (
             if input.pressed(REEL) {
                 if line_info.length >= 1. {
                     line_info.length -= 1.;
+                    *wave_visibility = Visibility::Visible;
+                    wave_transform.translation = bobber.position.with_z(901.);
                 } else {
                     // Line fully reeled back in
                     *line_visibility = Visibility::Hidden;
@@ -268,6 +272,8 @@ pub fn animate_fishing_line (
                     pb_transform.translation.y = 3292.;
                     return;
                 }
+            } else {
+                *wave_visibility = Visibility::Hidden;
             }
         }
 
@@ -334,7 +340,6 @@ pub fn animate_waves (
     let magnitude = fish.forces.drag.length();
 
     if magnitude == 0. {
-        *wave_visibility = Visibility::Hidden;
         return
     }
     
