@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::weather::*;
 
 
 pub const TITLE: &str = "Fishing Game";
@@ -73,12 +74,16 @@ pub struct PlayerReturnPos {
     pub player_save_y: f32, 
 }
 
+/*#[derive(Resource)]
+pub struct FishBoundsDir {
+    pub change_x: Vec3,
+    pub change_y: Vec3,
+}*/
 //GAMESTATE for switching the game world to the fishing mode
 
 
 
-
-
+//FISH THING 
 
 
 
@@ -113,3 +118,29 @@ impl GameDayTimer {
         }
     }    
 } 
+
+#[derive(Component)]
+pub struct FishingButton;
+
+#[derive(Component)]
+pub struct ShopingButton;
+
+#[derive(Resource)]
+pub struct Money {
+    pub amount: i32,
+}
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ShopingMode {
+    #[default]
+    Overworld,
+    Shop
+}
+impl ShopingMode{
+    pub fn next(&self) -> Self {
+        match self {
+            ShopingMode::Overworld => ShopingMode::Shop,
+            ShopingMode::Shop => ShopingMode::Overworld,
+        }
+    }
+}

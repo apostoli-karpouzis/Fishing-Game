@@ -4,9 +4,10 @@ use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
 use crate::weather::*;
+use crate::fishingView::*;
 
 pub fn calc_fish_prob(
-    fish: &Fish, 
+    fish: &FishDetails, 
     species: &Species, 
     weather: &Res<WeatherState>, 
     time: &Res<GameDayTimer>) -> f32
@@ -43,7 +44,7 @@ pub fn calc_fish_prob(
 
 pub fn hook_fish(
     state: Res<State<FishingMode>>,
-    mut potential_fish: Query<(&Fish, &Species, Entity), With<Fish>>,
+    mut potential_fish: Query<(&FishDetails, &Species, Entity), (With<FishDetails>, With<InPond>)>,
     hooked_fish: Query<&Fish, With<FishHooked>>,
     weather: Res<WeatherState>,
     time: Res<GameDayTimer>,
@@ -55,16 +56,18 @@ pub fn hook_fish(
                 return;
             }*/
 
-            for fish in potential_fish.iter_mut() {
-                let (mut fish, species, entity_id) = fish;
-                let prob = 100. * calc_fish_prob(fish, species, &weather, &time);
-                let mut prob_rng = rand::thread_rng();
-                let roll = prob_rng.gen_range(0..100);
-                if (roll as f32) < prob {
-                    println!("Prob = {}  Roll = {}", prob, roll);
-                    //commands.entity(entity_id).insert(FishHooked);
-                    return;
-                }
+            for fish_info in potential_fish.iter_mut() {
+                let (mut fish, species, entity_id) = fish_info;
+                if fish.touching_lure {
+                    let prob = 100. * calc_fish_prob(fish, species, &weather, &time);
+                    let mut prob_rng = rand::thread_rng();
+                    let roll = prob_rng.gen_range(0..100);
+                    if (roll as f32) < prob {
+                        println!("Hit in collision zone!");
+                        //commands.entity(entity_id).insert(FishHooked);
+                        return;
+                    }
+                } 
             }
         }
 

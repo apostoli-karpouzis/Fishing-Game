@@ -5,6 +5,8 @@ use crate::species::*;
 use crate::fishingView::*;
 use std::f32;
 use f32::consts::PI;
+use crate::money::*;
+
 
 const REEL: KeyCode = KeyCode::KeyO;
 
@@ -12,7 +14,8 @@ pub fn simulate_fish(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut fish_info: Query<(&Species, &mut Fish, &mut Transform), With<FishHooked>>,
-    line_info: Query<&FishingLine, With<FishingLine>>
+    line_info: Query<&FishingLine, With<FishingLine>>,
+    mut money: ResMut<Money>,
    // mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>, Without<FishHooked>)>,
 ) {
     let (fish_species, mut fish, fish_transform) = fish_info.single_mut();
@@ -84,14 +87,19 @@ pub fn simulate_fish(
         fish.rotation.z = f32::atan2(fish.velocity.y, fish.velocity.x) + PI;
     }
 
-    //let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
-    //let fishxy = Vec2::new(fish.position.x, fish.position.y);
+    let playerxy = Vec2::new(player_position.x, player_position.y);
+    let fishxy = Vec2::new(fish.position.x, fish.position.y);
 
-    // let dist = (fishxy - rod_end).length();
+    let dist = (playerxy - fishxy).length();
 
-    // if dist < 5.0
-    // {
-    //     fish.is_caught = true;
-    //     println!("caught fish!");
-    // }
+    println!("dist: {}", dist);
+
+    if dist < 150.0 && !fish.is_caught {
+        fish.is_caught = true;
+        println!("Caught fish!");
+
+        // Increase money by 100 when the fish is caught
+        money.amount += 100;
+        println!("Money increased! {}", money.amount);
+    }
 }
