@@ -14,6 +14,7 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+mod shop;
 //mod species;
 
 use crate::physics::*;
@@ -85,6 +86,7 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_plugins(shop::ShopPlugin)
 
     
         .run();
