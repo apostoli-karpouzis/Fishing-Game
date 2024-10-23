@@ -113,3 +113,29 @@ impl GameDayTimer {
         }
     }    
 } 
+
+#[derive(Component)]
+pub struct FishingButton;
+
+#[derive(Component)]
+pub struct ShopingButton;
+
+#[derive(Resource)]
+pub struct Money {
+    pub amount: i32,
+}
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ShopingMode {
+    #[default]
+    Overworld,
+    Shop
+}
+impl ShopingMode{
+    pub fn next(&self) -> Self {
+        match self {
+            ShopingMode::Overworld => ShopingMode::Shop,
+            ShopingMode::Shop => ShopingMode::Overworld,
+        }
+    }
+}
