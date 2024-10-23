@@ -84,14 +84,16 @@ pub fn simulate_fish(
         fish.rotation.z = f32::atan2(fish.velocity.y, fish.velocity.x) + PI;
     }
 
-    //let rod_end = Vec2::new(rod_transform.translation.x + rod_info.length / 2. * f32::cos(rod_rotation.rot + PI / 2.), rod_transform.translation.y + rod_info.length / 2. * f32::sin(rod_rotation.rot + PI / 2.));
-    //let fishxy = Vec2::new(fish.position.x, fish.position.y);
+    let playerxy = Vec2::new(player_position.x, player_position.y);
+    let fishxy = Vec2::new(fish.position.x, fish.position.y);
 
-    // let dist = (fishxy - rod_end).length();
+    let dist = (playerxy - fishxy).length();
 
-    // if dist < 5.0
-    // {
-    //     fish.is_caught = true;
-    //     println!("caught fish!");
-    // }
+    println!("dist: {}", dist);
+
+    if dist < 150.0
+    {
+        fish.is_caught = true;
+        println!("caught fish!");
+    }
 }

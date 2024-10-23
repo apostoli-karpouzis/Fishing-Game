@@ -352,7 +352,7 @@ pub fn is_fish_caught(
 
 pub fn animate_fishing_line(
     rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
-    fish: Query<(&Species, &Fish), With<FishHooked>>,
+    mut fish: Query<(&Species, &mut Fish), With<FishHooked>>,
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
@@ -362,8 +362,8 @@ pub fn animate_fishing_line(
     input: Res<ButtonInput<KeyCode>>,
 ) {
     let (rod_info, rod_transform, rod_rotation) = rod.single();
-    let (fish_species, fish_state) = fish.single();
-    let (mut line_transform, mut line_visibility, mut line_mesh, mut line_info) = line.single_mut();
+    let (fish_species, mut fish_state) = fish.single_mut();
+    let (mut line_transform, mut line_visibility, mut line_mesh,mut line_info) = line.single_mut();
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
 
     let (mut splash, mut splash_texture, mut splash_visibility) = splash.single_mut();
@@ -384,6 +384,15 @@ pub fn animate_fishing_line(
         if fish_state.is_caught == true {
             *line_visibility = Visibility::Hidden;
             *bobber_visibility = Visibility::Hidden;
+            *wave_visibility = Visibility::Hidden;
+            fish_state.position = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            fish_state.velocity = Vec3::new(0., 0., 0.);
+            fish_state.forces = Forces::default();
+            wave_texture.index = 0;
+            line_info.fish_on = false;
+            line_info.length = 0.;
+            fish_state.is_caught = false;
+
             splash_texture.index = 0;
             power_info.released = false;
             power_info.meter = 0;
@@ -436,6 +445,7 @@ pub fn animate_fishing_line(
                     // Line fully reeled back in
                     *line_visibility = Visibility::Hidden;
                     *bobber_visibility = Visibility::Hidden;
+                    *wave_visibility = Visibility::Hidden;
                     splash_texture.index = 0;
                     power_info.released = false;
                     power_info.meter = 0;
@@ -516,6 +526,7 @@ pub fn animate_waves(
     let fish = fish_info.single_mut();
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
 
+    
     let magnitude = fish.forces.drag.length();
 
     if magnitude == 0. {
