@@ -14,7 +14,8 @@ pub fn simulate_fish(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut fish_info: Query<(&Species, &mut Fish, &mut Transform), With<FishHooked>>,
-    line_info: Query<&FishingLine, With<FishingLine>>
+    line_info: Query<&FishingLine, With<FishingLine>>,
+    mut money: ResMut<Money>,
    // mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>, Without<FishHooked>)>,
 ) {
     let (fish_species, mut fish, fish_transform) = fish_info.single_mut();
