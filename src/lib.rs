@@ -8,4 +8,5 @@ pub mod weather;
 pub mod species;
 pub mod fish;
 pub mod fishingView;
+pub mod probCalc;
 //pub mod species;
