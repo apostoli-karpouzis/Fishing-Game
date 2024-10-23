@@ -111,6 +111,8 @@ fn setup(
 
     commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
 
+    //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
+
     commands.insert_resource(directionTimer{
         // create the repeating timer
         timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
@@ -310,9 +312,47 @@ fn setup(
             depth: (0,5),
             //x, y, z
             position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
             catch_prob: 10.,
+        },
+        InPond,
+        IsBass,
+        Collision,
+    ));
+
+
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Cat1",
+            fish_id: 2,
+            length: rng.gen_range(5..12),
+            width: rng.gen_range(3..5),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Rainy,
+            depth: (5,20),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            catch_prob: 2.,
         },
         InPond,
         IsBass,

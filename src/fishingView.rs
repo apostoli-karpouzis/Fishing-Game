@@ -38,6 +38,7 @@ pub struct FishingLine {
     pub length: f32
 }
 
+
 impl FishingLine {
     pub const WIDTH: f32 = 3.;
 }
@@ -61,15 +62,17 @@ pub struct FishDetails{
     pub depth: (i32, i32),
     //x, y, z
     pub position: (i32, i32),
+    pub change_x: Vec3,
+    pub change_y: Vec3,
     //length, width, depth
     pub bounds: (i32, i32),
     pub catch_prob: f32,
 }
 
 impl FishDetails {
-    pub fn new(name: &'static str, fish_id: i32, length: i32, width: i32, weight: i32, time_of_day: (usize, usize), weather: Weather, depth: (i32, i32), position: (i32, i32), bounds: (i32, i32), catch_prob: f32) -> Self{
+    pub fn new(name: &'static str, fish_id: i32, length: i32, width: i32, weight: i32, time_of_day: (usize, usize), weather: Weather, depth: (i32, i32), position: (i32, i32),change_x:Vec3, change_y:Vec3, bounds: (i32, i32), catch_prob: f32) -> Self{
         Self {
-            name, fish_id, length, width, weight, time_of_day, weather, depth, position, bounds, catch_prob
+            name, fish_id, length, width, weight, time_of_day, weather, depth, position, change_x, change_y, bounds, catch_prob
         }
     }
 }
@@ -78,63 +81,72 @@ pub fn move_fish(
     mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
     time: Res<Time>,
     mut config: ResMut<directionTimer>,
+    
+    //mut fish_direction: ResMut<FishBoundsDir>
 )
     {
-    let(mut fish_details, mut fish_pos) = fish_details.single_mut();
-
     let mut rng = rand::thread_rng();
-    let mut change_x: Vec3 = Vec3::new(0.,0.,0.);
-    let mut change_y: Vec3 = Vec3::new(0.,0.,0.);
     config.timer.tick(time.delta());
-    if config.timer.finished() {
-        let dir: i32 = rng.gen_range(0..9);
-        if dir == 1{
-            change_x = Vec3::new(0.,0.,0.);
-            change_y = Vec3::new(0. ,1., 0.);
-        }
-        else if dir == 2{
-            change_x = Vec3::new(1.,0.,0.);
-            change_y = Vec3::new(0. ,1., 0.);
-        }
-        else if dir == 3{
-            change_x = Vec3::new(1.,0.,0.);
-            change_y =  Vec3::new(0. ,0., 0.);
-        }
-        else if dir == 4{
-            change_x = Vec3::new(1.,0.,0.);
-            change_y = Vec3::new(0. ,-1., 0.);
-        }
-        else if dir == 5{
-            change_x = Vec3::new(0.,0.,0.);
-            change_y = Vec3::new(0. ,-1., 0.);
-        }
-        else if dir == 6{
-            change_x =  Vec3::new(-1.,0.,0.);
-            change_y = Vec3::new(0. ,-1., 0.);
-        }
-        else if dir == 7{
-            change_x = Vec3::new(-1.,0.,0.);
-            change_y = Vec3::new(0. ,0., 0.);
-        }
-        else if dir == 8{
-            change_x = Vec3::new(-1.,0.,0.);
-            change_y = Vec3::new(0. ,1., 0.);
-        }
-        
-           
-    }
-        //match it then set up the vector for the next tree seconds, keep the stuff about borders 
-    
+    for(mut fish_details, mut fish_pos) in fish_details.iter_mut(){
 
-    
-    //println!("fish pos x {}, fish pos y {}", change_x, change_y);
-    //CHANGE THESE TO CONSTANTS LATER!!!!!
-    if (fish_pos.translation.x - 1.) >= (8320. + 160.) && (fish_pos.translation.x + 1.) <= (9391. - 160.){
-        fish_pos.translation += change_x;
-    }
-    if (fish_pos.translation.y - 1.) >= (3286. + 90.) && (fish_pos.translation.y + 1.) <= (3960. - 90.){
-        fish_pos.translation += change_y;
+        //let mut rng = rand::thread_rng();
         
+        
+        if config.timer.finished() {
+            println!("timer finished");
+            let dir: i32 = rng.gen_range(0..9);
+            println!("numer is {} {:?}", dir, fish_details.name);
+            if dir == 0{
+                
+                fish_details.change_x = Vec3::new(0.,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,0.5, 0.);
+            }
+            else if dir == 1{
+                fish_details.change_x = Vec3::new(0.5,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,0.5, 0.);
+            }
+            else if dir == 2{
+                fish_details.change_x = Vec3::new(0.5,0.,0.);
+                fish_details.change_y =  Vec3::new(0. ,0., 0.);
+            }
+            else if dir == 3{
+                fish_details.change_x = Vec3::new(0.5,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,-0.5, 0.);
+            }
+            else if dir == 4{
+                fish_details.change_x = Vec3::new(0.,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,-0.5, 0.);
+            }
+            else if dir == 5{
+                fish_details.change_x =  Vec3::new(-0.5,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,-0.5, 0.);
+            }
+            else if dir == 6{
+                fish_details.change_x = Vec3::new(-0.5,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,0., 0.);
+            }
+            else if dir == 7{
+                fish_details.change_x = Vec3::new(-0.5,0.,0.);
+                fish_details.change_y = Vec3::new(0. ,0.5, 0.);
+            }
+            println!("numer is {:?} is going {:?}", fish_details.name, fish_details.change_x);
+            
+        }
+            //match it then set up the vector for the next tree seconds, keep the stuff about borders 
+        
+
+        
+        //println!("fish pos x {}, fish pos y {}", change_x, change_y);
+        //CHANGE THESE TO CONSTANTS LATER!!!!!
+        let holdx: Vec3 = fish_pos.translation + fish_details.change_x;
+        if (holdx.x) >= (8320. + 160.) && (holdx.x) <= (9391. - 160.){
+            fish_pos.translation += fish_details.change_x;
+        }
+        let holdy: Vec3 = fish_pos.translation + fish_details.change_y;
+        if (holdy.y) >= (3376. + 90.) && (holdy.y) <= (3960. - 90.){
+            fish_pos.translation += fish_details.change_y;
+            
+        }
     }
     //fish_pos.translation += change_y;
         //return (self.position.0 + x, self.position.1+y)

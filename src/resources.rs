@@ -74,6 +74,11 @@ pub struct PlayerReturnPos {
     pub player_save_y: f32, 
 }
 
+/*#[derive(Resource)]
+pub struct FishBoundsDir {
+    pub change_x: Vec3,
+    pub change_y: Vec3,
+}*/
 //GAMESTATE for switching the game world to the fishing mode
 
 
