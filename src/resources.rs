@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 
-pub const TITLE: &str = "movement";
+pub const TITLE: &str = "Fishing Game";
 pub const WIN_W: f32 = 1280.;
 pub const WIN_H: f32 = 720.;
 
