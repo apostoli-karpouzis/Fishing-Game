@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::{seq::SliceRandom,};
 
-const WEATHER_UPDATE_PERIOD: f32 = 3.;
+const WEATHER_UPDATE_PERIOD: f32 = 30.;
 
 #[derive(Resource)]
 pub struct WeatherState {

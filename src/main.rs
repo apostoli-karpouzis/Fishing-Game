@@ -14,7 +14,10 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+
 mod probCalc;
+mod shop;
+
 //mod species;
 
 use crate::physics::*;
@@ -86,6 +89,7 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_plugins(shop::ShopPlugin)
 
         // Check if we've hooked any fish
         .add_systems(Update, hook_fish)
