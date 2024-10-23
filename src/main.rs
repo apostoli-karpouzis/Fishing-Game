@@ -2,6 +2,11 @@ use bevy::window::EnabledButtons;
 use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
 use rand::Rng;
 use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
+use std::collections::HashMap;
+use std::time::Duration;
+
+
+
 
 mod physics;
 mod fish;
@@ -19,6 +24,7 @@ mod probCalc;
 mod shop;
 mod money;
 //mod species;
+
 
 use crate::physics::*;
 use crate::fish::*;
@@ -65,6 +71,8 @@ fn main() {
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
+        
+
         //Run the game timer
         .add_systems(Update, run_game_timer)
 
@@ -85,6 +93,9 @@ fn main() {
         .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
         .add_systems(Update, screen_edge_collision.after(move_player))
 
+            
+        .add_systems(Update, move_fish.run_if(run_if_in_fishing))
+        .add_systems(Update, fish_area_bobber.run_if(run_if_in_fishing))
         // // FishingMode systems (power bar and rod rotation)
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
@@ -106,6 +117,8 @@ fn main() {
         .run();
 }
 
+
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -113,12 +126,24 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let mut rng = rand::thread_rng();
+
     commands.spawn((
         Camera2dBundle::default(),
         Animation::new()
     ));
 
     commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
+
+    //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
+
+    commands.insert_resource(directionTimer{
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
+    });
+    //let mut fish: HashMap<String, Species> = HashMap::new();
+
+    
     //GRASS CODE V
     
     //let bg_texture_handle = asset_server.load("test_bg.png");
@@ -254,7 +279,6 @@ fn setup(
         },
         Animation::new()
     ));
-    //tree collision hold
     commands.spawn((
         SpriteBundle {
             texture: fish_bass_handle.clone(),
@@ -263,7 +287,7 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 901.),
                 ..default()
             },
             ..default()
@@ -285,8 +309,91 @@ fn setup(
         },
         FishHooked
     ));
-
+    
     //spawn example fish
+    //BEMMY
+    //BASS
+    let cool_fish_handle: Handle<Image> = asset_server.load("awesomeFishy.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Bass1",
+            fish_id: 1,
+            length: rng.gen_range(4..8),
+            width: rng.gen_range(1..3),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            catch_prob: 10.,
+            touching_lure: false,
+        },
+        InPond,
+        IsBass,
+        Collision,
+    ));
+
+    //FISH BOX
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Cat1",
+            fish_id: 2,
+            length: rng.gen_range(5..12),
+            width: rng.gen_range(3..5),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Rainy,
+            depth: (5,20),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            catch_prob: 2.,
+            touching_lure: false,
+        },
+        InPond,
+        IsBass,
+        Collision,
+    ));
+    /*
+    
+    
+        MAKE THE FISH STRUCT HERE :(
+    
+     */
+
+    
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),
