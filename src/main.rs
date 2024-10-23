@@ -14,6 +14,8 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
+
+mod probCalc;
 mod shop;
 mod money;
 //mod species;
@@ -29,8 +31,11 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+
 use crate::money::*;
 //use crate::species::*;
+use crate::probCalc::*;
+
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -95,6 +100,8 @@ fn main() {
         .add_systems(Update, update_weather_tint.after(update_weather))
         .add_plugins(shop::ShopPlugin)
 
+        // Check if we've hooked any fish
+        .add_systems(Update, hook_fish)
     
         .run();
 }
@@ -302,7 +309,7 @@ fn setup(
 
     //Time of day timer
     commands.insert_resource(
-        GameDayTimer::new(30.),
+        GameDayTimer::new(10.),
     );
 
 

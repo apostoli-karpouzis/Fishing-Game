@@ -117,7 +117,7 @@ fn check_shop_entrance(
         return;
     }else{
         if *pd == PlayerDirection::Back 
-        && time_of_day.time_period != resources::TimePeriod::Night && !shop_state.is_open{
+        && time_of_day.hour < 21 && !shop_state.is_open{
             let mut camera = camera_query.single_mut();
             original_camera_pos.0 = camera.translation;
             println!("{}", original_camera_pos.0);
