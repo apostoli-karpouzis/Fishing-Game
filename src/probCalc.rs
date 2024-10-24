@@ -44,7 +44,7 @@ pub fn calc_fish_prob(
 pub fn hook_fish(
     state: Res<State<FishingMode>>,
     mut potential_fish: Query<(&Fish, &Species, Entity), With<Fish>>,
-    hooked_fish: Query<&Fish, With<FishHooked>>,
+    hooked_fish: Query<&Fish, With<Fish>>,
     weather: Res<WeatherState>,
     time: Res<GameDayTimer>,
     mut commands: Commands

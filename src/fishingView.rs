@@ -3,6 +3,7 @@ use std::f32::consts::PI;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use crate::resources::*;
 use crate::fish::*;
+use crate::physics::*;
 use crate::species::*;
 use crate::map::*;
 
@@ -160,20 +161,20 @@ pub fn rod_rotate(
     }
 }
 
-pub fn is_fish_caught(
+pub fn is_fish_hooked(
     bobber: Query< (&Transform, &Tile),  With<Bobber>>,
-    fish: Query<&Fish, With<FishHooked>>,
+    fish: Query<(&Fish, &PhysicsObject), With<Fish>>,
     mut line: Query<&mut FishingLine, (With<FishingLine>, Without<Rotatable>)>,
 ){
-    let fish_state = fish.single();
-    let fish_position = fish_state.position;
+    let (fish_details, fish_physics) = fish.single();
+    let fish_position = fish_physics.position;
     let (bobber_transform, tile) = bobber.single();
     let bobber_position = bobber_transform.translation;
 
-    if fish_position.y - fish_state.width / 2. > bobber_position.y + tile.hitbox.y / 2.
-    || fish_position.y + fish_state.width / 2. < bobber_position.y - tile.hitbox.y / 2. 
-    || fish_position.x + fish_state.width / 2. < bobber_position.x - tile.hitbox.x / 2. 
-    || fish_position.x - fish_state.width / 2. > bobber_position.x + tile.hitbox.x / 2.
+    if fish_position.y - fish_details.width / 2. > bobber_position.y + tile.hitbox.y / 2.
+    || fish_position.y + fish_details.width / 2. < bobber_position.y - tile.hitbox.y / 2. 
+    || fish_position.x + fish_details.width / 2. < bobber_position.x - tile.hitbox.x / 2. 
+    || fish_position.x - fish_details.width / 2. > bobber_position.x + tile.hitbox.x / 2.
     {
         return;
     }
@@ -184,7 +185,7 @@ pub fn is_fish_caught(
 
 pub fn animate_fishing_line (
     rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
-    fish: Query<(&Species, &Fish), With<FishHooked>>,
+    fish: Query<(&Species, &Fish, &PhysicsObject), With<Fish>>,
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
@@ -194,7 +195,7 @@ pub fn animate_fishing_line (
     input: Res<ButtonInput<KeyCode>>
 ) {
     let (rod_info, rod_transform, rod_rotation) = rod.single();
-    let (fish_species, fish_state) = fish.single();
+    let (fish_species, fish_details, fish_physics) = fish.single();
     let (mut line_transform, mut line_visibility, mut line_mesh,mut line_info) = line.single_mut();
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
     
@@ -213,7 +214,7 @@ pub fn animate_fishing_line (
 
     // Fish hooked
     if line_info.fish_on {
-        if fish_state.is_caught {
+        if fish_details.is_caught {
             *line_visibility = Visibility::Hidden;
             *bobber_visibility = Visibility::Hidden;
             splash_texture.index = 0;
@@ -225,8 +226,8 @@ pub fn animate_fishing_line (
 
         let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
         let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
-        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_state.rotation.z));
-        let fish_pos = fish_state.position.xy() + fish_offset;
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+        let fish_pos = fish_physics.position.xy() + fish_offset;
         let pos_delta = fish_pos - rod_end;
         
         // Hook line to fish
@@ -234,7 +235,7 @@ pub fn animate_fishing_line (
         line_rotation = f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
         line_pos = (rod_end + fish_pos) / 2.;
 
-        bobber.position = fish_state.position + fish_offset.extend(0.);
+        bobber.position = fish_physics.position + fish_offset.extend(0.);
         bobber_transform.translation =  Vec3::new(bobber.position.x, bobber.position.y, 950.);
     } else {
         if line_info.casting
@@ -295,13 +296,12 @@ pub fn animate_fishing_line (
 }
 
 pub fn animate_fish (
-    mut fish_info: Query<(&Fish, &mut Transform), With<FishHooked>>
+    mut fish_info: Query<(&PhysicsObject, &mut Transform), With<Fish>>
 ) {
-    let (fish, mut fish_transform) = fish_info.single_mut();
+    let (fish_physics, mut fish_transform) = fish_info.single_mut();
 
-    fish_transform.translation.x = fish.position.x;
-    fish_transform.translation.y = fish.position.y;
-    fish_transform.rotation = Quat::from_rotation_z(fish.rotation.z);
+    fish_transform.translation = fish_physics.position.with_z(901.);
+    fish_transform.rotation = Quat::from_rotation_z(fish_physics.rotation.z);
 }
 
 pub fn animate_splash (
@@ -332,31 +332,31 @@ pub fn animate_splash (
 }
 
 pub fn animate_waves (
-    mut fish_info: Query<&Fish, With<FishHooked>>,
+    objects: Query<&PhysicsObject, With<PhysicsObject>>,
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
 ) {
-    let fish = fish_info.single_mut();
+    let object = objects.single();
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
 
-    let magnitude = fish.forces.drag.length();
+    let magnitude = object.forces.water.length();
 
     if magnitude == 0. {
         return
     }
     
-    if magnitude < 0.1 {
+    if magnitude < 40. {
         wave_texture.index = 0;
-    } else if magnitude < 0.2 {
+    } else if magnitude < 100. {
         wave_texture.index = 1;
-    } else if magnitude < 0.4 {
+    } else if magnitude < 250. {
         wave_texture.index = 2;
     } else {
         wave_texture.index = 3;
     }
 
     *wave_visibility = Visibility::Visible;
-    wave_transform.translation = fish.position;
-    wave_transform.translation.z = 901.;
+    wave_transform.translation = object.position.with_z(901.);
+    wave_transform.rotation = Quat::from_rotation_z(f32::atan2(object.forces.water.y, object.forces.water.x) - PI / 2.);
 }
 
 pub fn run_if_in_overworld(state: Res<State<FishingMode>>) -> bool{

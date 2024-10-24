@@ -9,16 +9,12 @@ pub struct Fish {
     pub width: f32,
     pub weight: f32,
     pub age: f32,
-    pub hunger: f32,
-    pub position: Vec3,
-    pub rotation: Vec3,
-    pub velocity: Vec3,
-    pub forces: Forces
+    pub hunger: f32
 }
 
 impl Fish {
-    pub fn new(id: u32, is_caught: bool, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
-        Self { id, is_caught, is_alive, length, width, weight, age, hunger, position, rotation, velocity, forces }
+    pub fn new(id: u32, is_caught: bool, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32) -> Self {
+        Self { id, is_caught, is_alive, length, width, weight, age, hunger }
     }
     
     //call when fish die
@@ -48,16 +44,6 @@ impl Fish {
         return self.age * self.hunger;
     }
 }
-
-#[derive(Default)]
-pub struct Forces {
-    pub player: Vec3,
-    pub currents: Vec3,
-    pub drag: Vec3
-}
-
-#[derive(Component)]
-pub struct FishHooked;
 
 #[derive(Default)]
 pub struct Pond {

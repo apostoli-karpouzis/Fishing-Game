@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::player::*;
+use crate::fishingZone::*;
 use crate::resources::*;
 
 pub const TILE_SIZE: f32 = 16.;
@@ -19,32 +20,34 @@ pub struct Location {
     pub y: usize,
 }
 
+impl Location {
+    pub fn get_current_area(&self) -> &Area {
+        return &self.map.areas[self.x][self.y];
+    }
+}
+
+#[derive(Resource)]
 pub struct Map {
+    pub areas: Vec<Vec<Area>>,
     pub width: usize,
     pub height: usize,
 }
 
 impl Map {
-    pub fn new(width: usize, height: usize) -> Self {
-        Self { width, height }
+    pub fn new(areas: Vec<Vec<Area>>, width: usize, height: usize) -> Self {
+        Self { areas, width, height }
     }
 }
 
-pub enum FishingZone {
-    None,
-    River,
-    Lake,
-    Pond
-}
-
+#[derive(Clone)]
 pub struct Area {
     pub zone: FishingZone,
-    pub layout: [[Tile; GRID_ROWS]; GRID_COLUMNS],
+    pub layout: [[&'static Tile; GRID_ROWS]; GRID_COLUMNS],
     pub objects: Vec<Object>
 }
 
 impl Area {
-    pub fn new(zone: FishingZone, layout: [[Tile; GRID_ROWS]; GRID_COLUMNS], objects: Vec<Object>) -> Self {
+    pub fn new(zone: FishingZone, layout: [[&'static Tile; GRID_ROWS]; GRID_COLUMNS], objects: Vec<Object>) -> Self {
         Self { zone, layout, objects }
     }
 }
@@ -69,13 +72,14 @@ impl Tile {
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
 }
 
+#[derive(Clone)]
 pub struct Object {
-    pub tile: Tile,
+    pub tile: &'static Tile,
     pub position: Vec2
 }
 
 impl Object {
-    pub const fn new(tile: Tile, position: Vec2) -> Self {
+    pub const fn new(tile: &'static Tile, position: Vec2) -> Self {
         Self { tile, position }
     }
 }
