@@ -1,8 +1,9 @@
 use bevy::prelude::*;
-use crate::resources::*;
 use crate::fish::*;
 use crate::species::*;
 use crate::fishingView::*;
+use crate::player::*;
+use crate::map::*;
 use std::f32;
 use f32::consts::PI;
 use crate::money::*;
@@ -10,96 +11,94 @@ use crate::money::*;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
-pub fn simulate_fish(
-    time: Res<Time>,
+#[derive(Component)]
+pub struct PhysicsObject {
+    pub mass: f32,
+    pub position: Vec3,
+    pub rotation: Vec3,
+    pub velocity: Vec3,
+    pub forces: Forces
+}
+
+#[derive(Default)]
+pub struct Forces {
+    pub own: Vec3,
+    pub player: Vec3,
+    pub water: Vec3
+}
+
+impl Forces {
+    pub fn net_force(&self) -> Vec3 {
+        return self.own + self.player + self.water;
+    }
+}
+
+pub fn simulate_fish (
     input: Res<ButtonInput<KeyCode>>,
-    mut fish_info: Query<(&Species, &mut Fish, &mut Transform), With<FishHooked>>,
+    mut fishes: Query<(&Species, &mut Fish, &mut PhysicsObject), With<Fish>>,
+    fishing_rod: Query<(&Transform, &FishingRod, &RotationObj), (With<FishingRod>, Without<Fish>)>,
     line_info: Query<&FishingLine, With<FishingLine>>,
-    mut money: ResMut<Money>,
-   // mut rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>, Without<FishHooked>)>,
+    player: Query<&Location, With<Player>>
 ) {
-    let (fish_species, mut fish, fish_transform) = fish_info.single_mut();
+    let (rod_transform, rod_info, rod_rotation) = fishing_rod.single();
     let line = line_info.single();
-    //let (rod_info, rod_transform, rod_rotation) = rod.single();
+    let player_location = player.single();
 
-    let player_position = Vec3::new(FISHINGROOMX - 100., FISHINGROOMY - WIN_H / 2., 100.);
-    
-    // Calculate drag
-    let p = 1.0;
-    let sa = fish.width * fish.width;
+    for fish in fishes.iter_mut() {
+        let (fish_species, mut fish_details, mut fish_physics) = fish;
+        
+        // Calculate force from water
+        let p = 1.0;
+        let sa = fish_details.width * fish_details.width / 2000.;
+        let relative_velocity = fish_physics.velocity - player_location.get_current_area().zone.current;
 
-    let drag_force = p * fish_species.cd * sa * fish.velocity.length() * fish.velocity.length() * -fish.velocity.normalize_or_zero(); //Force exerted onto the fish by the water
+        fish_physics.forces.water = p * fish_species.cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize_or_zero(); //Force exerted onto the fish by the water
+        
+        // Calculate player force
+        let reeling = input.pressed(REEL);
 
-    fish.forces.drag = drag_force;
-    
-    // Calculate player force
-    let reeling = input.pressed(REEL);
+        fish_physics.forces.player = if reeling && line.fish_on {
+            let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+            let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
+            let delta = rod_end - fish_physics.position;
 
-    // Check that player is reeling and fish is attached to line
-    let player_force = if reeling && line.fish_on {
-        let delta = player_position - fish.position;
+            800. * delta.normalize_or_zero()
+        } else {
+            Vec3::ZERO
+        };
 
-        100. * delta.normalize_or_zero()
-    } else {
-        Vec3::ZERO
-    };
-
-    fish.forces.player = player_force;
-    
-    // Calculate fish force
-    let fish_force: Vec3 = if fish.velocity.length() < 0.1 {
-        Vec3::ZERO
-    } else {
-        -fish.fish_anger() * fish.velocity.normalize_or_zero() //opposed velocity
-    };
-    
-    // Calculate net force and acceleration 
-    let net_force = drag_force + player_force + fish_force; // fish force works against player drag force works against motion of fish
-    let acceleration = net_force / fish.weight;
-    fish.velocity = fish.velocity + acceleration * time.delta_seconds();
-
-    // Bounds check
-    let mut new_pos = fish.position + fish.velocity * time.delta_seconds();
-    
-    // Surface collision
-    if new_pos.z > 0. {
-        new_pos.z = 0.;
-        fish.velocity.z = 0.;
+        // Calculate fish force
+        fish_physics.forces.own = if fish_physics.velocity.length() > 5.0 {
+            -fish_details.fish_anger() * fish_physics.velocity.normalize_or_zero()
+        }  else {
+            Vec3::ZERO
+        }
     }
-    
-    // Side collision
-    if new_pos.x < FISHINGROOMX - WIN_W / 2. + fish.width / 2.
-    || new_pos.x > FISHINGROOMX + 460. - fish.width / 2.
-    {
-        new_pos.x = fish_transform.translation.x;
-    }
-    
-    if new_pos.y > FISHINGROOMY + WIN_H / 2. - fish.width / 2.
-    || new_pos.y < FISHINGROOMY - 220. + fish.width / 2.
-    {
-        new_pos.y = fish_transform.translation.y;
-    }
+}
 
-    fish.position = new_pos;
+pub fn simulate_physics (
+    time: Res<Time>,
+    mut objects: Query<&mut PhysicsObject, With<PhysicsObject>>
+) {
+    for mut fish_physics in objects.iter_mut() {
+        // Calculate net force and acceleration 
+        let acceleration = fish_physics.forces.net_force() / fish_physics.mass;
+        fish_physics.velocity = fish_physics.velocity + acceleration * time.delta_seconds();
 
-    // Calculate rotation
-    if fish.velocity.x != 0. || fish.velocity.y != 0. {
-        fish.rotation.z = f32::atan2(fish.velocity.y, fish.velocity.x) + PI;
-    }
+        // Bounds check
+        let mut new_pos = fish_physics.position + fish_physics.velocity * time.delta_seconds();
+        
+        // Surface collision
+        if new_pos.z > 0. {
+            new_pos.z = 0.;
+            fish_physics.velocity.z = 0.;
+        }
 
-    let playerxy = Vec2::new(player_position.x, player_position.y);
-    let fishxy = Vec2::new(fish.position.x, fish.position.y);
+        fish_physics.position = new_pos;
 
-    let dist = (playerxy - fishxy).length();
-
-    println!("dist: {}", dist);
-
-    if dist < 150.0 && !fish.is_caught {
-        fish.is_caught = true;
-        println!("Caught fish!");
-
-        // Increase money by 100 when the fish is caught
-        money.amount += 100;
-        println!("Money increased! {}", money.amount);
+        // Calculate rotation
+        if fish_physics.velocity.x != 0. || fish_physics.velocity.y != 0. {
+            fish_physics.rotation.z = f32::atan2(fish_physics.velocity.y, fish_physics.velocity.x) + PI;
+        }
     }
 }

@@ -9,5 +9,7 @@ pub mod species;
 pub mod fish;
 pub mod money;
 pub mod fishingView;
+pub mod fishingZone;
+pub mod physics;
 pub mod probCalc;
 //pub mod species;

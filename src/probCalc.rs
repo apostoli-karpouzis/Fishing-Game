@@ -7,7 +7,7 @@ use crate::weather::*;
 use crate::fishingView::*;
 
 pub fn calc_fish_prob(
-    fish: &FishDetails, 
+    fish: &Fish, 
     species: &Species, 
     weather: &Res<WeatherState>, 
     time: &Res<GameDayTimer>) -> f32
@@ -44,8 +44,8 @@ pub fn calc_fish_prob(
 
 pub fn hook_fish(
     state: Res<State<FishingMode>>,
-    mut potential_fish: Query<(&FishDetails, &Species, Entity), (With<FishDetails>, With<InPond>)>,
-    hooked_fish: Query<&Fish, With<FishHooked>>,
+    mut potential_fish: Query<(&Fish, &Species, Entity), With<Fish>>,
+    hooked_fish: Query<&Fish, With<Fish>>,
     weather: Res<WeatherState>,
     time: Res<GameDayTimer>,
     mut commands: Commands

@@ -19,7 +19,7 @@ mod button;
 mod gameday;
 mod weather;
 mod fishingView;
-
+mod fishingZone;
 mod probCalc;
 mod shop;
 mod money;
@@ -37,6 +37,7 @@ use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
 use crate::fishingView::*;
+use crate::fishingZone::*;
 
 use crate::money::*;
 //use crate::species::*;
@@ -100,8 +101,10 @@ fn main() {
         .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
         .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
         .add_systems(Update, simulate_fish.after(power_bar_cast).after(rod_rotate))
-        .add_systems(Update, is_fish_caught.after(simulate_fish))
-        .add_systems(Update, animate_fish.after(is_fish_caught))
+        .add_systems(Update, simulate_physics.after(simulate_fish))
+        .add_systems(Update, is_fish_hooked.after(simulate_physics))
+        .add_systems(Update, is_fish_caught.after(simulate_physics))
+        .add_systems(Update, animate_fish.after(is_fish_hooked))
         .add_systems(Update, animate_fishing_line.after(animate_fish))
         .add_systems(Update, animate_waves.after(animate_fish))
         .add_systems(Update, animate_splash.after(animate_fishing_line))
@@ -241,12 +244,6 @@ fn setup(
         }
     }
 
-    // MAP
-    let map: Map = Map {
-        width: MAP_WIDTH,
-        height: MAP_HEIGHT
-    };
-
     //PLAYER
 
     let player_sheet_handle = asset_server.load("characters/full-spritesheet-64x128-256x640.png");
@@ -255,6 +252,19 @@ fn setup(
     let player_layout_handle = texture_atlases.add(player_layout);
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+
+    // MAP
+    let map: Map = Map {
+        areas: vec![vec![Area {
+            zone: FishingZone {
+                current: Vec3::new(-50.0, 0., 0.)
+            },
+            layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
+            objects: Vec::new()
+        }; MAP_HEIGHT]; MAP_WIDTH],
+        width: MAP_WIDTH,
+        height: MAP_HEIGHT
+    };
 
     commands.spawn((
         SpriteBundle {
@@ -287,7 +297,7 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY+30., 901.),
+                translation: Vec3::ZERO,
                 ..default()
             },
             ..default()
@@ -297,17 +307,20 @@ fn setup(
             id: 0,
             is_caught: false,
             is_alive: true,
+            touching_lure: false,
             length: 8.0,
-            width: 0.05,
+            width: 5.0,
             weight: 2.0,
             age: 6.0,
-            hunger: 10.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.),
-            rotation: Vec3::new(0., 0., 0.),
+            hunger: 10.0
+        },
+        PhysicsObject {
+            mass: 2.0,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
-        },
-        FishHooked
+        }
     ));
     
     //spawn example fish
