@@ -103,6 +103,7 @@ fn main() {
         .add_systems(Update, simulate_fish.after(power_bar_cast).after(rod_rotate))
         .add_systems(Update, simulate_physics.after(simulate_fish))
         .add_systems(Update, is_fish_hooked.after(simulate_physics))
+        .add_systems(Update, is_fish_caught.after(simulate_physics))
         .add_systems(Update, animate_fish.after(is_fish_hooked))
         .add_systems(Update, animate_fishing_line.after(animate_fish))
         .add_systems(Update, animate_waves.after(animate_fish))
@@ -256,7 +257,7 @@ fn setup(
     let map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
-                current: Vec3::new(-100.0, 0., 0.)
+                current: Vec3::new(-50.0, 0., 0.)
             },
             layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
             objects: Vec::new()
@@ -306,6 +307,7 @@ fn setup(
             id: 0,
             is_caught: false,
             is_alive: true,
+            touching_lure: false,
             length: 8.0,
             width: 5.0,
             weight: 2.0,

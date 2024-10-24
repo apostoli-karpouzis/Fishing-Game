@@ -49,7 +49,7 @@ pub fn simulate_fish (
         
         // Calculate force from water
         let p = 1.0;
-        let sa = fish_details.width * fish_details.width / 100.;
+        let sa = fish_details.width * fish_details.width / 2000.;
         let relative_velocity = fish_physics.velocity - player_location.get_current_area().zone.current;
 
         fish_physics.forces.water = p * fish_species.cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize_or_zero(); //Force exerted onto the fish by the water
@@ -62,7 +62,7 @@ pub fn simulate_fish (
             let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
             let delta = rod_end - fish_physics.position;
 
-            400. * delta.normalize_or_zero()
+            800. * delta.normalize_or_zero()
         } else {
             Vec3::ZERO
         };

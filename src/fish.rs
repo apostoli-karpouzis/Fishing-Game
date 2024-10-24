@@ -5,6 +5,7 @@ pub struct Fish {
     pub id: u32,
     pub is_caught: bool,
     pub is_alive: bool,
+    pub touching_lure: bool,
     pub length: f32,
     pub width: f32,
     pub weight: f32,
@@ -13,8 +14,8 @@ pub struct Fish {
 }
 
 impl Fish {
-    pub fn new(id: u32, is_caught: bool, is_alive: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32) -> Self {
-        Self { id, is_caught, is_alive, length, width, weight, age, hunger }
+    pub fn new(id: u32, is_caught: bool, is_alive: bool, touching_lure: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32) -> Self {
+        Self { id, is_caught, is_alive, touching_lure, length, width, weight, age, hunger }
     }
     
     //call when fish die

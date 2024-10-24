@@ -7,7 +7,7 @@ use crate::weather::*;
 use crate::fishingView::*;
 
 pub fn calc_fish_prob(
-    fish: &FishDetails, 
+    fish: &Fish, 
     species: &Species, 
     weather: &Res<WeatherState>, 
     time: &Res<GameDayTimer>) -> f32

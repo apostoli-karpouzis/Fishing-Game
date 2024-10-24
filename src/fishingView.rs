@@ -352,7 +352,7 @@ pub fn is_fish_hooked(
 
 pub fn animate_fishing_line(
     rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
-    fish: Query<(&Species, &Fish, &PhysicsObject), With<Fish>>,
+    mut fish: Query<(&Species, &mut Fish, &mut PhysicsObject), With<Fish>>,
     mut line: Query<(&mut Transform, &mut Visibility, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<Rotatable>)>,
     mut power_bar: Query<(&mut PowerBar, &mut Transform), (With<PowerBar>, Without<Rotatable>, Without<FishingLine>, Without<Wave>, Without<Bobber>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut TextureAtlas, &mut Visibility), (With<Splash>, Without<FishingLine>, Without<Rotatable>)>,
@@ -362,7 +362,7 @@ pub fn animate_fishing_line(
     input: Res<ButtonInput<KeyCode>>,
 ) {
     let (rod_info, rod_transform, rod_rotation) = rod.single();
-    let (fish_species, fish_details, fish_physics) = fish.single();
+    let (fish_species, mut fish_details, mut fish_physics) = fish.single_mut();
     let (mut line_transform, mut line_visibility, mut line_mesh,mut line_info) = line.single_mut();
     let (mut power_info, mut pb_transform) = power_bar.single_mut();
 
@@ -385,13 +385,13 @@ pub fn animate_fishing_line(
             *line_visibility = Visibility::Hidden;
             *bobber_visibility = Visibility::Hidden;
             *wave_visibility = Visibility::Hidden;
-            fish_state.position = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
-            fish_state.velocity = Vec3::new(0., 0., 0.);
-            fish_state.forces = Forces::default();
+            fish_physics.position = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            fish_physics.velocity = Vec3::new(0., 0., 0.);
+            fish_physics.forces = Forces::default();
             wave_texture.index = 0;
             line_info.fish_on = false;
             line_info.length = 0.;
-            fish_state.is_caught = false;
+            fish_details.is_caught = false;
 
             splash_texture.index = 0;
             power_info.released = false;
@@ -457,11 +457,8 @@ pub fn animate_fishing_line(
         
         line_rotation = rod_rotation.rot;
         let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
-        line_pos = rod_transform.translation.xy()
-            + (rod_info.length + line_info.length) / 2. * angle_vector;
-        bobber.position = (rod_transform.translation
-            + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.))
-        .with_z(bobber.position.z);
+        line_pos = rod_transform.translation.xy() + (rod_info.length + line_info.length) / 2. * angle_vector;
+        bobber.position = (rod_transform.translation + ((rod_info.length / 2. + line_info.length) * angle_vector).extend(0.)).with_z(bobber.position.z);
         bobber_transform.translation = Vec3::new(bobber.position.x, bobber.position.y, 950.);
     }
 
@@ -472,6 +469,24 @@ pub fn animate_fishing_line(
     meshes.remove(&line_info.mesh_handle);
     line_info.mesh_handle = meshes.add(Rectangle::new(FishingLine::WIDTH, line_info.length));
     *line_mesh = Mesh2dHandle(line_info.mesh_handle.clone());
+}
+
+pub fn is_fish_caught (
+    rod: Query<(&FishingRod, &Transform, &RotationObj), (With<FishingRod>, With<Rotatable>)>,
+    mut fish: Query<(&mut Fish, &PhysicsObject), With<Fish>>,
+    mut money: ResMut<Money>
+) {
+    let (rod_info, rod_transform, rod_rotation) = rod.single();
+    let (mut fish_details, fish_physics) = fish.single_mut();
+
+    let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+    let catch_pos = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
+    let distance = (fish_physics.position - catch_pos).length();
+
+    if distance < 10. {
+        fish_details.is_caught = true;
+        money.amount += 100;
+    }
 }
 
 pub fn animate_fish (
@@ -531,11 +546,11 @@ pub fn animate_waves (
         return
     }
     
-    if magnitude < 40. {
+    if magnitude < 200. {
         wave_texture.index = 0;
-    } else if magnitude < 100. {
+    } else if magnitude < 400. {
         wave_texture.index = 1;
-    } else if magnitude < 250. {
+    } else if magnitude < 600. {
         wave_texture.index = 2;
     } else {
         wave_texture.index = 3;
