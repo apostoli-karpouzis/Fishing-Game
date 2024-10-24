@@ -6,6 +6,8 @@ use crate::player::*;
 use crate::map::*;
 use std::f32;
 use f32::consts::PI;
+use crate::money::*;
+
 
 const REEL: KeyCode = KeyCode::KeyO;
 
