@@ -11,12 +11,6 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 #[derive(Component)]
 pub struct ButtonVisible(pub bool);
 
-// #[derive(Component)]
-// pub struct FishingButton;
-
-// #[derive(Component)]
-// pub struct ShopingButton;
-
 #[derive(Component)]
 pub struct Button;
 
