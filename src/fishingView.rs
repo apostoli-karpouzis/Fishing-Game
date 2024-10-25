@@ -1,12 +1,14 @@
-use bevy::{prelude::*, sprite::Mesh2dHandle};
+extern crate rand;
+
 use std::f32;
 use std::f32::consts::PI;
+use std::time::Duration;
+use bevy::{prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
 use rand::Rng;
 use crate::fish::*;
 use crate::map::Collision;
 use crate::resources::*;
 use crate::weather::*;
-extern crate rand;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
@@ -33,7 +35,7 @@ pub struct FishingView {
 }
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FishingState {
+enum FishingState {
     #[default]
     Idle,
     Casting,
@@ -41,7 +43,7 @@ pub enum FishingState {
 }
 
 #[derive(Component)]
-pub struct PowerBar;
+struct PowerBar;
 
 #[derive(Component)]
 pub struct FishingRod {
@@ -49,7 +51,7 @@ pub struct FishingRod {
 }
 
 #[derive(Resource)]
-pub struct DirectionTimer {
+struct DirectionTimer {
     pub timer: Timer,
 }
 
@@ -68,18 +70,18 @@ impl FishingLine {
 }
 
 #[derive(Component, Default)]
-pub struct Bobber;
+struct Bobber;
 
 #[derive(Component)]
-pub struct Wave;
+struct Wave;
 
 #[derive(Component, Default)]
-pub struct Splash {
+struct Splash {
     pub position: Vec3,
 }
 
 #[derive(Component)]
-pub struct InPond;
+struct InPond;
 
 #[derive(Component)]
 pub struct IsBass;
@@ -149,8 +151,11 @@ impl Plugin for FishingViewPlugin {
         .init_state::<FishingMode>()
         .init_state::<FishingState>()
         .insert_resource(FishingView { rod_rotation: 0., power: 0. })
+        .add_systems(Startup, setup)
         .add_systems(Update,
             (
+                move_fish,
+                fish_area_bobber,
                 power_bar_cast.run_if(in_state(FishingState::Idle)),
                 rod_rotate,
                 (
@@ -177,6 +182,279 @@ impl Plugin for FishingViewPlugin {
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnExit(FishingState::Reeling), reset_interface);
     }
+}
+
+fn setup (
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let mut rng = rand::thread_rng();
+
+    //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
+
+    commands.insert_resource(DirectionTimer{
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
+    });
+    //let mut fish: HashMap<String, Species> = HashMap::new();
+
+    //spawn example fish
+    //BEMMY
+    //BASS
+    let cool_fish_handle: Handle<Image> = asset_server.load("awesomeFishy.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Bass1",
+            fish_id: 1,
+            length: rng.gen_range(4..8),
+            width: rng.gen_range(1..3),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            hunger: 10.,
+            touching_lure: false,
+        },
+        InPond,
+        BASS,
+        Collision,
+    ));
+
+    //FISH BOX
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        FishDetails {
+            name: "Cat1",
+            fish_id: 2,
+            length: rng.gen_range(5..12),
+            width: rng.gen_range(3..5),
+            weight: rng.gen_range(3..10),
+            time_of_day: (2,15),
+            weather: Weather::Rainy,
+            depth: (5,20),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            hunger: 7.,
+            touching_lure: false,
+        },
+        InPond,
+        CATFISH,
+        Collision,
+    ));
+
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+                ..default()
+            },
+            ..default()
+        },
+        BASS,
+        Fish {
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            age: 6.0,
+            hunger: 10.0
+        },
+        PhysicsObject {
+            mass: 2.0,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            rotation: Vec3::ZERO,
+            velocity: Vec3::ZERO,
+            forces: Forces::default()
+        }
+    ));
+
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fishing_sheet_handle.clone(),
+                        sprite: Sprite {
+                        ..default()
+                    },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                ..default()
+            },
+            ..default()
+        },
+        
+    ));
+    
+    //powerbar view
+    let bar_sheet_handle = asset_server.load("fishingStuff/powerBar.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bar_sheet_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX+575., FISHINGROOMY-308., 899.),
+                ..default()
+            },
+            ..default()
+        },
+        PowerBar
+    ));
+
+    let player_fishing_handle = asset_server.load("fishingStuff/backFishingSprite.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: player_fishing_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+
+    let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: fishing_rod_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            //where do I put it
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        FishingRod {
+            length: 300.
+        }
+    ));
+
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, 0.0))),
+            material: materials.add(Color::hsl(100.,1., 1.)),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
+            ..default()
+        },
+        FishingLine::default()
+    ));
+
+    let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
+    let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
+    let splash_layout_len = splash_layout.textures.len();
+    let splash_layout_handle = texture_atlases.add(splash_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: splashes_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: splash_layout_handle.clone(),
+            index: 0,
+        },
+        AnimationTimer::new(0.2), 
+        AnimationFrameCount(splash_layout_len), //number of different frames that we have
+        Splash::default(),
+        Animation::new()
+    ));
+
+    let waves_sheet_handle: Handle<Image> = asset_server.load("waves/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_len = wave_layout.textures.len();
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    commands.spawn((
+        SpriteBundle {
+            texture: waves_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: wave_layout_handle.clone(),
+            index: 0,
+        },
+        //AnimationTimer::new(0.2), 
+        AnimationFrameCount(wave_layout_len), //number of different frames that we have
+        Wave,
+        //Animation::new()
+    ));
+
+    let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: bobber_handle.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        Tile::BOBBER,
+        Collision,
+        Bobber::default(),
+    ));
 }
 
 pub fn move_fish(
