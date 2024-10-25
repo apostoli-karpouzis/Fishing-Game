@@ -74,7 +74,6 @@ fn main() {
         .add_systems(Update, fishing_button_system)
         .add_systems(Update, shop_button_system)
 
-        .insert_resource(Money { amount: 100 }) 
         .add_systems(Update, update_money_display)
 
         // Overworld systems (player movement, animations)
