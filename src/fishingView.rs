@@ -780,7 +780,7 @@ fn is_fish_caught (
 
     if distance < 15. {
         fish_details.is_caught = true;
-        money.amount += 100;
+        money.amount += fish_details.weight as i32 * 2;
 
         // Reset fish for testing
         fish_physics.position = Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.);
