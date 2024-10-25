@@ -125,11 +125,6 @@ pub struct FishingButton;
 #[derive(Component)]
 pub struct ShopingButton;
 
-#[derive(Resource)]
-pub struct Money {
-    pub amount: i32,
-}
-
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ShopingMode {
     #[default]
@@ -143,4 +138,10 @@ impl ShopingMode{
             ShopingMode::Shop => ShopingMode::Overworld,
         }
     }
+}
+
+#[derive(Component)]
+pub struct PlayerInventory {
+    pub coins: u32,
+    pub items: Vec<String>,
 }

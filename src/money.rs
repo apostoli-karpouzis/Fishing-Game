@@ -26,9 +26,10 @@ pub fn spawn_money_display(commands: &mut Commands, asset_server: &Res<AssetServ
 
 
 pub fn update_money_display(
-    money: Res<Money>,
+    playerInventory: Query<&mut PlayerInventory>,
     mut query: Query<&mut Text, With<MoneyDisplay>>,
 ) {
     let mut text = query.single_mut();
-    text.sections[0].value = format!("Money: {}", money.amount);
+    let inventory_info = playerInventory.single();
+    text.sections[0].value = format!("Money: {}", inventory_info.coins);
 }

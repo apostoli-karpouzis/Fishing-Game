@@ -2,6 +2,7 @@ use bevy::{input::keyboard::KeyboardInput, prelude::*};
 use crate::{
     map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
 };
+use crate::resources::*;
 
 #[derive(Component)]
 struct ShopEntrance;
@@ -10,12 +11,6 @@ struct ShopEntrance;
 struct ShopItem {
     name: String,
     price: u32,
-}
-
-#[derive(Component)]
-struct PlayerInventory {
-    coins: u32,
-    items: Vec<String>,
 }
 
 #[derive(Resource)]
@@ -46,7 +41,7 @@ impl Plugin for ShopPlugin {
 fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
-            coins: 100,
+            coins: 0,
             items: Vec::new(),
         },
 ));
@@ -99,6 +94,7 @@ fn spawn_shop(
     ));
 }
 
+// GOTTA TURN OFF PLAYER MOVEMENT WHEN IN SHOP
 fn check_shop_entrance(
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), With<Player>>,
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
@@ -116,16 +112,16 @@ fn check_shop_entrance(
     {
         return;
     }else{
-        // if *pd == PlayerDirection::Back 
-        // && time_of_day.hour < 21 && !shop_state.is_open{
-        //     let mut camera = camera_query.single_mut();
-        //     original_camera_pos.0 = camera.translation;
-        //     println!("{}", original_camera_pos.0);
-        //     let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
-        //     camera.translation = new_position;
-        //     shop_state.is_open = true;
-        //     println!("Shop open");
-        // }
+        if *pd == PlayerDirection::Back 
+        && time_of_day.hour < 21 && !shop_state.is_open{
+            let mut camera = camera_query.single_mut();
+            original_camera_pos.0 = camera.translation;
+            println!("{}", original_camera_pos.0);
+            let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
+            camera.translation = new_position;
+            shop_state.is_open = true;
+            println!("Shop open");
+        }
     }
 }
 
