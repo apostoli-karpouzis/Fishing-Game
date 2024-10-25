@@ -457,7 +457,7 @@ fn setup (
     ));
 }
 
-pub fn move_fish(
+fn move_fish(
     mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
@@ -519,7 +519,7 @@ pub fn move_fish(
     //return (self.position.0 + x, self.position.1+y)
 }
 
-pub fn fish_area_bobber(
+fn fish_area_bobber(
     mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>, Without<Bobber>)>,
     bobber: Query<(&Transform, &Tile), With<Bobber>>,
 ) {
@@ -545,7 +545,7 @@ pub fn fish_area_bobber(
     }
 }
 
-pub fn fishing_transition (
+fn fishing_transition (
     mut return_val: ResMut<PlayerReturnPos>,
     mut fishing_view: ResMut<FishingView>,
     mut camera: Query<&mut Transform, With<Camera>>,
@@ -575,7 +575,7 @@ pub fn fishing_transition (
     //powerbar is space A, D are rotational
 }
 
-pub fn overworld_transition(
+fn overworld_transition(
     mut camera: Query<&mut Transform, With<Camera>>,
     //mut power_bar: Query<(&mut Transform, &mut Power), With<Bar>>,
     return_val: ResMut<PlayerReturnPos>,
@@ -591,7 +591,7 @@ pub fn overworld_transition(
     //set rotation back to 0
 }
 
-pub fn power_bar_cast(
+fn power_bar_cast(
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut next_state: ResMut<NextState<FishingState>>,
@@ -612,7 +612,7 @@ pub fn power_bar_cast(
     }
 }
 
-pub fn rod_rotate(
+fn rod_rotate(
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut fishing_view: ResMut<FishingView>
@@ -631,7 +631,7 @@ pub fn rod_rotate(
     fishing_view.rod_rotation = new_rotation.clamp(ROD_MIN_ROTATION, ROD_MAX_ROTATION);
 }
 
-pub fn begin_cast (
+fn begin_cast (
     fishing_view: Res<FishingView>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut bobber: Query<&mut Visibility, With<Bobber>>
@@ -643,7 +643,7 @@ pub fn begin_cast (
     *bobber_visibililty = Visibility::Visible;
 }
 
-pub fn cast_line (
+fn cast_line (
     time: Res<Time>,
     fishing_view: Res<FishingView>,
     mut next_state: ResMut<NextState<FishingState>>,
@@ -680,7 +680,7 @@ pub fn cast_line (
 
 }
 
-pub fn update_fishing_interface (
+fn update_fishing_interface (
     fishing_view: Res<FishingView>,
     mut power_bar: Query<&mut Transform, With<PowerBar>>,
     mut rod: Query<&mut Transform, (With<FishingRod>, Without<PowerBar>)>
@@ -692,7 +692,7 @@ pub fn update_fishing_interface (
     rod_transform.rotation = Quat::from_rotation_z(fishing_view.rod_rotation);
 }
 
-pub fn is_fish_hooked(
+fn is_fish_hooked(
     bobber: Query<(&Transform, &Tile),  With<Bobber>>,
     fish: Query<(&Fish, &PhysicsObject), With<Fish>>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
@@ -714,7 +714,7 @@ pub fn is_fish_hooked(
     line_state.fish_on = true;
 }
 
-pub fn animate_fishing_line (
+fn animate_fishing_line (
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     fishing_view: Res<FishingView>,
@@ -764,7 +764,7 @@ pub fn animate_fishing_line (
     }
 }
 
-pub fn is_fish_caught (
+fn is_fish_caught (
     fishing_view: Res<FishingView>,
     mut money: ResMut<Money>,
     mut next_state: ResMut<NextState<FishingState>>,
@@ -792,7 +792,7 @@ pub fn is_fish_caught (
     }
 }
 
-pub fn reset_interface (
+fn reset_interface (
     mut fishing_view: ResMut<FishingView>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut splash: Query<&mut TextureAtlas, With<Splash>>,
@@ -820,7 +820,7 @@ pub fn move_physics_objects (
     }
 }
 
-pub fn draw_fishing_line (
+fn draw_fishing_line (
     mut meshes: ResMut<Assets<Mesh>>,
     mut line: Query<(&mut Transform, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<FishingRod>)>,
 ) {
@@ -840,7 +840,7 @@ pub fn draw_fishing_line (
     *line_mesh = Mesh2dHandle(line_info.mesh_handle.clone());
 }
 
-pub fn animate_splash(
+fn animate_splash(
     mut splash: Query<(&Splash, &mut Transform, &mut Visibility, &mut TextureAtlas, &mut AnimationTimer), With<Splash>>,
     time: Res<Time>
 ) {
@@ -866,7 +866,7 @@ pub fn animate_splash(
     }
 }
 
-pub fn animate_waves (
+fn animate_waves (
     objects: Query<&PhysicsObject, With<PhysicsObject>>,
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
 ) {
