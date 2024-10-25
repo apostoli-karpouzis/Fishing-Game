@@ -89,7 +89,7 @@ pub fn shop_button_system(
     mut start_fishing_animation: ResMut<StartFishingAnimation>,
     mut fishing_timer: ResMut<FishingAnimationDuration>,
     mut next_state: ResMut<NextState<ShopingMode>>,  
-    state: Res<State<ShopingMode>>,  
+    state: Res<State<ShopingMode>>,
 ) {
    
     for (mut color, mut border_color, children) in &mut button_query {
@@ -116,7 +116,7 @@ pub fn shop_button_system(
             }
 
             
-            if input.just_pressed(KeyCode::KeyE) && state.eq(&ShopingMode::Overworld) {
+            if input.just_pressed(KeyCode::KeyE) && state.eq(&ShopingMode::Overworld){
                 *color = PRESSED_BUTTON.into();  
                 start_fishing_animation.active = true;
                 start_fishing_animation.button_control_active = false;
@@ -124,7 +124,7 @@ pub fn shop_button_system(
 
                 
                 next_state.set(ShopingMode::Shop);
-                println!("Switching to shoping mode");
+                // println!("Switching to shoping mode");
 
             
             } else if input.just_pressed(KeyCode::Escape) && state.eq(&ShopingMode::Shop) {

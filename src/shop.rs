@@ -65,7 +65,7 @@ fn spawn_shop(
             },
             ..default()
         },
-        Tile::new("shop", false, Vec2::new(256.0, 215.0)),
+        Tile::Shop,
         Collision,
     ));
 
@@ -105,7 +105,7 @@ fn check_shop_entrance(
     time_of_day: Res<resources::GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
     mut shop_state: ResMut<ShopState>,
-    mut original_camera_pos: ResMut<OriginalCameraPosition>, 
+    mut original_camera_pos: ResMut<OriginalCameraPosition>,
 ){
     let (mut pt, mut pd, mut pl, _pa, mut pi ) = player_query.single_mut();
     let (e_tran,e_tile) = entrance_query.single();
@@ -116,16 +116,16 @@ fn check_shop_entrance(
     {
         return;
     }else{
-        if *pd == PlayerDirection::Back 
-        && time_of_day.hour < 21 && !shop_state.is_open{
-            let mut camera = camera_query.single_mut();
-            original_camera_pos.0 = camera.translation;
-            println!("{}", original_camera_pos.0);
-            let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
-            camera.translation = new_position;
-            shop_state.is_open = true;
-            println!("Shop open");
-        }
+        // if *pd == PlayerDirection::Back 
+        // && time_of_day.hour < 21 && !shop_state.is_open{
+        //     let mut camera = camera_query.single_mut();
+        //     original_camera_pos.0 = camera.translation;
+        //     println!("{}", original_camera_pos.0);
+        //     let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
+        //     camera.translation = new_position;
+        //     shop_state.is_open = true;
+        //     println!("Shop open");
+        // }
     }
 }
 
