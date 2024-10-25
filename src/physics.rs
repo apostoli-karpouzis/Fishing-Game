@@ -33,6 +33,9 @@ impl Forces {
     }
 }
 
+#[derive(Component)]
+pub struct Hooked;
+
 pub fn calculate_water_force (
     mut fishes: Query<(&Species, &Fish, &mut PhysicsObject), With<Fish>>,
     player: Query<&Location, With<Player>>
@@ -54,26 +57,22 @@ pub fn calculate_player_force (
     input: Res<ButtonInput<KeyCode>>,
     fishing_view: ResMut<FishingView>,
     fishing_rod: Query<(&Transform, &FishingRod), With<FishingRod>>,
-    line_info: Query<&FishingLine, With<FishingLine>>,
-    mut fishes: Query<&mut PhysicsObject, With<Fish>>
+    mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>
 ) {
     let (rod_transform, rod_info) = fishing_rod.single();
-    let line = line_info.single();
+    let mut object_physics = hooked_object.single_mut();
 
     let reeling = input.pressed(REEL);
 
-    // Currently assumes every fish is attached to line
-    for mut fish_physics in fishes.iter_mut() {
-        fish_physics.forces.player = if reeling && line.fish_on {
-            let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
-            let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
-            let delta = rod_end - fish_physics.position;
+    object_physics.forces.player = if reeling {
+        let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
+        let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
+        let delta = rod_end - object_physics.position;
 
-            PLAYER_FORCE * delta.normalize_or_zero()
-        } else {
-            Vec3::ZERO
-        };
-    }
+        PLAYER_FORCE * delta.normalize_or_zero()
+    } else {
+        Vec3::ZERO
+    };
 }
 
 pub fn calculate_fish_force (
