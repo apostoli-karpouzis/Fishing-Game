@@ -1,12 +1,7 @@
 use bevy::window::EnabledButtons;
-use bevy::{prelude::*, window::PresentMode, color::palettes::css::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
+use bevy::{prelude::*, window::PresentMode, sprite::{MaterialMesh2dBundle, Mesh2dHandle},};
 use rand::Rng;
-use bevy::sprite::{Wireframe2dConfig, Wireframe2dPlugin};
-use std::collections::HashMap;
 use std::time::Duration;
-
-
-
 
 mod physics;
 mod fish;
@@ -67,19 +62,13 @@ fn main() {
         }))
         .init_state::<GameState>()
         .init_state::<Weather>()
-        .init_state::<FishingMode>()
         .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
-        
-
+    
         //Run the game timer
         .add_systems(Update, run_game_timer)
-
-        // Handle transitions when entering and exiting FishingMode
-        .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
-        .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
@@ -89,34 +78,30 @@ fn main() {
         .add_systems(Update, update_money_display)
 
         // Overworld systems (player movement, animations)
-        .add_systems(Update, move_player.run_if(run_if_in_overworld))
+        .add_systems(Update, move_player.run_if(in_state(FishingMode::Overworld)))
         .add_systems(Update, animate_player.after(move_player))
-        .add_systems(Update, move_camera.after(move_player).run_if(run_if_in_overworld))
+        .add_systems(Update, move_camera.after(move_player).run_if(in_state(FishingMode::Overworld)))
         .add_systems(Update, screen_edge_collision.after(move_player))
 
             
-        .add_systems(Update, move_fish.run_if(run_if_in_fishing))
-        .add_systems(Update, fish_area_bobber.run_if(run_if_in_fishing))
-        // // FishingMode systems (power bar and rod rotation)
-        .add_systems(Update, power_bar_cast.run_if(run_if_in_fishing))
-        .add_systems(Update, rod_rotate.run_if(run_if_in_fishing))
-        .add_systems(Update, simulate_fish.after(power_bar_cast).after(rod_rotate))
-        .add_systems(Update, simulate_physics.after(simulate_fish))
-        .add_systems(Update, is_fish_hooked.after(simulate_physics))
-        .add_systems(Update, is_fish_caught.after(simulate_physics))
-        .add_systems(Update, animate_fish.after(is_fish_hooked))
-        .add_systems(Update, animate_fishing_line.after(animate_fish))
-        .add_systems(Update, animate_waves.after(animate_fish))
-        .add_systems(Update, animate_splash.after(animate_fishing_line))
+        .add_systems(Update, move_fish.run_if(in_state(FishingMode::Fishing)))
+        .add_systems(Update, fish_area_bobber.run_if(in_state(FishingMode::Fishing)))
+
 
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-        .add_plugins(shop::ShopPlugin)
 
+        
         // Check if we've hooked any fish
         .add_systems(Update, hook_fish)
-    
+        
+        .add_plugins(
+            (
+                FishingViewPlugin,
+                shop::ShopPlugin
+            )
+        )
         .run();
 }
 
@@ -140,7 +125,7 @@ fn setup(
 
     //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
 
-    commands.insert_resource(directionTimer{
+    commands.insert_resource(DirectionTimer{
         // create the repeating timer
         timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
     });
@@ -297,7 +282,7 @@ fn setup(
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::ZERO,
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
                 ..default()
             },
             ..default()
@@ -470,10 +455,7 @@ fn setup(
             },
             ..default()
         },
-        PowerBar {
-            meter: 0,
-            released: false
-        },
+        PowerBar
     ));
 
     let player_fishing_handle = asset_server.load("fishingStuff/backFishingSprite.png");
@@ -508,19 +490,14 @@ fn setup(
         },
         FishingRod {
             length: 300.
-        },
-        Rotatable,
-        RotationObj{
-            rot: 0.,
         }
     ));
 
     commands.spawn((
         MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(meshes.add(Rectangle::new(2.5, 250.0))),
+            mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, 0.0))),
             material: materials.add(Color::hsl(100.,1., 1.)),
-            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   901.),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
             ..default()
         },
         FishingLine::default()

@@ -6,10 +6,10 @@ use crate::player::*;
 use crate::map::*;
 use std::f32;
 use f32::consts::PI;
-use crate::money::*;
-
 
 const REEL: KeyCode = KeyCode::KeyO;
+
+const PLAYER_FORCE: f32 = 600.;
 
 #[derive(Component)]
 pub struct PhysicsObject {
@@ -33,41 +33,55 @@ impl Forces {
     }
 }
 
-pub fn simulate_fish (
-    input: Res<ButtonInput<KeyCode>>,
-    mut fishes: Query<(&Species, &mut Fish, &mut PhysicsObject), With<Fish>>,
-    fishing_rod: Query<(&Transform, &FishingRod, &RotationObj), (With<FishingRod>, Without<Fish>)>,
-    line_info: Query<&FishingLine, With<FishingLine>>,
+pub fn calculate_water_force (
+    mut fishes: Query<(&Species, &Fish, &mut PhysicsObject), With<Fish>>,
     player: Query<&Location, With<Player>>
 ) {
-    let (rod_transform, rod_info, rod_rotation) = fishing_rod.single();
-    let line = line_info.single();
     let player_location = player.single();
+    let water_current = player_location.get_current_area().zone.current;
 
-    for fish in fishes.iter_mut() {
-        let (fish_species, mut fish_details, mut fish_physics) = fish;
-        
-        // Calculate force from water
+    // Currently only works with fish
+    for (fish_species, fish_details, mut fish_physics) in fishes.iter_mut() {
         let p = 1.0;
         let sa = fish_details.width * fish_details.width / 2000.;
-        let relative_velocity = fish_physics.velocity - player_location.get_current_area().zone.current;
+        let relative_velocity = fish_physics.velocity - water_current;
+    
+        fish_physics.forces.water = p * fish_species.cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize_or_zero();
+    }
+}
 
-        fish_physics.forces.water = p * fish_species.cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize_or_zero(); //Force exerted onto the fish by the water
-        
-        // Calculate player force
-        let reeling = input.pressed(REEL);
+pub fn calculate_player_force (
+    input: Res<ButtonInput<KeyCode>>,
+    fishing_view: ResMut<FishingView>,
+    fishing_rod: Query<(&Transform, &FishingRod), With<FishingRod>>,
+    line_info: Query<&FishingLine, With<FishingLine>>,
+    mut fishes: Query<&mut PhysicsObject, With<Fish>>
+) {
+    let (rod_transform, rod_info) = fishing_rod.single();
+    let line = line_info.single();
 
+    let reeling = input.pressed(REEL);
+
+    // Currently assumes every fish is attached to line
+    for mut fish_physics in fishes.iter_mut() {
         fish_physics.forces.player = if reeling && line.fish_on {
-            let angle_vector = Vec2::from_angle(rod_rotation.rot + PI / 2.);
+            let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
             let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
             let delta = rod_end - fish_physics.position;
 
-            800. * delta.normalize_or_zero()
+            PLAYER_FORCE * delta.normalize_or_zero()
         } else {
             Vec3::ZERO
         };
+    }
+}
 
-        // Calculate fish force
+pub fn calculate_fish_force (
+    mut fishes: Query<(&mut Fish, &mut PhysicsObject), With<Fish>>,
+) {
+    for fish in fishes.iter_mut() {
+        let (mut fish_details, mut fish_physics) = fish;
+        
         fish_physics.forces.own = if fish_physics.velocity.length() > 5.0 {
             -fish_details.fish_anger() * fish_physics.velocity.normalize_or_zero()
         }  else {
