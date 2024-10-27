@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use crate::weather::*;
 
 
 pub const TITLE: &str = "Fishing Game";
@@ -8,9 +7,6 @@ pub const WIN_H: f32 = 720.;
 
 pub const ANIM_TIME: f32 = 0.125; // 8 fps
 pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
-
-pub const FISHINGROOMX: f32 = 8960.;
-pub const FISHINGROOMY: f32 = 3600.;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer {
@@ -144,4 +140,9 @@ impl ShopingMode{
 pub struct PlayerInventory {
     pub coins: u32,
     pub items: Vec<String>,
+}
+
+#[derive(Resource)]
+pub struct ShopState {
+    pub is_open: bool,
 }

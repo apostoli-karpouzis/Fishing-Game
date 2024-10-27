@@ -9,7 +9,9 @@ use f32::consts::PI;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
-const PLAYER_FORCE: f32 = 600.;
+const MAX_PLAYER_FORCE: f32 = 600.;
+const MAX_PLAYER_POWER: f32 = MAX_PLAYER_FORCE * 60.;
+const P: f32 = 1. / 250.;
 
 #[derive(Component)]
 pub struct PhysicsObject {
@@ -45,11 +47,21 @@ pub fn calculate_water_force (
 
     // Currently only works with fish
     for (fish_species, fish_details, mut fish_physics) in fishes.iter_mut() {
-        let p = 1.0;
-        let sa = fish_details.width * fish_details.width / 2000.;
         let relative_velocity = fish_physics.velocity - water_current;
+
+        if relative_velocity == Vec3::ZERO {
+            fish_physics.forces.water = Vec3::ZERO;
+            continue;
+        }
+
+        let angle = Vec2::from_angle(fish_physics.rotation.z).extend(0.).angle_between(water_current);
+        let proportion = (PI / 2. - f32::abs(angle - PI / 2.)) / (PI / 2.);
+        let sa_min = fish_details.width * fish_details.width;
+        let sa_max = fish_details.width * fish_details.length;
+        let sa = sa_min + (sa_max - sa_min) * proportion;
+        let cd = fish_species.cd.0 + (fish_species.cd.1 - fish_species.cd.0) * proportion;
     
-        fish_physics.forces.water = p * fish_species.cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize_or_zero();
+        fish_physics.forces.water = P * cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize();
     }
 }
 
@@ -74,8 +86,9 @@ pub fn calculate_player_force (
         let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
         let rod_end = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
         let delta = rod_end - object_physics.position;
+        let force = (MAX_PLAYER_POWER / object_physics.velocity.length()).min(MAX_PLAYER_FORCE);
 
-        PLAYER_FORCE * delta.normalize_or_zero()
+        force * delta.normalize_or_zero()
     } else {
         Vec3::ZERO
     };
@@ -87,7 +100,7 @@ pub fn calculate_fish_force (
     for fish in fishes.iter_mut() {
         let (mut fish_details, mut fish_physics) = fish;
         
-        fish_physics.forces.own = if fish_physics.velocity.length() > 5.0 {
+        fish_physics.forces.own = if fish_physics.velocity.length() > 10.0 {
             -fish_details.fish_anger() * fish_physics.velocity.normalize_or_zero()
         }  else {
             Vec3::ZERO
@@ -99,25 +112,25 @@ pub fn simulate_physics (
     time: Res<Time>,
     mut objects: Query<&mut PhysicsObject, With<PhysicsObject>>
 ) {
-    for mut fish_physics in objects.iter_mut() {
-        // Calculate net force and acceleration 
-        let acceleration = fish_physics.forces.net_force() / fish_physics.mass;
-        fish_physics.velocity = fish_physics.velocity + acceleration * time.delta_seconds();
+    for mut object in objects.iter_mut() {
+        // Calculate net force and acceleration
+        let acceleration = object.forces.net_force() / object.mass;
+        object.velocity = object.velocity + acceleration * time.delta_seconds();
 
         // Bounds check
-        let mut new_pos = fish_physics.position + fish_physics.velocity * time.delta_seconds();
+        let mut new_pos = object.position + object.velocity * time.delta_seconds();
         
         // Surface collision
         if new_pos.z > 0. {
             new_pos.z = 0.;
-            fish_physics.velocity.z = 0.;
+            object.velocity.z = 0.;
         }
 
-        fish_physics.position = new_pos;
+        object.position = new_pos;
 
         // Calculate rotation
-        if fish_physics.velocity.x != 0. || fish_physics.velocity.y != 0. {
-            fish_physics.rotation.z = f32::atan2(fish_physics.velocity.y, fish_physics.velocity.x) + PI;
+        if object.velocity.x != 0. || object.velocity.y != 0. {
+            object.rotation.z = f32::atan2(object.velocity.y, object.velocity.x) + PI;
         }
     }
 }
