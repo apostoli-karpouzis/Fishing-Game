@@ -16,6 +16,9 @@ use crate::species::*;
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
 
+pub const FISHINGROOMX: f32 = 8960.;
+pub const FISHINGROOMY: f32 = 3600.;
+
 const POWER_BAR_Y_OFFSET: f32 = FISHINGROOMY - 308.;
 const MAX_POWER: f32 = 250.;
 const POWER_FILL_SPEED: f32 = 250.;
@@ -183,8 +186,8 @@ impl Plugin for FishingViewPlugin {
         .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
-        .add_systems(OnExit(FishingState::ReelingUnhooked), reset_interface)
-        .add_systems(OnExit(FishingState::ReelingHooked), reset_interface);
+        .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
+        .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface);
     }
 }
 

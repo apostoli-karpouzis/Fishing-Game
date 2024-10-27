@@ -78,10 +78,16 @@ fn main() {
         .add_systems(Update, update_money_display)
 
         // Overworld systems (player movement, animations)
-        .add_systems(Update, move_player.run_if(in_state(FishingMode::Overworld)))
-        .add_systems(Update, animate_player.after(move_player))
-        .add_systems(Update, move_camera.after(move_player).run_if(in_state(FishingMode::Overworld)))
-        .add_systems(Update, screen_edge_collision.after(move_player))
+        .add_systems(Update,
+            (
+                move_player,
+                (
+                    animate_player,
+                    move_camera,
+                    screen_edge_collision
+                ).after(move_player)
+            ).run_if(in_state(CurrentScreen::Overworld))
+        )
 
         // Weather updates
         .add_systems(Update, update_weather)
