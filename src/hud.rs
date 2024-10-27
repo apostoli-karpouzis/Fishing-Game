@@ -83,17 +83,31 @@ pub fn update_money_display(
 
 pub fn update_clock_display(
     time: Res<GameDayTimer>,
-    mut query: Query<&mut Text, With<ClockDisplay>>,
+    mut query: Query<(&mut Text, &mut Visibility), With<ClockDisplay>>,
+    shop_state: Res<ShopState>,
 ) {
-    let mut text = query.single_mut();
+    let (mut text, mut visibility) = query.single_mut();
     text.sections[0].value = format!("Hour: {}", time.hour);
+    if shop_state.is_open {
+        *visibility = Visibility::Hidden;
+    }
+    else {
+        *visibility = Visibility::Visible;
+    }
 }
 
 pub fn update_weather_display(
     weather: Res<WeatherState>,
-    mut query: Query<&mut Text, With<ClockDisplay>>,
+    mut query: Query<(&mut Text, &mut Visibility), With<WeatherDisplay>>,
+    shop_state: Res<ShopState>,
 ) {
-    let mut text = query.single_mut();
+    let (mut text, mut visibility) = query.single_mut();
+    if shop_state.is_open {
+        *visibility = Visibility::Hidden;
+    }
+    else {
+        *visibility = Visibility::Visible;
+    }
     match weather.current_weather {
         Weather::Cloudy => { 
             text.sections[0].value = format!("Weather: Cloudy");

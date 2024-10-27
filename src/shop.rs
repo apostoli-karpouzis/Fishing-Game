@@ -13,10 +13,7 @@ struct ShopItem {
     price: u32,
 }
 
-#[derive(Resource)]
-struct ShopState {
-    is_open: bool,
-}
+
 
 #[derive(Resource)]
 struct SelectedShopItem {
@@ -31,7 +28,6 @@ impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
         .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop))
-        .insert_resource(ShopState {is_open: false})
         .insert_resource(SelectedShopItem {index: 0})
         .insert_resource(OriginalCameraPosition(Vec3::ZERO));
 
@@ -94,7 +90,7 @@ fn spawn_shop(
     ));
 }
 
-// GOTTA TURN OFF PLAYER MOVEMENT WHEN IN SHOP
+
 fn check_shop_entrance(
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), With<Player>>,
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
