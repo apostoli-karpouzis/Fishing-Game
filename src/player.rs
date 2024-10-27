@@ -55,10 +55,15 @@ pub fn move_player(
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
     mut fish_button: Query<&mut Visibility, (With<Button>, With<FishingButton>)>,
     mut shop_button: Query<&mut Visibility, (With<Button>, With<ShopingButton>, Without<FishingButton>)>,
+    mut shop_state: ResMut<ShopState>,
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
     let mut shop_button_visibility = shop_button.single_mut();
+
+    if shop_state.is_open {
+        return;
+    }
 
     // Map transition
     if state.eq(&GameState::MapTransition) {

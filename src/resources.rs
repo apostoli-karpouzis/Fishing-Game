@@ -141,3 +141,8 @@ pub struct PlayerInventory {
     pub coins: u32,
     pub items: Vec<String>,
 }
+
+#[derive(Resource)]
+pub struct ShopState {
+    pub is_open: bool,
+}
