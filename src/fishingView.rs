@@ -726,13 +726,14 @@ fn is_fish_hooked (
 fn is_fish_caught (
     mut commands: Commands,
     fishing_view: Res<FishingView>,
-    mut money: ResMut<Money>,
+    mut playerInventory: Query<&mut PlayerInventory>,
     mut next_state: ResMut<NextState<FishingState>>,
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
     mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
 ) {
     let (rod_info, rod_transform) = rod.single();
     let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
+    let mut inventory_info = playerInventory.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let catch_pos = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
@@ -740,7 +741,7 @@ fn is_fish_caught (
 
     if distance < 15. {
         fish_details.is_caught = true;
-        money.amount += 100;
+        inventory_info.coins += fish_details.weight as u32 * 2;
 
         // Reset fish for testing
         fish_physics.position = Vec3::new(FISHINGROOMX, FISHINGROOMY, 0.);

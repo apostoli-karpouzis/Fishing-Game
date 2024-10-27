@@ -17,7 +17,7 @@ mod fishingView;
 mod fishingZone;
 mod probCalc;
 mod shop;
-mod money;
+mod hud;
 //mod species;
 
 
@@ -34,7 +34,7 @@ use crate::weather::*;
 use crate::fishingView::*;
 use crate::fishingZone::*;
 
-use crate::money::*;
+use crate::hud::*;
 //use crate::species::*;
 use crate::probCalc::*;
 
@@ -74,8 +74,9 @@ fn main() {
         .add_systems(Update, fishing_button_system)
         .add_systems(Update, shop_button_system)
 
-        .insert_resource(Money { amount: 100 }) 
         .add_systems(Update, update_money_display)
+        .add_systems(Update, update_clock_display)
+        .add_systems(Update, update_weather_display)
 
         // Overworld systems (player movement, animations)
         .add_systems(Update,
@@ -296,4 +297,6 @@ fn setup(
     
     spawn_fishing_button(&mut commands, &asset_server);
     spawn_money_display(&mut commands, &asset_server);
+    spawn_clock_display(&mut commands, &asset_server);
+    spawn_weather_display(&mut commands, &asset_server);
 }

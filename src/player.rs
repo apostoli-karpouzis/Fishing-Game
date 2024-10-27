@@ -169,10 +169,10 @@ pub fn move_player(
                     *fish_button_visibility = Visibility::Visible;
                     *shop_button_visibility = Visibility::Hidden;
                 }
-                // &Tile::Shop => {
-                //     *fish_button_visibility = Visibility::Hidden;
-                //     *shop_button_visibility = Visibility::Visible;
-                // }
+                &Tile::Shop => {
+                    *fish_button_visibility = Visibility::Hidden;
+                    *shop_button_visibility = Visibility::Visible;
+                }
                 _ => {
 
                     *fish_button_visibility = Visibility::Hidden;
