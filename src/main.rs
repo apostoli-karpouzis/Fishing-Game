@@ -87,7 +87,7 @@ fn main() {
                     move_camera,
                     screen_edge_collision
                 ).after(move_player)
-            ).run_if(in_state(CurrentScreen::Overworld))
+            ).run_if(in_state(FishingMode::Overworld))
         )
 
         // Weather updates
