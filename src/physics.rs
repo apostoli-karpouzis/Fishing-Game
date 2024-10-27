@@ -57,8 +57,14 @@ pub fn calculate_player_force (
     input: Res<ButtonInput<KeyCode>>,
     fishing_view: ResMut<FishingView>,
     fishing_rod: Query<(&Transform, &FishingRod), With<FishingRod>>,
-    mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>
+    mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>,
+    state: Res<State<FishingState>>,
 ) {
+    if *state.get() != FishingState::ReelingHooked && *state.get() != FishingState::ReelingUnhooked{        
+        return;
+    }
+
+    println!("calculating player force...");
     let (rod_transform, rod_info) = fishing_rod.single();
     let mut object_physics = hooked_object.single_mut();
 
