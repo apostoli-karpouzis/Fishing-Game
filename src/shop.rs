@@ -2,6 +2,7 @@ use bevy::{input::keyboard::KeyboardInput, prelude::*};
 use crate::{
     map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
 };
+use crate::resources::*;
 
 #[derive(Component)]
 struct ShopEntrance;
@@ -12,16 +13,7 @@ struct ShopItem {
     price: u32,
 }
 
-#[derive(Component)]
-struct PlayerInventory {
-    coins: u32,
-    items: Vec<String>,
-}
 
-#[derive(Resource)]
-struct ShopState {
-    is_open: bool,
-}
 
 #[derive(Resource)]
 struct SelectedShopItem {
@@ -36,7 +28,6 @@ impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
         .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop))
-        .insert_resource(ShopState {is_open: false})
         .insert_resource(SelectedShopItem {index: 0})
         .insert_resource(OriginalCameraPosition(Vec3::ZERO));
 
@@ -46,7 +37,7 @@ impl Plugin for ShopPlugin {
 fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
-            coins: 100,
+            coins: 0,
             items: Vec::new(),
         },
 ));
@@ -65,7 +56,7 @@ fn spawn_shop(
             },
             ..default()
         },
-        Tile::new("shop", false, Vec2::new(256.0, 215.0)),
+        Tile::Shop,
         Collision,
     ));
 
@@ -99,13 +90,14 @@ fn spawn_shop(
     ));
 }
 
+
 fn check_shop_entrance(
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), With<Player>>,
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
     time_of_day: Res<resources::GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
     mut shop_state: ResMut<ShopState>,
-    mut original_camera_pos: ResMut<OriginalCameraPosition>, 
+    mut original_camera_pos: ResMut<OriginalCameraPosition>,
 ){
     let (mut pt, mut pd, mut pl, _pa, mut pi ) = player_query.single_mut();
     let (e_tran,e_tile) = entrance_query.single();
