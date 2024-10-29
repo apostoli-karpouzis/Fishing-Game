@@ -197,17 +197,6 @@ impl Plugin for FishingViewPlugin {
     }
 }
 
-fn in_any_state(
-    states: [FishingState; 2],
-    current_state : ResMut<State<FishingState>>,
-) -> bool {
-    if states.contains(current_state.get()) {
-        return true;
-    }
-    return false;
-
-}
-
 fn setup (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -690,6 +679,7 @@ fn power_bar_cast(
     time: Res<Time>,
     mut next_state: ResMut<NextState<FishingState>>,
     mut fishing_view: ResMut<FishingView>,
+    mut lure: Query<(&mut PhysicsObject, &TextureAtlas) , With<Bobber>>
 ) {
     if input.pressed(TUG) {
         // Increase power
@@ -697,12 +687,27 @@ fn power_bar_cast(
 
         if fishing_view.power >= MAX_POWER {
             // Max power reached, release
+            set_bobber_physics(lure);
             fishing_view.power = MAX_POWER;
             next_state.set(FishingState::Casting);
         }
     } else if input.just_released(TUG) {
         // Manual release
+        set_bobber_physics(lure);
         next_state.set(FishingState::Casting);
+    }
+}
+
+fn set_bobber_physics(
+    mut lure: Query<(&mut PhysicsObject, &TextureAtlas) , With<Bobber>>
+){
+    let (mut bobber_physics, texture) = lure.single_mut();
+    if texture.index == 0 {//bobber physics!!!
+        *bobber_physics = PhysicsObject::new(2.0, Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
+    }if texture.index == 1  {//frog physics!!!
+        *bobber_physics = PhysicsObject::new(5.0, Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
+    }else if texture.index == 2 {//swimbait physics!!!
+        *bobber_physics =  PhysicsObject::new(20.0, Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
     }
 }
 
@@ -830,10 +835,10 @@ fn update_fishing_interface (
 fn is_fish_hooked (
     mut commands: Commands,
     mut next_state: ResMut<NextState<FishingState>>,
-    bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject),  With<Bobber>>,
+    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),  With<Bobber>>,
     mut fishes: Query<(Entity, &Fish, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>
 ) {
-    let (bobber_transform, tile,  bobber_entity_id, bobber_physics) = bobber.single();
+    let (bobber_transform, tile,  bobber_entity_id, bobber_physics, mut bobber_visibility) = bobber.single_mut();
     let bobber_position = bobber_transform.translation;
 
     for (entity_id, fish_details, mut fish_physics) in fishes.iter_mut() {
@@ -847,6 +852,7 @@ fn is_fish_hooked (
     
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
+        *bobber_visibility = Visibility::Hidden;
         fish_physics.mass = fish_physics.mass + bobber_physics.mass;
         commands.entity(bobber_entity_id).remove::<Hooked>();
         commands.entity(entity_id).insert(Hooked);
@@ -869,7 +875,7 @@ fn is_done_reeling(
     let catch_pos = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
     let distance = (lure_physics.position - catch_pos).length();
 
-    if distance < 15. {
+    if distance < 100. {
         commands.entity(entity_id).remove::<Hooked>();
         next_state.set(FishingState::Idle);
     }

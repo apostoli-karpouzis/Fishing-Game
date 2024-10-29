@@ -22,6 +22,12 @@ pub struct PhysicsObject {
     pub forces: Forces
 }
 
+impl PhysicsObject {
+    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
+        Self { mass, position, rotation, velocity, forces }
+    }
+}
+
 #[derive(Default)]
 pub struct Forces {
     pub own: Vec3,
