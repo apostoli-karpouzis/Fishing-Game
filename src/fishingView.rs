@@ -784,40 +784,36 @@ fn cast_line (
 }
 
 fn switch_lures(
-    mut screen_lure: Query< (&mut TextureAtlas, &mut AnimationTimer ), With<OnScreenLure> >,
+    mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
     input: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>,  
 ){
-    let (mut screen_texture, mut timer)  = screen_lure.single_mut();
+    let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
 
-    timer.tick(time.delta());
 
-    if timer.just_finished()
-    {
-        if input.pressed(KeyCode::KeyZ) {
-            if bait_texture.index == 2 
-            {
-                bait_texture.index = 0;
-                screen_texture.index = 0;
-                return;
-            }
-            bait_texture.index = bait_texture.index + 1;
-            screen_texture.index = screen_texture.index + 1;
+    if input.just_pressed(KeyCode::KeyZ) {
+        if bait_texture.index == 2 
+        {
+            bait_texture.index = 0;
+            screen_texture.index = 0;
+            return;
         }
-
-        if input.pressed(KeyCode::KeyX) {
-            if bait_texture.index == 0 
-            {
-                bait_texture.index = 2;
-                screen_texture.index = 2;
-                return;
-            }
-            bait_texture.index = bait_texture.index - 1;
-            screen_texture.index = screen_texture.index - 1;
-        }
+        bait_texture.index = bait_texture.index + 1;
+        screen_texture.index = screen_texture.index + 1;
     }
+
+    if input.just_pressed(KeyCode::KeyX) {
+        if bait_texture.index == 0 
+        {
+            bait_texture.index = 2;
+            screen_texture.index = 2;
+            return;
+        }
+        bait_texture.index = bait_texture.index - 1;
+        screen_texture.index = screen_texture.index - 1;
+    }
+    
 }
 
 fn update_fishing_interface (
