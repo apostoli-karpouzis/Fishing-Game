@@ -12,6 +12,7 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
+use crate::probCalc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -192,6 +193,7 @@ impl Plugin for FishingViewPlugin {
         .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
         .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
+        //.add_systems(Update, hook_fish)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
         .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface);
     }
@@ -250,6 +252,17 @@ fn setup (
             touching_lure: false,
         },
         InPond,
+        Fish {
+            id: 1,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            age: 6.0,
+            hunger: 10.0
+        },
         BASS,
         Collision,
     ));
@@ -287,6 +300,17 @@ fn setup (
             touching_lure: false,
         },
         InPond,
+        Fish {
+            id: 2,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            age: 6.0,
+            hunger: 10.0
+        },
         CATFISH,
         Collision,
     ));
@@ -622,7 +646,7 @@ fn fish_area_bobber(
             return;
         }
         fishes_details.touching_lure = true;
-        println!("numer is {:?} {:?}", fishes_details.name, fishes_details.touching_lure);
+        println!("fish is {:?} {:?}", fishes_details.name, fishes_details.touching_lure);
         println!("bobber hit");
     }
 }

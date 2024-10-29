@@ -44,7 +44,7 @@ pub fn calc_fish_prob(
 
 pub fn hook_fish(
     state: Res<State<FishingMode>>,
-    mut potential_fish: Query<(&Fish, &Species, Entity), With<Fish>>,
+    mut potential_fish: Query<(&Fish, &Species, &FishDetails, Entity), With<Fish>>,
     hooked_fish: Query<&Fish, With<Fish>>,
     weather: Res<WeatherState>,
     time: Res<GameDayTimer>,
@@ -57,15 +57,21 @@ pub fn hook_fish(
             }*/
 
             for fish_info in potential_fish.iter_mut() {
-                let (mut fish, species, entity_id) = fish_info;
-                if fish.touching_lure {
+                let (mut fish, species, details, entity_id) = fish_info;
+                if details.touching_lure {
                     let prob = 100. * calc_fish_prob(fish, species, &weather, &time);
                     let mut prob_rng = rand::thread_rng();
                     let roll = prob_rng.gen_range(0..100);
+                    println!("calculating");
                     if (roll as f32) < prob {
-                        println!("Hit in collision zone!");
+                        println!("fish {:?} Hit in collision zone!", details.name);
                         //commands.entity(entity_id).insert(FishHooked);
+                        println!("the prob is: {}", prob);
                         return;
+                    }
+                    else{
+                        println!("fish {:?}  collided failed to catch", details.name);
+                        println!("the prob is: {}", prob);
                     }
                 } 
             }
