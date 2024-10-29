@@ -22,6 +22,12 @@ pub struct PhysicsObject {
     pub forces: Forces
 }
 
+impl PhysicsObject {
+    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
+        Self { mass, position, rotation, velocity, forces }
+    }
+}
+
 #[derive(Default)]
 pub struct Forces {
     pub own: Vec3,
@@ -69,8 +75,14 @@ pub fn calculate_player_force (
     input: Res<ButtonInput<KeyCode>>,
     fishing_view: ResMut<FishingView>,
     fishing_rod: Query<(&Transform, &FishingRod), With<FishingRod>>,
-    mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>
+    mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>,
+    state: Res<State<FishingState>>,
 ) {
+    if *state.get() != FishingState::ReelingHooked && *state.get() != FishingState::ReelingUnhooked{        
+        return;
+    }
+
+    println!("calculating player force...");
     let (rod_transform, rod_info) = fishing_rod.single();
     let mut object_physics = hooked_object.single_mut();
 
