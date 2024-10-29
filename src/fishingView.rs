@@ -12,6 +12,7 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
+use crate::probCalc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -158,6 +159,7 @@ impl Plugin for FishingViewPlugin {
         .init_state::<FishingMode>()
         .init_state::<FishingState>()
         .insert_resource(FishingView { rod_rotation: 0., power: 0. })
+        .insert_resource(ProbTimer::new(2.))
         .add_systems(Startup, setup)
         .add_systems(Update,
             (
@@ -836,12 +838,16 @@ fn is_fish_hooked (
     mut commands: Commands,
     mut next_state: ResMut<NextState<FishingState>>,
     mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),  With<Bobber>>,
-    mut fishes: Query<(Entity, &Fish, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>
+    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
+    weather: Res<WeatherState>,
+    timer: Res<GameDayTimer>,
+    mut prob_timer: ResMut<ProbTimer>,
+    time: Res<Time>
 ) {
     let (bobber_transform, tile,  bobber_entity_id, bobber_physics, mut bobber_visibility) = bobber.single_mut();
     let bobber_position = bobber_transform.translation;
 
-    for (entity_id, fish_details, mut fish_physics) in fishes.iter_mut() {
+    for (entity_id, fish_details, fish_species, mut fish_physics) in fishes.iter_mut() {
         if fish_physics.position.y - fish_details.width / 2. > bobber_position.y + tile.hitbox.y / 2.
         || fish_physics.position.y + fish_details.width / 2. < bobber_position.y - tile.hitbox.y / 2. 
         || fish_physics.position.x + fish_details.width / 2. < bobber_position.x - tile.hitbox.x / 2. 
@@ -852,12 +858,15 @@ fn is_fish_hooked (
     
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
-        *bobber_visibility = Visibility::Hidden;
-        fish_physics.mass = fish_physics.mass + bobber_physics.mass;
-        commands.entity(bobber_entity_id).remove::<Hooked>();
-        commands.entity(entity_id).insert(Hooked);
-        next_state.set(FishingState::ReelingHooked);
-        break;
+
+        if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+            *bobber_visibility = Visibility::Hidden;
+            fish_physics.mass = fish_physics.mass + bobber_physics.mass;
+            commands.entity(bobber_entity_id).remove::<Hooked>();
+            commands.entity(entity_id).insert(Hooked);
+            next_state.set(FishingState::ReelingHooked);
+            break;
+        }  
     }
 }
 
