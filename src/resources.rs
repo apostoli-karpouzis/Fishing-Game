@@ -115,6 +115,18 @@ impl GameDayTimer {
     }    
 } 
 
+#[derive(Resource)]
+pub struct ProbTimer{
+    pub timer: Timer,
+}
+
+impl ProbTimer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Repeating),
+        }
+    }    
+} 
 #[derive(Component)]
 pub struct FishingButton;
 
