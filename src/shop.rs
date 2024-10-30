@@ -7,13 +7,14 @@ use crate::resources::*;
 #[derive(Component)]
 struct ShopEntrance;
 
+#[derive(Resource)]
+pub struct HoverEntity(pub Entity);
+
 #[derive(Component)]
 struct ShopItem {
     name: String,
     price: u32,
 }
-
-
 
 #[derive(Resource)]
 struct SelectedShopItem {
