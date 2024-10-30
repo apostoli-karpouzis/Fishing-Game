@@ -88,6 +88,37 @@ fn spawn_shop(
             price: 1000,
         },
     ));
+    commands.spawn((
+        ShopItem{
+            name: "Tree".to_string(),
+            price: 20,
+        }
+    ));
+    commands.spawn((
+        ShopItem{
+            name: "Water".to_string(),
+            price: 240,
+        }
+    ));
+    commands.spawn((
+        ShopItem{
+            name: "Fish".to_string(),
+            price: 500,
+        }
+    ));
+
+    let hover_texture = asset_server.load("hover.png");
+    let hover_entity = commands.spawn(SpriteBundle {
+        texture: hover_texture,
+        transform: Transform {
+            translation: Vec3::new(2620., 2860., 3.0), 
+            ..Default::default()
+        },
+        ..Default::default()
+    }).id();
+
+    
+    commands.insert_resource(HoverEntity(hover_entity));
     
 }
 
@@ -97,19 +128,19 @@ fn display_shop_items(
     asset_server: Res<AssetServer>,
     shop_state: Res<ShopState>,
 ) {
-   
     if !shop_state.is_open {
         return;
     }
 
     
-    let items = [
-        asset_server.load("fishingRod.png"),
-        asset_server.load("pixil-frame-0 (64).png"),
-        asset_server.load("rocks.png"),
-    ];
+    let fishing_rod_texture = asset_server.load("fishingRod.png");
+    let lure_texture = asset_server.load("pixil-frame-0 (64).png");
+    let rocks_texture = asset_server.load("Rocks.png");
+    let tree_texture = asset_server.load("tiles/tree.png");
+    let water_texture = asset_server.load("tiles/water.png");
+    let fish_texture = asset_server.load("fish/bass.png");
 
-    // Define slot positions
+    //slot positions
     let slot_positions = [
         Vec3::new(2620., 2820., 2.),
         Vec3::new(3000., 2820., 2.),
@@ -119,50 +150,60 @@ fn display_shop_items(
         Vec3::new(3400., 3100., 2.),
     ];
 
-    
+
     let font: Handle<Font> = asset_server.load("pixel.ttf");
 
-    
+
     for (i, (entity, item)) in shop_items.iter().enumerate() {
         if let Some(&position) = slot_positions.get(i) {
-            if let Some(texture) = items.get(i) {
-                
-                commands.entity(entity)
-                    .insert(SpriteBundle {
-                        texture: texture.clone(),
-                        transform: Transform::from_translation(position),
+            let texture = match item.name.as_str() {
+                "Fishing Rod" => fishing_rod_texture.clone(),
+                "Lure" => lure_texture.clone(),
+                "Rocks" => rocks_texture.clone(),
+                "Tree" => tree_texture.clone(),
+                "Water" => water_texture.clone(),
+                "Fish" => fish_texture.clone(),
+                _ => {
+                    println!("No texture found for item: {}", item.name);
+                    continue;
+                }
+            };
+
+            commands.entity(entity)
+                .insert(SpriteBundle {
+                    texture,
+                    transform: Transform::from_translation(position),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    
+                    parent.spawn(Text2dBundle {
+                        text: Text::from_section(
+                            item.name.clone(),
+                            TextStyle {
+                                font: font.clone(),
+                                font_size: 30.0,
+                                color: Color::WHITE,
+                            },
+                        ),
+                        transform: Transform::from_translation(Vec3::new(0.0, 160.0, 1.0)),
                         ..Default::default()
-                    })
-                    .with_children(|parent| {
-                        
-                        parent.spawn(Text2dBundle {
-                            text: Text::from_section(
-                                item.name.clone(),
-                                TextStyle {
-                                    font: font.clone(),
-                                    font_size: 30.0,
-                                    color: Color::WHITE,
-                                },
-                            ),
-                            transform: Transform::from_translation(Vec3::new(0.0, 160.0, 1.0)), 
-                            ..Default::default()
-                        });
+                    });
 
                     
-                        parent.spawn(Text2dBundle {
-                            text: Text::from_section(
-                                format!("${}", item.price),
-                                TextStyle {
-                                    font: font.clone(),
-                                    font_size: 30.0,
-                                    color: Color::WHITE,
-                                },
-                            ),
-                            transform: Transform::from_translation(Vec3::new(0.0, -90.0, 1.0)), 
-                            ..Default::default()
-                        });
+                    parent.spawn(Text2dBundle {
+                        text: Text::from_section(
+                            format!("${}", item.price),
+                            TextStyle {
+                                font: font.clone(),
+                                font_size: 30.0,
+                                color: Color::WHITE,
+                            },
+                        ),
+                        transform: Transform::from_translation(Vec3::new(0.0, -90.0, 1.0)),
+                        ..Default::default()
                     });
-            }
+                });
         } else {
             println!("No available slots");
         }
@@ -231,25 +272,68 @@ fn handle_purchase(
 
 fn update_selected_item(
     input: Res<ButtonInput<KeyCode>>,
-    mut selected_item:ResMut<SelectedShopItem>,
+    mut selected_item: ResMut<SelectedShopItem>,
     shop_items: Query<&ShopItem>,
     shop_state: Res<ShopState>,
-){
+    hover_entity: Res<HoverEntity>,
+    mut hover_query: Query<&mut Transform>,
+) {
     if !shop_state.is_open {
         return;
     }
 
-    let item_count = shop_items.iter().count();
+    let cols = 3;
+    let rows = 2;
 
-    if input.just_pressed(KeyCode::ArrowUp){
-        selected_item.index = (selected_item.index + item_count - 1) % item_count;
+    let current_row = selected_item.index / cols;
+    let current_col = selected_item.index % cols;
+
+    if input.just_pressed(KeyCode::ArrowUp) {
+        let new_row = if current_row == 0 { rows - 1 } else { current_row - 1 };
+        selected_item.index = new_row * cols + current_col;
         println!("Selected: {}", selected_item.index);
     }
-    if input.just_pressed(KeyCode::ArrowDown){
-        selected_item.index = (selected_item.index + 1) % item_count;
+
+    if input.just_pressed(KeyCode::ArrowDown) {
+        let new_row = if current_row == rows - 1 { 0 } else { current_row + 1 };
+        selected_item.index = new_row * cols + current_col;
         println!("Selected: {}", selected_item.index);
     }
-} 
+
+    if input.just_pressed(KeyCode::ArrowLeft) {
+        let new_col = if current_col == 0 { cols - 1 } else { current_col - 1 };
+        selected_item.index = current_row * cols + new_col;
+        println!("Selected: {}", selected_item.index);
+    }
+
+    if input.just_pressed(KeyCode::ArrowRight) {
+        let new_col = if current_col == cols - 1 { 0 } else { current_col + 1 };
+        selected_item.index = current_row * cols + new_col;
+        println!("Selected: {}", selected_item.index);
+    }
+
+    // Define slot positions
+    let slot_positions = [
+        Vec3::new(2620., 2820., 2.),
+        Vec3::new(3000., 2820., 2.),
+        Vec3::new(3400., 2820., 2.),
+        Vec3::new(2620., 3100., 2.),
+        Vec3::new(3000., 3100., 2.),
+        Vec3::new(3400., 3100., 2.),
+    ];
+
+    if let Some(&position) = slot_positions.get(selected_item.index) {
+        if let Ok(mut hover_transform) = hover_query.get_mut(hover_entity.0) {
+            let adjusted_x = if position == Vec3::new(3000., 2820., 2.) || position == Vec3::new(3000., 3100., 2.) {
+                position.x + 2.0
+            } else {
+                position.x - 10.0
+            };
+
+            hover_transform.translation = Vec3::new(adjusted_x, position.y + 42.0, position.z + 1.0);
+        }
+    }
+}
 
 fn exit_shop (
     input: Res<ButtonInput<KeyCode>>,
