@@ -76,6 +76,6 @@ pub fn hook_fish(
                     }
                 } 
             }
-            return false;      
+            return;      
         }
     }
