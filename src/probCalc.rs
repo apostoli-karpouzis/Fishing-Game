@@ -75,24 +75,7 @@ pub fn hook_fish(
                         println!("the prob is: {}", prob);
                     }
                 } 
-    mut potential_fish: (&Fish, &Species),
-    weather: &Res<WeatherState>,
-    timer: &Res<GameDayTimer>,
-    mut prob_timer: &mut ResMut<ProbTimer>,
-    time: &Res<Time>
-    ) -> bool {
-
-        prob_timer.timer.tick(time.delta());
-        if prob_timer.timer.just_finished() {
-                let (fish, species) = potential_fish;
-                let prob = 100. * calc_fish_prob(fish, species, &weather, &timer);
-                let mut prob_rng = rand::thread_rng();
-                let roll = prob_rng.gen_range(0..100);
-                println!("Prob: {}\tRoll: {}", prob, roll);
-                if (roll as f32) < prob {
-                    return true;
-                }
             }
             return false;      
-        
+        }
     }
