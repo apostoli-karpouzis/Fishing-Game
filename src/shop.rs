@@ -27,7 +27,7 @@ pub struct ShopPlugin;
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
-        .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop))
+        .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop, display_shop_items))
         .insert_resource(SelectedShopItem {index: 0})
         .insert_resource(OriginalCameraPosition(Vec3::ZERO));
 
@@ -78,16 +78,95 @@ fn spawn_shop(
     ));
     commands.spawn((
         ShopItem{
-            name: "Bait Box".to_string(),
+            name: "Lure".to_string(),
             price: 20,
         }
     ));
     commands.spawn((
         ShopItem{
-            name: "Sunglasses".to_string(),
-            price: 100,
+            name: "Rocks".to_string(),
+            price: 1000,
         },
     ));
+    
+}
+
+fn display_shop_items(
+    mut commands: Commands,
+    shop_items: Query<(Entity, &ShopItem)>,
+    asset_server: Res<AssetServer>,
+    shop_state: Res<ShopState>,
+) {
+   
+    if !shop_state.is_open {
+        return;
+    }
+
+    
+    let items = [
+        asset_server.load("fishingRod.png"),
+        asset_server.load("pixil-frame-0 (64).png"),
+        asset_server.load("rocks.png"),
+    ];
+
+    // Define slot positions
+    let slot_positions = [
+        Vec3::new(2620., 2820., 2.),
+        Vec3::new(3000., 2820., 2.),
+        Vec3::new(3400., 2820., 2.),
+        Vec3::new(2620., 3100., 2.),
+        Vec3::new(3000., 3100., 2.),
+        Vec3::new(3400., 3100., 2.),
+    ];
+
+    
+    let font: Handle<Font> = asset_server.load("pixel.ttf");
+
+    
+    for (i, (entity, item)) in shop_items.iter().enumerate() {
+        if let Some(&position) = slot_positions.get(i) {
+            if let Some(texture) = items.get(i) {
+                
+                commands.entity(entity)
+                    .insert(SpriteBundle {
+                        texture: texture.clone(),
+                        transform: Transform::from_translation(position),
+                        ..Default::default()
+                    })
+                    .with_children(|parent| {
+                        
+                        parent.spawn(Text2dBundle {
+                            text: Text::from_section(
+                                item.name.clone(),
+                                TextStyle {
+                                    font: font.clone(),
+                                    font_size: 30.0,
+                                    color: Color::WHITE,
+                                },
+                            ),
+                            transform: Transform::from_translation(Vec3::new(0.0, 160.0, 1.0)), 
+                            ..Default::default()
+                        });
+
+                    
+                        parent.spawn(Text2dBundle {
+                            text: Text::from_section(
+                                format!("${}", item.price),
+                                TextStyle {
+                                    font: font.clone(),
+                                    font_size: 30.0,
+                                    color: Color::WHITE,
+                                },
+                            ),
+                            transform: Transform::from_translation(Vec3::new(0.0, -90.0, 1.0)), 
+                            ..Default::default()
+                        });
+                    });
+            }
+        } else {
+            println!("No available slots");
+        }
+    }
 }
 
 
