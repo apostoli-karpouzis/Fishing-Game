@@ -96,7 +96,7 @@ fn main() {
 
         
         // Check if we've hooked any fish
-        .add_systems(Update, hook_fish)
+        //.add_systems(Update, hook_fish)
 
         .insert_resource(ShopState {is_open: false})        
         .add_plugins(
