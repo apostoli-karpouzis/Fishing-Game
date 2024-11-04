@@ -874,7 +874,14 @@ fn is_fish_hooked (
         {
             continue;
         }
-    
+        /* 
+        state: Res<State<FishingMode>>,
+    mut potential_fish: Query<(&Fish, &Species, &FishDetails, Entity), With<Fish>>,
+    hooked_fish: Query<&Fish, With<Fish>>,
+    weather: Res<WeatherState>,
+    time: Res<GameDayTimer>,
+    mut commands: Commands
+        */
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
 
