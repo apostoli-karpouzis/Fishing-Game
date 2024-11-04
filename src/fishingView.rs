@@ -855,6 +855,7 @@ fn update_fishing_interface (
 
 fn is_fish_hooked (
     mut commands: Commands,
+    mut curr_state: ResMut<State<FishingState>>,
     mut next_state: ResMut<NextState<FishingState>>,
     mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),  With<Bobber>>,
     mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
@@ -876,16 +877,16 @@ fn is_fish_hooked (
         }
         /* 
         state: Res<State<FishingMode>>,
-    mut potential_fish: Query<(&Fish, &Species, &FishDetails, Entity), With<Fish>>,
-    hooked_fish: Query<&Fish, With<Fish>>,
-    weather: Res<WeatherState>,
-    time: Res<GameDayTimer>,
-    mut commands: Commands
+        mut potential_fish: Query<(&Fish, &Species, &FishDetails, Entity), With<Fish>>,
+        hooked_fish: Query<&Fish, With<Fish>>,
+        weather: Res<WeatherState>,
+        time: Res<GameDayTimer>,
+        mut commands: Commands
         */
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
 
-        if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+        if hook_fish(curr_state::ReelingUnhooked,fishes,&fishes, &weather, &mut prob_timer, commands){
             *bobber_visibility = Visibility::Hidden;
             fish_physics.mass = fish_physics.mass + bobber_physics.mass;
             commands.entity(bobber_entity_id).remove::<Hooked>();
