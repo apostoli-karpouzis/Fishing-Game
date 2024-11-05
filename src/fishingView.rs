@@ -63,13 +63,23 @@ struct DirectionTimer {
     pub timer: Timer,
 }
 
+#[derive(Default, PartialEq)]
+pub enum LineTypes{
+    #[default]
+    MONOFILIMENT,
+    FLUOROCARBON,
+    BRAIDED,
+}
+
 #[derive(Component, Default)]
 pub struct FishingLine {
     pub cast_distance: f32,
     pub length: f32,
     pub start: Vec2,
     pub end: Vec2,
+    pub strength: f32,
     pub mesh_handle: Handle<Mesh>,
+    pub line_type: LineTypes,
 }
 
 impl FishingLine {
@@ -184,7 +194,8 @@ impl Plugin for FishingViewPlugin {
                 move_physics_objects.after(is_fish_caught),
                 (
                     //animate_fishing_line_unhooked.run_if(in_state(FishingState::ReelingUnhooked)),
-                    animate_fishing_line_hooked
+                    animate_fishing_line_hooked,
+                    is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
@@ -406,7 +417,10 @@ fn setup (
             transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
             ..default()
         },
-        FishingLine::default()
+        FishingLine{
+            strength: 2000.,
+            ..default()
+        },
     ));
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
@@ -789,10 +803,12 @@ fn switch_lures(
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
     input: Res<ButtonInput<KeyCode>>,
+   mut line: Query< &mut FishingLine, (With<FishingLine>, Without<FishingRod>)>,
+
 ){
     let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
-
+    let mut line_properties = line.single_mut();
 
     if input.just_pressed(KeyCode::KeyZ) {
         if bait_texture.index == 2 
@@ -814,6 +830,22 @@ fn switch_lures(
         }
         bait_texture.index = bait_texture.index - 1;
         screen_texture.index = screen_texture.index - 1;
+    }
+
+    if input.just_pressed(KeyCode::KeyM) {
+        if line_properties.line_type == LineTypes::MONOFILIMENT {
+            println!("Switch to Fluorocarbon!");
+            line_properties.line_type = LineTypes::FLUOROCARBON;
+            line_properties.strength = 3000.;
+        }else if line_properties.line_type == LineTypes::FLUOROCARBON {
+            println!("Switch to Braided!");
+            line_properties.line_type = LineTypes::BRAIDED;
+            line_properties.strength = 4000.;
+        }else{
+            println!("Switch to Monofiliment!");
+            line_properties.line_type = LineTypes::MONOFILIMENT;
+            line_properties.strength = 2000.;
+        }
     }
     
 }
@@ -854,15 +886,16 @@ fn is_fish_hooked (
     
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
+        println!("collision");
 
-        if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+        //if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
             *bobber_visibility = Visibility::Hidden;
             fish_physics.mass = fish_physics.mass + bobber_physics.mass;
             commands.entity(bobber_entity_id).remove::<Hooked>();
             commands.entity(entity_id).insert(Hooked);
             next_state.set(FishingState::ReelingHooked);
             break;
-        }  
+        //}  
     }
 }
 
@@ -914,6 +947,24 @@ fn is_fish_caught (
         fish_details.is_caught = false;
         commands.entity(entity_id).remove::<Hooked>();
 
+        next_state.set(FishingState::Idle);
+    }
+}
+
+fn is_line_broken (
+    mut commands: Commands,
+    mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
+    mut next_state: ResMut<NextState<FishingState>>,
+    mut line: Query< &mut FishingLine ,  (With<FishingLine>, Without<Hooked>)>,
+    state: Res<State<FishingState>>,
+){
+
+    let fishingline = line.single(); 
+    let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
+    let tension_force = fish_physics.forces.player.length() + fish_physics.forces.water.length() + fish_physics.forces.own.length();
+
+    if tension_force > fishingline.strength{
+        commands.entity(entity_id).remove::<Hooked>();
         next_state.set(FishingState::Idle);
     }
 }
