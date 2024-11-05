@@ -1,3 +1,5 @@
+use std::path::is_separator;
+
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 use crate::{
     map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
@@ -14,6 +16,7 @@ pub struct HoverEntity(pub Entity);
 struct ShopItem {
     name: String,
     price: u32,
+    is_bought: bool,
 }
 
 #[derive(Resource)]
@@ -38,7 +41,7 @@ impl Plugin for ShopPlugin {
 fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
-            coins: 0,
+            coins: 1000,
             items: Vec::new(),
         },
 ));
@@ -75,36 +78,42 @@ fn spawn_shop(
         ShopItem {
             name: "Fishing Rod".to_string(),
             price: 50,
+            is_bought: true
         },
     ));
     commands.spawn((
         ShopItem{
             name: "Lure".to_string(),
             price: 20,
+            is_bought: false
         }
     ));
     commands.spawn((
         ShopItem{
             name: "Rocks".to_string(),
             price: 1000,
+            is_bought: false
         },
     ));
     commands.spawn((
         ShopItem{
             name: "Tree".to_string(),
             price: 20,
+            is_bought: false
         }
     ));
     commands.spawn((
         ShopItem{
             name: "Water".to_string(),
             price: 240,
+            is_bought: false
         }
     ));
     commands.spawn((
         ShopItem{
             name: "Fish".to_string(),
             price: 500,
+            is_bought: false
         }
     ));
 
@@ -246,7 +255,7 @@ fn handle_purchase(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     shop_state: Res<ShopState>,
-    shop_items: Query<(Entity, &ShopItem)>,
+    mut shop_items: Query<&mut ShopItem>,
     mut player_inventory: Query<&mut PlayerInventory>,
     selected_item: Res<SelectedShopItem>,
 ) {
@@ -257,14 +266,18 @@ fn handle_purchase(
     if keyboard_input.just_pressed(KeyCode::KeyE) { // Use Enter key to purchase
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
-            let items: Vec<_> = shop_items.iter().collect();
-            if let Some((item_entity, shop_item)) = items.get(selected_item.index) {
-                if inventory.coins >= shop_item.price {
+            let mut items: Vec<_> = shop_items.iter().collect();
+            if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
+                if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
                     inventory.items.push(shop_item.name.clone());
+                    shop_item.is_bought = true;
                     println!("Purchased: {}", shop_item.name);
-                } else {
+                } else if inventory.coins < shop_item.price{
                     println!("Not enough coins to purchase {}", shop_item.name);
+                }
+                else {
+                    println!("Shop item has already been purchased");
                 }
             }
         }
