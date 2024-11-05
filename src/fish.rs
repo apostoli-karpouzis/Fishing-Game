@@ -1,7 +1,9 @@
 use bevy::{prelude::*, utils::HashMap};
+use crate::weather::*;
 
 #[derive(Component)]
 pub struct Fish {
+    pub name: &'static str,
     pub id: u32,
     pub is_caught: bool,
     pub is_alive: bool,
@@ -9,13 +11,40 @@ pub struct Fish {
     pub length: f32,
     pub width: f32,
     pub weight: f32,
+    pub time_of_day: (usize, usize),
+    pub weather: Weather,
+    //bounds
+    pub depth: (i32, i32),
+    //x, y, z
+    pub position: (i32, i32),
+    pub change_x: Vec3,
+    pub change_y: Vec3,
+    //length, width, depth
+    pub bounds: (i32, i32),
     pub age: f32,
     pub hunger: f32
 }
 
 impl Fish {
-    pub fn new(id: u32, is_caught: bool, is_alive: bool, touching_lure: bool, length: f32, width: f32, weight: f32, age: f32, hunger: f32) -> Self {
-        Self { id, is_caught, is_alive, touching_lure, length, width, weight, age, hunger }
+    pub fn new(
+        name: &'static str,
+        id: u32, 
+        is_caught: bool, 
+        is_alive: bool, 
+        touching_lure: bool, 
+        length: f32, 
+        width: f32, 
+        weight: f32,
+        time_of_day: (usize, usize), 
+        weather: Weather,
+        depth: (i32, i32),
+        position: (i32, i32),
+        change_x: Vec3,
+        change_y: Vec3,
+        bounds: (i32, i32),
+        age: f32, 
+        hunger: f32) -> Self {
+        Self {name, id, is_caught, is_alive, touching_lure, length, width, weight, time_of_day, weather, depth, position, change_x, change_y, bounds, age, hunger }
     }
     
     //call when fish die
