@@ -99,7 +99,7 @@ impl FishingLineType {
     
     pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
     pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
-    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(1000., Color::srgb(0.9, 0.9, 0.9));
 }
 
 #[derive(Component, Default)]
