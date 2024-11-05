@@ -17,11 +17,11 @@ pub fn calc_fish_prob(
         let mut b_a = 0.;
         let mut b = 0.;
         if species.weather == weather.current_weather && (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
-            b_a = 0.2;
+            b_a = species.catch_prob;
             b = (0.25)*(((species.time_of_day.1 as f32)-(species.time_of_day.0 as f32))/24.);
         }
         else if species.weather == weather.current_weather || (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
-            b_a = 0.1;
+            b_a = (species.catch_prob/2.);
             if species.weather == weather.current_weather {
                 b = (0.25)*(1. - (((species.time_of_day.1 as f32)-(species.time_of_day.0 as f32))/24.));
             }
@@ -30,7 +30,7 @@ pub fn calc_fish_prob(
             }
         }
         else{
-            b_a = 0.05;
+            b_a = (species.catch_prob / 4.);
             b = (0.75)*(1. - (((species.time_of_day.1 as f32)-(species.time_of_day.0 as f32))/24.));
         }
 
