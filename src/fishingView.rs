@@ -3,7 +3,8 @@ extern crate rand;
 use std::f32;
 use std::f32::consts::PI;
 use std::time::Duration;
-use bevy::{prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
+use bevy::prelude::*;
+use bevy::sprite::*;
 use rand::Rng;
 use crate::fish::*;
 use crate::map::Collision;
@@ -12,7 +13,6 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
-use crate::probCalc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -63,27 +63,43 @@ struct DirectionTimer {
     pub timer: Timer,
 }
 
-#[derive(Default, PartialEq)]
-pub enum LineTypes{
-    #[default]
-    MONOFILIMENT,
-    FLUOROCARBON,
-    BRAIDED,
-}
-
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct FishingLine {
     pub cast_distance: f32,
     pub length: f32,
     pub start: Vec2,
     pub end: Vec2,
-    pub strength: f32,
-    pub mesh_handle: Handle<Mesh>,
-    pub line_type: LineTypes,
+    pub line_type: &'static FishingLineType
 }
 
 impl FishingLine {
+    pub fn new(line_type: &'static FishingLineType) -> Self {
+        Self {
+            cast_distance: 0.0,
+            length: 0.0,
+            start: Vec2::ZERO,
+            end: Vec2::ZERO,
+            line_type
+        }
+    }
+
     pub const WIDTH: f32 = 3.;
+}
+
+#[derive(PartialEq)]
+pub struct FishingLineType {
+    pub strength: f32,
+    pub color: Color
+}
+
+impl FishingLineType {
+    pub const fn new(strength: f32, color: Color) -> Self {
+        Self { strength, color }
+    }
+    
+    pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
+    pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
 }
 
 #[derive(Component, Default)]
@@ -176,7 +192,7 @@ impl Plugin for FishingViewPlugin {
                 move_fish,
                 fish_area_bobber,
                 power_bar_cast.run_if(in_state(FishingState::Idle)),
-                switch_lures.run_if(in_state(FishingState::Idle)),
+                switch_equipment.run_if(in_state(FishingState::Idle)),
                 rod_rotate,
                 (
                     update_fishing_interface,
@@ -384,7 +400,6 @@ fn setup (
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX+575., FISHINGROOMY-308., 899.),
                 ..default()
@@ -401,7 +416,6 @@ fn setup (
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
                 ..default()
@@ -417,7 +431,6 @@ fn setup (
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100., 900.),
                 ..default()
@@ -436,10 +449,7 @@ fn setup (
             transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
             ..default()
         },
-        FishingLine{
-            strength: 2000.,
-            ..default()
-        },
+        FishingLine::new(&FishingLineType::MONOFILILMENT)
     ));
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
@@ -818,26 +828,27 @@ fn cast_line (
 
 }
 
-fn switch_lures(
+fn switch_equipment (
+    input: Res<ButtonInput<KeyCode>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
-    input: Res<ButtonInput<KeyCode>>,
-   mut line: Query< &mut FishingLine, (With<FishingLine>, Without<FishingRod>)>,
+    mut line: Query<(&mut FishingLine, &mut Handle<ColorMaterial>), With<FishingLine>>,
 
-){
+) {
     let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
-    let mut line_properties = line.single_mut();
+    let (mut line_properties, mut line_material) = line.single_mut();
 
     if input.just_pressed(KeyCode::KeyZ) {
         if bait_texture.index == 2 
         {
             bait_texture.index = 0;
             screen_texture.index = 0;
-            return;
+        } else {
+            bait_texture.index = bait_texture.index + 1;
+            screen_texture.index = screen_texture.index + 1;
         }
-        bait_texture.index = bait_texture.index + 1;
-        screen_texture.index = screen_texture.index + 1;
     }
 
     if input.just_pressed(KeyCode::KeyX) {
@@ -845,26 +856,28 @@ fn switch_lures(
         {
             bait_texture.index = 2;
             screen_texture.index = 2;
-            return;
+        } else {
+            bait_texture.index = bait_texture.index - 1;
+            screen_texture.index = screen_texture.index - 1;
         }
-        bait_texture.index = bait_texture.index - 1;
-        screen_texture.index = screen_texture.index - 1;
     }
 
     if input.just_pressed(KeyCode::KeyM) {
-        if line_properties.line_type == LineTypes::MONOFILIMENT {
-            println!("Switch to Fluorocarbon!");
-            line_properties.line_type = LineTypes::FLUOROCARBON;
-            line_properties.strength = 3000.;
-        }else if line_properties.line_type == LineTypes::FLUOROCARBON {
-            println!("Switch to Braided!");
-            line_properties.line_type = LineTypes::BRAIDED;
-            line_properties.strength = 4000.;
-        }else{
-            println!("Switch to Monofiliment!");
-            line_properties.line_type = LineTypes::MONOFILIMENT;
-            line_properties.strength = 2000.;
+        match line_properties.line_type {
+            &FishingLineType::MONOFILILMENT => {
+                line_properties.line_type = &FishingLineType::FLUOROCARBON;
+            }
+            &FishingLineType::FLUOROCARBON => {
+                line_properties.line_type = &FishingLineType::BRAIDED;
+            }
+            &FishingLineType::BRAIDED => {
+                line_properties.line_type = &FishingLineType::MONOFILILMENT;
+            }
+            _ => {}
         }
+
+        let material = materials.get_mut(line_material.id()).unwrap();
+        material.color = line_properties.line_type.color;
     }
     
 }
@@ -972,17 +985,16 @@ fn is_fish_caught (
 
 fn is_line_broken (
     mut commands: Commands,
-    mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
     mut next_state: ResMut<NextState<FishingState>>,
-    mut line: Query< &mut FishingLine ,  (With<FishingLine>, Without<Hooked>)>,
-    state: Res<State<FishingState>>,
+    hooked_object: Query<(Entity, &PhysicsObject), With<Hooked>>,
+    line: Query<&FishingLine, With<FishingLine>>,
 ){
 
+    let (entity_id, fish_physics) = hooked_object.single();
     let fishingline = line.single(); 
-    let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
     let tension_force = fish_physics.forces.player.length() + fish_physics.forces.water.length() + fish_physics.forces.own.length();
 
-    if tension_force > fishingline.strength{
+    if tension_force > fishingline.line_type.strength {
         commands.entity(entity_id).remove::<Hooked>();
         next_state.set(FishingState::Idle);
     }
@@ -1030,7 +1042,7 @@ fn animate_fishing_line_hooked (
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
     mut fish: Query<(&Species, &PhysicsObject), With<Fish>>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
-    mut bobber: Query<(&mut Transform, &PhysicsObject), (With<Bobber>, Without<FishingRod>)>,
+    mut bobber: Query<&PhysicsObject, With<Bobber>>,
     state: Res<State<FishingState>>
 ) {
 
@@ -1038,11 +1050,10 @@ fn animate_fishing_line_hooked (
         return;
     }
 
-    println!("reeling in line");
     let (rod_info, rod_transform) = rod.single();
     let (fish_species, fish_physics) = fish.single_mut();
     let mut line_info = line.single_mut();
-    let(mut bobber_transform, bobber_physics) = bobber.single_mut();
+    let bobber_physics = bobber.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
@@ -1056,8 +1067,6 @@ fn animate_fishing_line_hooked (
         line_info.start = rod_end;
         line_info.end = bobber_physics.position.xy();
     }
-    // Hook line to fish
-    //bobber_transform.translation =  fish_pos.extend(950.);
 }
 
 fn reset_interface (
@@ -1092,7 +1101,7 @@ fn draw_fishing_line (
     mut line: Query<(&mut Transform, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<FishingRod>)>,
 ) {
     println!("drawing line");
-    let (mut line_transform, mut line_mesh, mut line_info) = line.single_mut();
+    let (mut line_transform, mut line_mesh, line_info) = line.single_mut();
 
     let pos_delta = line_info.end - line_info.start;
     let line_length = pos_delta.length();
@@ -1103,9 +1112,8 @@ fn draw_fishing_line (
     line_transform.translation = Vec3::new(line_pos.x, line_pos.y, line_transform.translation.z);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
 
-    meshes.remove(&line_info.mesh_handle);
-    line_info.mesh_handle = meshes.add(Rectangle::new(FishingLine::WIDTH, line_length));
-    *line_mesh = Mesh2dHandle(line_info.mesh_handle.clone());
+    meshes.remove(line_mesh.id());
+    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, line_length)));
 }
 
 fn animate_splash(
