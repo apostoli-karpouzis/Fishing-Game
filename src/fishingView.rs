@@ -3,7 +3,8 @@ extern crate rand;
 use std::f32;
 use std::f32::consts::PI;
 use std::time::Duration;
-use bevy::{prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
+use bevy::prelude::*;
+use bevy::sprite::*;
 use rand::Rng;
 use crate::fish::*;
 use crate::map::Collision;
@@ -30,6 +31,9 @@ const ROD_MIN_ROTATION: f32 = -1.2;
 const ROD_MAX_ROTATION: f32 = 1.2;
 const ROD_ROTATION_SPEED: f32 = PI / 2.;
 
+const BENDING_RESOLUTION: f32 = 0.01;
+const PIXELS_PER_METER: f32 = 200.;
+
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
@@ -37,7 +41,8 @@ const REEL_IN_SPEED: f32 = 150.;
 #[derive(Resource)]
 pub struct FishingView {
     pub rod_rotation: f32,
-    pub power: f32
+    pub power: f32,
+    pub segments: Vec<Entity>
 }
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -59,7 +64,24 @@ struct PowerBar;
 
 #[derive(Component)]
 pub struct FishingRod {
-    pub length: f32
+    pub length: f32,
+    pub rod_type: &'static FishingRodType,
+    pub rod_material: Handle<ColorMaterial>
+}
+
+pub struct FishingRodType {
+    pub length: f32,
+    pub radius: f32,
+    pub thickness: f32,
+    pub shear_modulus: f32,
+}
+
+impl FishingRodType {
+    pub const fn new(length: f32, radius: f32, thickness: f32, shear_modulus: f32) -> Self {
+        Self { length, radius, thickness, shear_modulus }
+    }
+
+    pub const NORMAL: FishingRodType = FishingRodType::new(1.5, 0.015, 0.004, 72E9);
 }
 
 #[derive(Resource)]
@@ -67,17 +89,43 @@ struct DirectionTimer {
     pub timer: Timer,
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct FishingLine {
     pub cast_distance: f32,
     pub length: f32,
     pub start: Vec2,
     pub end: Vec2,
-    pub mesh_handle: Handle<Mesh>,
+    pub line_type: &'static FishingLineType
 }
 
 impl FishingLine {
+    pub fn new(line_type: &'static FishingLineType) -> Self {
+        Self {
+            cast_distance: 0.0,
+            length: 0.0,
+            start: Vec2::ZERO,
+            end: Vec2::ZERO,
+            line_type
+        }
+    }
+
     pub const WIDTH: f32 = 3.;
+}
+
+#[derive(PartialEq)]
+pub struct FishingLineType {
+    pub strength: f32,
+    pub color: Color
+}
+
+impl FishingLineType {
+    pub const fn new(strength: f32, color: Color) -> Self {
+        Self { strength, color }
+    }
+    
+    pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
+    pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(1000., Color::srgb(0.9, 0.9, 0.9));
 }
 
 #[derive(Component, Default)]
@@ -107,62 +155,62 @@ pub enum ObstType{
     Pad,
 }
 //FISH THING
-#[derive(Component)]
-pub struct FishDetails {
-    pub name: &'static str,
-    pub fish_id: i32,
-    pub length: i32,
-    pub width: i32,
-    pub weight: i32,
-    pub time_of_day: (usize, usize),
-    pub weather: Weather,
-    //bounds
-    pub depth: (i32, i32),
-    //x, y, z
-    pub position: (i32, i32),
-    pub change_x: Vec3,
-    pub change_y: Vec3,
-    //length, width, depth
-    pub bounds: (i32, i32),
-    pub hunger: f32,
-    pub touching_lure: bool,
-}
+// #[derive(Component)]
+// pub struct FishDetails {
+//     pub name: &'static str,
+//     pub fish_id: i32,
+//     pub length: i32,
+//     pub width: i32,
+//     pub weight: i32,
+//     pub time_of_day: (usize, usize),
+//     pub weather: Weather,
+//     //bounds
+//     pub depth: (i32, i32),
+//     //x, y, z
+//     pub position: (i32, i32),
+//     pub change_x: Vec3,
+//     pub change_y: Vec3,
+//     //length, width, depth
+//     pub bounds: (i32, i32),
+//     pub hunger: f32,
+//     pub touching_lure: bool,
+// }
 
-impl FishDetails {
-    pub fn new(
-        name: &'static str,
-        fish_id: i32,
-        length: i32,
-        width: i32,
-        weight: i32,
-        time_of_day: (usize, usize),
-        weather: Weather,
-        depth: (i32, i32),
-        position: (i32, i32),
-        change_x: Vec3,
-        change_y: Vec3,
-        bounds: (i32, i32),
-        hunger: f32,
-        touching_lure: bool,
-    ) -> Self {
-        Self {
-            name,
-            fish_id,
-            length,
-            width,
-            weight,
-            time_of_day,
-            weather,
-            depth,
-            position,
-            change_x,
-            change_y,
-            bounds,
-            hunger,
-            touching_lure,
-        }
-    }
-}
+// impl FishDetails {
+//     pub fn new(
+//         name: &'static str,
+//         fish_id: i32,
+//         length: i32,
+//         width: i32,
+//         weight: i32,
+//         time_of_day: (usize, usize),
+//         weather: Weather,
+//         depth: (i32, i32),
+//         position: (i32, i32),
+//         change_x: Vec3,
+//         change_y: Vec3,
+//         bounds: (i32, i32),
+//         hunger: f32,
+//         touching_lure: bool,
+//     ) -> Self {
+//         Self {
+//             name,
+//             fish_id,
+//             length,
+//             width,
+//             weight,
+//             time_of_day,
+//             weather,
+//             depth,
+//             position,
+//             change_x,
+//             change_y,
+//             bounds,
+//             hunger,
+//             touching_lure,
+//         }
+//     }
+// }
 
 #[derive(Component)]
 pub struct FishingViewPlugin;
@@ -172,7 +220,7 @@ impl Plugin for FishingViewPlugin {
         app
         .init_state::<FishingMode>()
         .init_state::<FishingState>()
-        .insert_resource(FishingView { rod_rotation: 0., power: 0. })
+        .insert_resource(FishingView { rod_rotation: 0., power: 0., segments: Vec::new() })
         .insert_resource(ProbTimer::new(2.))
         .add_systems(Startup, setup)
         .add_systems(Update,
@@ -180,7 +228,7 @@ impl Plugin for FishingViewPlugin {
                 move_fish,
                 fish_area_bobber,
                 power_bar_cast.run_if(in_state(FishingState::Idle)),
-                switch_lures.run_if(in_state(FishingState::Idle)),
+                switch_equipment.run_if(in_state(FishingState::Idle)),
                 rod_rotate,
                 (
                     update_fishing_interface,
@@ -198,7 +246,9 @@ impl Plugin for FishingViewPlugin {
                 move_physics_objects.after(is_fish_caught),
                 (
                     //animate_fishing_line_unhooked.run_if(in_state(FishingState::ReelingUnhooked)),
-                    animate_fishing_line_hooked
+                    animate_fishing_line_hooked,
+                    animate_fishing_rod,
+                    is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
@@ -216,6 +266,7 @@ impl Plugin for FishingViewPlugin {
 fn setup (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut fishing_view: ResMut<FishingView>,
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -262,8 +313,8 @@ fn setup (
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 5.,
             hunger: 10.,
-            touching_lure: false,
         },
         InPond,
         BASS,
@@ -299,8 +350,9 @@ fn setup (
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 10.,
             hunger: 7.,
-            touching_lure: false,
+            
         },
         InPond,
         CATFISH,
@@ -324,6 +376,7 @@ fn setup (
         },
         BASS,
         Fish {
+            name: "Bass2",
             id: 0,
             is_caught: false,
             is_alive: true,
@@ -331,6 +384,15 @@ fn setup (
             length: 8.0,
             width: 5.0,
             weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
@@ -340,7 +402,9 @@ fn setup (
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
-        }
+        },
+        InPond,
+        Collision,
     ));
 
     let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
@@ -368,7 +432,6 @@ fn setup (
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX+575., FISHINGROOMY-308., 899.),
                 ..default()
@@ -385,7 +448,6 @@ fn setup (
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
                 ..default()
@@ -395,13 +457,15 @@ fn setup (
     ));
 
     let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
-    commands.spawn((
+
+    let fishing_rod_material = materials.add(Color::srgb(0.0, 0.0, 0.0));
+    
+    let fishing_rod = commands.spawn((
         SpriteBundle {
             texture: fishing_rod_handle.clone(),
                         sprite: Sprite{
                         ..default() 
                         },
-            //where do I put it
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100., 900.),
                 ..default()
@@ -409,9 +473,26 @@ fn setup (
             ..default()
         },
         FishingRod {
-            length: 300.
+            length: 300.,
+            rod_type: &FishingRodType::NORMAL,
+            rod_material: fishing_rod_material.clone()
         }
     ));
+
+    let segment_count: usize = (FishingRodType::NORMAL.length / BENDING_RESOLUTION) as usize;
+
+    for i in 0..segment_count {
+        let segment = commands.spawn(
+            MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, FishingLine::WIDTH))),
+                material: fishing_rod_material.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            }
+        );
+
+        fishing_view.segments.push(segment.id());
+    }
 
     commands.spawn((
         MaterialMesh2dBundle {
@@ -420,7 +501,7 @@ fn setup (
             transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
             ..default()
         },
-        FishingLine::default()
+        FishingLine::new(&FishingLineType::MONOFILILMENT)
     ));
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
@@ -731,7 +812,7 @@ fn move_fish(
 
 
 fn fish_area_bobber(
-    mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>, Without<Bobber>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<Bobber>)>,
     bobber: Query<(&Transform, &Tile), With<Bobber>>,
 ) {
     //let (bob, tile) = bobber.single_mut();
@@ -912,24 +993,27 @@ fn cast_line (
 
 }
 //BEN
-fn switch_lures(
+fn switch_equipment (
+    input: Res<ButtonInput<KeyCode>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
-    input: Res<ButtonInput<KeyCode>>,
-){
+    mut line: Query<(&mut FishingLine, &mut Handle<ColorMaterial>), With<FishingLine>>,
+
+) {
     let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
-
+    let (mut line_properties, mut line_material) = line.single_mut();
 
     if input.just_pressed(KeyCode::KeyZ) {
         if bait_texture.index == 2 
         {
             bait_texture.index = 0;
             screen_texture.index = 0;
-            return;
+        } else {
+            bait_texture.index = bait_texture.index + 1;
+            screen_texture.index = screen_texture.index + 1;
         }
-        bait_texture.index = bait_texture.index + 1;
-        screen_texture.index = screen_texture.index + 1;
     }
 
     if input.just_pressed(KeyCode::KeyX) {
@@ -937,10 +1021,28 @@ fn switch_lures(
         {
             bait_texture.index = 2;
             screen_texture.index = 2;
-            return;
+        } else {
+            bait_texture.index = bait_texture.index - 1;
+            screen_texture.index = screen_texture.index - 1;
         }
-        bait_texture.index = bait_texture.index - 1;
-        screen_texture.index = screen_texture.index - 1;
+    }
+
+    if input.just_pressed(KeyCode::KeyM) {
+        match line_properties.line_type {
+            &FishingLineType::MONOFILILMENT => {
+                line_properties.line_type = &FishingLineType::FLUOROCARBON;
+            }
+            &FishingLineType::FLUOROCARBON => {
+                line_properties.line_type = &FishingLineType::BRAIDED;
+            }
+            &FishingLineType::BRAIDED => {
+                line_properties.line_type = &FishingLineType::MONOFILILMENT;
+            }
+            _ => {}
+        }
+
+        let material = materials.get_mut(line_material.id()).unwrap();
+        material.color = line_properties.line_type.color;
     }
     
 }
@@ -981,6 +1083,7 @@ fn is_fish_hooked (
     
         //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
         //also add weight of the bobber to the fish
+        println!("collision");
 
         if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
             *bobber_visibility = Visibility::Hidden;
@@ -1045,6 +1148,67 @@ fn is_fish_caught (
     }
 }
 
+fn animate_fishing_rod (
+    mut commands: Commands,
+    fishing_view: Res<FishingView>,
+    fishing_rod: Query<&FishingRod, With<FishingRod>>,
+    hooked_object: Query<&PhysicsObject, With<Hooked>>
+) {
+    let rod_state = fishing_rod.single();
+    
+    let force = if hooked_object.is_empty() {
+        0.
+    } else {
+        let physics_object = hooked_object.single();
+        physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length() // Temporary value
+    };
+
+    let rod_type = rod_state.rod_type;
+    let thickness_ratio = rod_type.thickness / rod_type.radius;
+    let thickness_ratio_inverse = 1. - thickness_ratio;
+
+    let mut pos_x = 0.;
+    let mut pos_y = 0.;
+    let mut theta = 0.;
+
+    for i in 0..fishing_view.segments.len() {
+        let x = i as f32 * BENDING_RESOLUTION;
+        let bending_moment_area = 1.0 / 2.0 * (x + x + BENDING_RESOLUTION) * force * BENDING_RESOLUTION;
+        let r2 = rod_type.radius * (thickness_ratio + x / rod_type.length * thickness_ratio_inverse);
+        let r1 = r2 - rod_type.thickness;
+        let second_moment_area = PI / 2. * (f32::powi(r2, 4) - f32::powi(r1, 4));
+        let dt = bending_moment_area / (rod_type.shear_modulus * second_moment_area);
+  
+        theta += dt;
+        pos_x += BENDING_RESOLUTION * f32::cos(theta);
+        pos_y += BENDING_RESOLUTION * f32::sin(theta);
+
+        // Display
+        let screen_ = FISHINGROOMX + pos_x * PIXELS_PER_METER;
+        let screen_y = FISHINGROOMY + 100. + pos_y * PIXELS_PER_METER;
+
+        let mut entity = commands.entity(fishing_view.segments[i]);
+        entity.insert(Transform::from_xyz(screen_, screen_y, 950.));
+    }
+}
+
+fn is_line_broken (
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<FishingState>>,
+    hooked_object: Query<(Entity, &PhysicsObject), With<Hooked>>,
+    line: Query<&FishingLine, With<FishingLine>>,
+){
+
+    let (entity_id, fish_physics) = hooked_object.single();
+    let fishingline = line.single(); 
+    let tension_force = fish_physics.forces.player.length() + fish_physics.forces.water.length() + fish_physics.forces.own.length();
+
+    if tension_force > fishingline.line_type.strength {
+        commands.entity(entity_id).remove::<Hooked>();
+        next_state.set(FishingState::Idle);
+    }
+}
+
 fn animate_fishing_line_unhooked (
     mut commands: Commands,
     input: Res<ButtonInput<KeyCode>>,
@@ -1087,7 +1251,7 @@ fn animate_fishing_line_hooked (
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
     mut fish: Query<(&Species, &PhysicsObject), With<Fish>>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
-    mut bobber: Query<(&mut Transform, &PhysicsObject), (With<Bobber>, Without<FishingRod>)>,
+    mut bobber: Query<&PhysicsObject, With<Bobber>>,
     state: Res<State<FishingState>>
 ) {
 
@@ -1095,11 +1259,10 @@ fn animate_fishing_line_hooked (
         return;
     }
 
-    println!("reeling in line");
     let (rod_info, rod_transform) = rod.single();
     let (fish_species, fish_physics) = fish.single_mut();
     let mut line_info = line.single_mut();
-    let(mut bobber_transform, bobber_physics) = bobber.single_mut();
+    let bobber_physics = bobber.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
@@ -1113,8 +1276,6 @@ fn animate_fishing_line_hooked (
         line_info.start = rod_end;
         line_info.end = bobber_physics.position.xy();
     }
-    // Hook line to fish
-    //bobber_transform.translation =  fish_pos.extend(950.);
 }
 
 fn reset_interface (
@@ -1149,7 +1310,7 @@ fn draw_fishing_line (
     mut line: Query<(&mut Transform, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<FishingRod>)>,
 ) {
     println!("drawing line");
-    let (mut line_transform, mut line_mesh, mut line_info) = line.single_mut();
+    let (mut line_transform, mut line_mesh, line_info) = line.single_mut();
 
     let pos_delta = line_info.end - line_info.start;
     let line_length = pos_delta.length();
@@ -1160,9 +1321,8 @@ fn draw_fishing_line (
     line_transform.translation = Vec3::new(line_pos.x, line_pos.y, line_transform.translation.z);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
 
-    meshes.remove(&line_info.mesh_handle);
-    line_info.mesh_handle = meshes.add(Rectangle::new(FishingLine::WIDTH, line_length));
-    *line_mesh = Mesh2dHandle(line_info.mesh_handle.clone());
+    meshes.remove(line_mesh.id());
+    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, line_length)));
 }
 
 fn animate_splash(
