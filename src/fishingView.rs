@@ -13,6 +13,7 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
+use crate::probCalc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
