@@ -50,6 +50,7 @@ pub enum GameState {
     MapTransition
 }
 
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FishingMode {
     #[default]

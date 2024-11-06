@@ -283,6 +283,22 @@ fn setup(
         Tile::TREE,
         Collision,
     ));
+    commands.spawn((
+        SpriteBundle {
+            texture: tree_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(300., 300., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::TREE,
+        Collision,
+    ));
     
     //spawn_button(&mut commands, asset_server);
     //spawn_button(&mut commands, asset_server);
@@ -291,6 +307,8 @@ fn setup(
     commands.insert_resource(
         GameDayTimer::new(10.),
     );
+
+    
 
     //let grass_layout_len = grass_layout.textures.len();
     //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 

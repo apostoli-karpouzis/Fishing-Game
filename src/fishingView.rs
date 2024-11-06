@@ -17,6 +17,8 @@ use crate::probCalc::*;
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
 
+const MARGINERROR: f32 = 100.;
+
 pub const FISHINGROOMX: f32 = 8960.;
 pub const FISHINGROOMY: f32 = 3600.;
 
@@ -46,6 +48,8 @@ pub enum FishingState {
     ReelingUnhooked,
     ReelingHooked
 }
+
+
 
 #[derive(Component)]
 struct OnScreenLure;
@@ -92,6 +96,16 @@ struct InPond;
 
 #[derive(Component)]
 pub struct IsBass;
+
+#[derive(Component)]
+pub struct PondObstruction;
+
+#[derive(Component, PartialEq)]
+pub enum ObstType{
+    Tree,
+    Fissure,
+    Pad,
+}
 //FISH THING
 #[derive(Component)]
 pub struct FishDetails {
@@ -234,7 +248,7 @@ fn setup (
             ..default()
         },
         FishDetails {
-            name: "Bass1",
+            name: "bass",
             fish_id: 1,
             length: rng.gen_range(4..8),
             width: rng.gen_range(1..3),
@@ -271,7 +285,7 @@ fn setup (
             ..default()
         },
         FishDetails {
-            name: "Cat1",
+            name: "catfish",
             fish_id: 2,
             length: rng.gen_range(5..12),
             width: rng.gen_range(3..5),
@@ -537,57 +551,169 @@ fn setup (
         Collision,
         Bobber::default(),
     ));*/
+
+    //spawning in the lilypad
+    let lily_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/lilypad.png");
+    let deep_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/deep.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: lily_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(128.,128.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Pad,
+        InPond,
+    ));
+    commands.spawn((
+        SpriteBundle {
+            texture: deep_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(128.,128.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Fissure,
+        InPond,
+    ));
+
 }
+
 
 fn move_fish(
     mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
     //mut fish_direction: ResMut<FishBoundsDir>
 ) {
     let mut rng = rand::thread_rng();
+    let mut obstRng = rand::thread_rng();
     config.timer.tick(time.delta());
-    for (mut fish_details, mut fish_pos) in fish_details.iter_mut() {
-        //let mut rng = rand::thread_rng();
+    //let mut obst_details = obst_details.single_mut();
 
+    for (mut fish_details, mut fish_pos) in fish_details.iter_mut() {
+        //let mut rng = rand::thread_rng();             
+        
+        //move towards the obsticle on the x bounds
+
+        
         if config.timer.finished() {
-            println!("timer finished");
-            let dir: i32 = rng.gen_range(0..9);
-            println!("numer is {} {:?}", dir, fish_details.name);
-            if dir == 0 {
-                fish_details.change_x = Vec3::new(0., 0., 0.);
-                fish_details.change_y = Vec3::new(0., 0.5, 0.);
-            } else if dir == 1 {
-                fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., 0.5, 0.);
-            } else if dir == 2 {
-                fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., 0., 0.);
-            } else if dir == 3 {
-                fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., -0.5, 0.);
-            } else if dir == 4 {
-                fish_details.change_x = Vec3::new(0., 0., 0.);
-                fish_details.change_y = Vec3::new(0., -0.5, 0.);
-            } else if dir == 5 {
-                fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., -0.5, 0.);
-            } else if dir == 6 {
-                fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., 0., 0.);
-            } else if dir == 7 {
-                fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                fish_details.change_y = Vec3::new(0., 0.5, 0.);
+
+
+            let move_type: i32 = rng.gen_range(0..9); 
+            let dir: i32 = obstRng.gen_range(0..9);
+            //finding where to go in relation to the 
+            //position in relation to x row
+            for (mut obst_details, ObsticalType) in obst_details.iter_mut(){
+                //go back and account for margin of error done
+                
+                if *ObsticalType == ObstType::Fissure{
+                    if fish_details.name == "catfish"{
+                        if obst_details.translation.x >= fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                
+                        }
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                        }
+                
+                        //move towards the obsticle on the right bounds
+                        if obst_details.translation.y >= fish_pos.translation.y{
+                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                
+                        }
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
+                        }
+                    }
+                }
+                else if *ObsticalType == ObstType::Pad{
+                    if fish_details.name == "bass"{
+                        if obst_details.translation.x >= fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                
+                        }
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                        }
+                
+                        //move towards the obsticle on the right bounds
+                        if obst_details.translation.y >= fish_pos.translation.y{
+                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                
+                        }
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
+                        }
+                    }
+                }
+                //for each collision object add a 
+
+                
+            
             }
-            println!(
-                "numer is {:?} is going {:?}",
-                fish_details.name, fish_details.change_x
-            );
+            
+
+            println!("timer finished");
+
+            
+
+            //println!("numer is {} {:?}", dir, fish_details.name);
+            if move_type >= 4{
+                if dir == 0 {
+                    fish_details.change_x = Vec3::new(0., 0., 0.);
+                    fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                } else if dir == 1 {
+                    fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                } else if dir == 2 {
+                    fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., 0., 0.);
+                } else if dir == 3 {
+                    fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., -0.5, 0.);
+                } else if dir == 4 {
+                    fish_details.change_x = Vec3::new(0., 0., 0.);
+                    fish_details.change_y = Vec3::new(0., -0.5, 0.);
+                } else if dir == 5 {
+                    fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., -0.5, 0.);
+                } else if dir == 6 {
+                    fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., 0., 0.);
+                } else if dir == 7 {
+                    fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                    fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                }
+                
+            }
+            else{
+                println!("moving toward the object");
+                //if it isnt moving in a random direction,
+            }
         }
+        
         //match it then set up the vector for the next tree seconds, keep the stuff about borders
 
         //println!("fish pos x {}, fish pos y {}", change_x, change_y);
         //CHANGE THESE TO CONSTANTS LATER!!!!!
+        
         let holdx: Vec3 = fish_pos.translation + fish_details.change_x;
         if (holdx.x) >= (8320. + 160.) && (holdx.x) <= (9391. - 160.) {
             fish_pos.translation += fish_details.change_x;
@@ -596,6 +722,7 @@ fn move_fish(
         if (holdy.y) >= (3376. + 90.) && (holdy.y) <= (3960. - 90.) {
             fish_pos.translation += fish_details.change_y;
         }
+        
     }
     //fish_pos.translation += change_y;
     //return (self.position.0 + x, self.position.1+y)
@@ -784,7 +911,7 @@ fn cast_line (
     bobber_transform.translation = line_info.end.extend(950.);
 
 }
-
+//BEN
 fn switch_lures(
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
@@ -829,7 +956,7 @@ fn update_fishing_interface (
     power_bar_transform.translation.y = POWER_BAR_Y_OFFSET + fishing_view.power;
     rod_transform.rotation = Quat::from_rotation_z(fishing_view.rod_rotation);
 }
-
+//BENLOOK
 fn is_fish_hooked (
     mut commands: Commands,
     mut next_state: ResMut<NextState<FishingState>>,
@@ -1092,3 +1219,4 @@ fn animate_waves (
     wave_transform.translation = object.position.with_z(902.);
     wave_transform.rotation = Quat::from_rotation_z(f32::atan2(object.forces.water.y, object.forces.water.x) - PI / 2.);
 }
+
