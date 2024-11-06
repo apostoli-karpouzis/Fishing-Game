@@ -155,62 +155,62 @@ pub enum ObstType{
     Pad,
 }
 //FISH THING
-// #[derive(Component)]
-// pub struct FishDetails {
-//     pub name: &'static str,
-//     pub fish_id: i32,
-//     pub length: i32,
-//     pub width: i32,
-//     pub weight: i32,
-//     pub time_of_day: (usize, usize),
-//     pub weather: Weather,
-//     //bounds
-//     pub depth: (i32, i32),
-//     //x, y, z
-//     pub position: (i32, i32),
-//     pub change_x: Vec3,
-//     pub change_y: Vec3,
-//     //length, width, depth
-//     pub bounds: (i32, i32),
-//     pub hunger: f32,
-//     pub touching_lure: bool,
-// }
+#[derive(Component)]
+pub struct FishDetails {
+    pub name: &'static str,
+    pub fish_id: i32,
+    pub length: i32,
+    pub width: i32,
+    pub weight: i32,
+    pub time_of_day: (usize, usize),
+    pub weather: Weather,
+    //bounds
+    pub depth: (i32, i32),
+    //x, y, z
+    pub position: (i32, i32),
+    pub change_x: Vec3,
+    pub change_y: Vec3,
+    //length, width, depth
+    pub bounds: (i32, i32),
+    pub hunger: f32,
+    pub touching_lure: bool,
+}
 
-// impl FishDetails {
-//     pub fn new(
-//         name: &'static str,
-//         fish_id: i32,
-//         length: i32,
-//         width: i32,
-//         weight: i32,
-//         time_of_day: (usize, usize),
-//         weather: Weather,
-//         depth: (i32, i32),
-//         position: (i32, i32),
-//         change_x: Vec3,
-//         change_y: Vec3,
-//         bounds: (i32, i32),
-//         hunger: f32,
-//         touching_lure: bool,
-//     ) -> Self {
-//         Self {
-//             name,
-//             fish_id,
-//             length,
-//             width,
-//             weight,
-//             time_of_day,
-//             weather,
-//             depth,
-//             position,
-//             change_x,
-//             change_y,
-//             bounds,
-//             hunger,
-//             touching_lure,
-//         }
-//     }
-// }
+impl FishDetails {
+    pub fn new(
+        name: &'static str,
+        fish_id: i32,
+        length: i32,
+        width: i32,
+        weight: i32,
+        time_of_day: (usize, usize),
+        weather: Weather,
+        depth: (i32, i32),
+        position: (i32, i32),
+        change_x: Vec3,
+        change_y: Vec3,
+        bounds: (i32, i32),
+        hunger: f32,
+        touching_lure: bool,
+    ) -> Self {
+        Self {
+            name,
+            fish_id,
+            length,
+            width,
+            weight,
+            time_of_day,
+            weather,
+            depth,
+            position,
+            change_x,
+            change_y,
+            bounds,
+            hunger,
+            touching_lure,
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct FishingViewPlugin;
@@ -313,8 +313,9 @@ fn setup (
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            age: 5.,
+            //age: 5.,
             hunger: 10.,
+            touching_lure: false,
         },
         InPond,
         BASS,
@@ -350,8 +351,8 @@ fn setup (
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
             bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            age: 10.,
             hunger: 7.,
+            touching_lure: false,
             
         },
         InPond,
