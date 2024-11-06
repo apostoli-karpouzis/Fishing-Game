@@ -1152,19 +1152,29 @@ fn is_fish_caught (
 fn animate_fishing_rod (
     mut commands: Commands,
     fishing_view: Res<FishingView>,
-    fishing_rod: Query<&FishingRod, With<FishingRod>>,
-    hooked_object: Query<&PhysicsObject, With<Hooked>>
+    fishing_rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
+    hooked_object: Query<(&Species, &PhysicsObject), With<Hooked>>
 ) {
-    let rod_state = fishing_rod.single();
+    let (rod_info, rod_transform) = fishing_rod.single();
     
     let force = if hooked_object.is_empty() {
         0.
     } else {
-        let physics_object = hooked_object.single();
-        physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length() // Temporary value
+        let (fish_species, physics_object) = hooked_object.single();
+
+        // Temporary 2D calculation
+        let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
+        let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(physics_object.rotation.z));
+        let fish_pos = physics_object.position.xy() + fish_offset;
+        let line_dir = fish_pos - rod_end;
+        let rod_dir = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
+        let angle = Vec2::angle_between(line_dir, rod_dir);
+
+        (physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length()) * f32::abs(f32::sin(angle))
     };
 
-    let rod_type = rod_state.rod_type;
+    let rod_type = rod_info.rod_type;
     let thickness_ratio = rod_type.thickness / rod_type.radius;
     let thickness_ratio_inverse = 1. - thickness_ratio;
 
