@@ -93,22 +93,22 @@ fn spawn_shop(
     ));
     commands.spawn((
         ShopItem{
-            is_bought: false
             name: "Surf Fishing Rod".to_string(),
+            is_bought: false,
             price: 150,
         },
     ));
     commands.spawn((
         ShopItem{
-            is_bought: false
             name: "Braided Fishing Line".to_string(),
+            is_bought: false,
             price: 50,
         }
     ));
     commands.spawn((
         ShopItem{
-            is_bought: false
             name: "Monofilament Fishing Line".to_string(),
+            is_bought: false,
             price: 25,
         }
     ));
