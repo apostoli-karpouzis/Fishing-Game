@@ -24,6 +24,9 @@ struct SelectedShopItem {
     index: usize,
 }
 
+#[derive(Component)]
+struct SoldSprite;
+
 #[derive(Resource)]
 struct OriginalCameraPosition(Vec3);
 
@@ -78,7 +81,7 @@ fn spawn_shop(
         ShopItem {
             name: "Fishing Rod".to_string(),
             price: 50,
-            is_bought: true
+            is_bought: false
         },
     ));
     commands.spawn((
@@ -149,6 +152,7 @@ fn display_shop_items(
     let tree_texture = asset_server.load("tiles/tree.png");
     let water_texture = asset_server.load("tiles/water.png");
     let fish_texture = asset_server.load("fish/bass.png");
+    let sold_texture: Handle<Image> = asset_server.load("sold.png");
 
     //slot positions
     let slot_positions = [
@@ -166,6 +170,9 @@ fn display_shop_items(
 
     for (i, (entity, item)) in shop_items.iter().enumerate() {
         if let Some(&position) = slot_positions.get(i) {
+            let mut position_sold = position;
+            position_sold.z += 1 as f32;
+            position_sold.y += 30 as f32;
             let texture = match item.name.as_str() {
                 "Fishing Rod" => fishing_rod_texture.clone(),
                 "Lure" => lure_texture.clone(),
@@ -186,6 +193,13 @@ fn display_shop_items(
                     ..Default::default()
                 })
                 .with_children(|parent| {
+
+                    parent.spawn(SpriteBundle{
+                        texture: sold_texture.clone(),
+                        transform: Transform::from_translation(position_sold),
+                        visibility: Visibility::Visible,
+                        ..Default::default()
+                    });
                     
                     parent.spawn(Text2dBundle {
                         text: Text::from_section(
@@ -214,11 +228,22 @@ fn display_shop_items(
                         ..Default::default()
                     });
                 });
+
+            commands.spawn((
+                SpriteBundle {
+                texture: sold_texture.clone(),
+                transform: Transform::from_translation(position_sold),
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            },
+            SoldSprite,
+            ));
         } else {
             println!("No available slots");
         }
+        }
     }
-}
+
 
 
 fn check_shop_entrance(
@@ -258,6 +283,7 @@ fn handle_purchase(
     mut shop_items: Query<&mut ShopItem>,
     mut player_inventory: Query<&mut PlayerInventory>,
     selected_item: Res<SelectedShopItem>,
+    mut sold_spite: Query<&mut Visibility, With<SoldSprite>>,
 ) {
     if !shop_state.is_open {
         return;
@@ -267,11 +293,16 @@ fn handle_purchase(
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
             let mut items: Vec<_> = shop_items.iter().collect();
+            // let mut sold_sprites:Vec<_> = sold_spite.iter().collect();
             if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
                 if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
                     inventory.items.push(shop_item.name.clone());
                     shop_item.is_bought = true;
+
+                    if let Some(mut sold_sprite_visibility) = sold_spite.iter_mut().nth(selected_item.index) {
+                        *sold_sprite_visibility  = Visibility::Visible;
+                    }
                     println!("Purchased: {}", shop_item.name);
                 } else if inventory.coins < shop_item.price{
                     println!("Not enough coins to purchase {}", shop_item.name);
