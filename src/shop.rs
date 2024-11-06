@@ -1,6 +1,4 @@
-use std::path::is_separator;
-
-use bevy::{input::keyboard::KeyboardInput, prelude::*};
+use bevy::prelude::*;
 use crate::{
     map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
 };
@@ -63,7 +61,7 @@ fn spawn_shop(
             },
             ..default()
         },
-        Tile::Shop,
+        Tile::SHOP,
         Collision,
     ));
 
@@ -84,41 +82,41 @@ fn spawn_shop(
             is_bought: false
         },
     ));
-    commands.spawn((
+    commands.spawn(
         ShopItem{
             name: "Lure".to_string(),
             price: 20,
             is_bought: false
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
             name: "Surf Fishing Rod".to_string(),
             is_bought: false,
             price: 150,
         },
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
             name: "Braided Fishing Line".to_string(),
             is_bought: false,
             price: 50,
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
             name: "Monofilament Fishing Line".to_string(),
             is_bought: false,
             price: 25,
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
             name: "Fish".to_string(),
             price: 500,
             is_bought: false
         }
-    ));
+    );
 
     let hover_texture = asset_server.load("hover.png");
     let hover_entity = commands.spawn(SpriteBundle {

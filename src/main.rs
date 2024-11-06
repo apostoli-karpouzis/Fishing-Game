@@ -13,9 +13,9 @@ mod resources;
 mod button;
 mod gameday;
 mod weather;
-mod fishingView;
-mod fishingZone;
-mod probCalc;
+mod fishing_view;
+mod fishing_zone;
+mod prob_calc;
 mod shop;
 mod hud;
 //mod species;
@@ -31,12 +31,12 @@ use crate::resources::*;
 use crate::button::*;
 use crate::gameday::*;
 use crate::weather::*;
-use crate::fishingView::*;
-use crate::fishingZone::*;
+use crate::fishing_view::*;
+use crate::fishing_zone::*;
 
 use crate::hud::*;
 //use crate::species::*;
-use crate::probCalc::*;
+use crate::prob_calc::*;
 
 
 const OLD_TILE_SIZE: f32 = 64.;
@@ -210,7 +210,6 @@ let shore_layout_handle = texture_atlases.add(shore_layout);
 let beach_width = WIN_W * 0.5;
 let grass_end = WIN_W * 3.5;
 let beach_start = grass_end;
-let beach_end = beach_start + beach_width;
 
 let mut j = 0.;
 while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
@@ -218,7 +217,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
     
     while (i as f32) * OLD_TILE_SIZE < beach_width {
-        if(i <= 1.){
+        if i <= 1.{
             // Spawn sand
             commands.spawn((
             SpriteBundle {

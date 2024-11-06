@@ -1,6 +1,3 @@
-use crate::fishingView::*;
-use crate::map::*;
-use crate::player::*;
 use crate::resources::*;
 use bevy::prelude::*;
 

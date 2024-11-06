@@ -73,11 +73,11 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
 
 
 pub fn update_money_display(
-    playerInventory: Query<&mut PlayerInventory>,
+    player_inventory: Query<&mut PlayerInventory>,
     mut query: Query<&mut Text, With<MoneyDisplay>>,
 ) {
     let mut text = query.single_mut();
-    let inventory_info = playerInventory.single();
+    let inventory_info = player_inventory.single();
     text.sections[0].value = format!("Money: {}", inventory_info.coins);
 }
 

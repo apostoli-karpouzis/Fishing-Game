@@ -13,7 +13,7 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
-use crate::probCalc::*;
+use crate::prob_calc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -685,7 +685,7 @@ fn move_fish(
     //mut fish_direction: ResMut<FishBoundsDir>
 ) {
     let mut rng = rand::thread_rng();
-    let mut obstRng = rand::thread_rng();
+    let mut obst_rng = rand::thread_rng();
     config.timer.tick(time.delta());
     //let mut obst_details = obst_details.single_mut();
 
@@ -699,13 +699,13 @@ fn move_fish(
 
 
             let move_type: i32 = rng.gen_range(0..9); 
-            let dir: i32 = obstRng.gen_range(0..9);
+            let dir: i32 = obst_rng.gen_range(0..9);
             //finding where to go in relation to the 
             //position in relation to x row
-            for (mut obst_details, ObsticalType) in obst_details.iter_mut(){
+            for (mut obst_details, obstical_type) in obst_details.iter_mut(){
                 //go back and account for margin of error done
                 
-                if *ObsticalType == ObstType::Fissure{
+                if *obstical_type == ObstType::Fissure{
                     if fish_details.name == "catfish"{
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
@@ -725,7 +725,7 @@ fn move_fish(
                         }
                     }
                 }
-                else if *ObsticalType == ObstType::Pad{
+                else if *obstical_type == ObstType::Pad{
                     if fish_details.name == "bass"{
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
@@ -1121,14 +1121,14 @@ fn is_done_reeling(
 fn is_fish_caught (
     mut commands: Commands,
     fishing_view: Res<FishingView>,
-    mut playerInventory: Query<&mut PlayerInventory>,
+    mut player_inventory: Query<&mut PlayerInventory>,
     mut next_state: ResMut<NextState<FishingState>>,
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
     mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
 ) {
     let (rod_info, rod_transform) = rod.single();
     let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
-    let mut inventory_info = playerInventory.single_mut();
+    let mut inventory_info = player_inventory.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let catch_pos = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
@@ -1320,7 +1320,7 @@ fn draw_fishing_line (
     mut meshes: ResMut<Assets<Mesh>>,
     mut line: Query<(&mut Transform, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<FishingRod>)>,
 ) {
-    println!("drawing line");
+    //println!("drawing line");
     let (mut line_transform, mut line_mesh, line_info) = line.single_mut();
 
     let pos_delta = line_info.end - line_info.start;

@@ -68,7 +68,6 @@ pub fn update_weather(
 
         weather_state.current_weather = *next_states.choose(&mut rng).unwrap();
         next_weather.set(weather_state.current_weather);
-        println!("Weather changed to: {:?}", weather_state.current_weather);
     }
 }
 
@@ -77,18 +76,7 @@ pub fn rain_particle_system(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
 ) {
-    commands.spawn((SpriteBundle {
-        sprite: Sprite {
-            color: Color::srgba(0.0, 0.0, 0.3, 0.75),
-            custom_size: Some(Vec2::new(5.0, 5.0)),
-            ..default()
-        },
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        ..default()
-    },
-    RainParticle{
-        velocity: Vec2::new(0.0, -10.0),
-    }));
+    //TODO: implement rain_particle_system
 }
 
 pub fn update_weather_tint(weather_state: Res<WeatherState>, 
