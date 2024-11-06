@@ -317,6 +317,27 @@ fn setup (
             hunger: 10.,
             touching_lure: false,
         },
+        Fish {
+            name: "bass",
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
         InPond,
         BASS,
         Collision,
@@ -354,6 +375,27 @@ fn setup (
             hunger: 7.,
             touching_lure: false,
             
+        },
+        Fish {
+            name: "catfish",
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
         },
         InPond,
         CATFISH,
@@ -678,7 +720,7 @@ fn setup (
 
 
 fn move_fish(
-    mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, Without<PhysicsObject> ,With<Collision>)>,
     mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
@@ -698,7 +740,7 @@ fn move_fish(
         if config.timer.finished() {
 
 
-            let move_type: i32 = rng.gen_range(0..9); 
+            let mut move_type: i32 = rng.gen_range(0..9); 
             let dir: i32 = obstRng.gen_range(0..9);
             //finding where to go in relation to the 
             //position in relation to x row
@@ -707,6 +749,7 @@ fn move_fish(
                 
                 if *ObsticalType == ObstType::Fissure{
                     if fish_details.name == "catfish"{
+                        //for the catfish they move toward the fissure
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
                 
@@ -720,13 +763,17 @@ fn move_fish(
                             fish_details.change_y = Vec3::new(0., 0.5, 0.);
                 
                         }
-                        else if obst_details.translation.x < fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
+                        else if obst_details.translation.y < fish_pos.translation.y{
+                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
                         }
+                    }
+                    else{
+                        //move_type = 5;
                     }
                 }
                 else if *ObsticalType == ObstType::Pad{
                     if fish_details.name == "bass"{
+                        //for the fissure they move toward the bass
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
                 
@@ -740,9 +787,12 @@ fn move_fish(
                             fish_details.change_y = Vec3::new(0., 0.5, 0.);
                 
                         }
-                        else if obst_details.translation.x < fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
+                        else if obst_details.translation.y < fish_pos.translation.y{
+                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
                         }
+                    }
+                    else{
+                        //move_type = 5;
                     }
                 }
                 //for each collision object add a 
@@ -757,7 +807,7 @@ fn move_fish(
             
 
             //println!("numer is {} {:?}", dir, fish_details.name);
-            if move_type >= 4{
+            if move_type >= 6{
                 if dir == 0 {
                     fish_details.change_x = Vec3::new(0., 0., 0.);
                     fish_details.change_y = Vec3::new(0., 0.5, 0.);
