@@ -1,4 +1,6 @@
 use crate::resources::*;
+use crate::fishing_view::*;
+use crate::shop::*;
 use bevy::prelude::*;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
@@ -10,6 +12,12 @@ pub struct ButtonVisible(pub bool);
 
 #[derive(Component)]
 pub struct Button;
+
+#[derive(Component)]
+pub struct FishingButton;
+
+#[derive(Component)]
+pub struct ShopingButton;
 
 pub fn fishing_button_system(
     input: Res<ButtonInput<KeyCode>>,   

@@ -7,13 +7,15 @@ use bevy::prelude::*;
 use bevy::sprite::*;
 use rand::Rng;
 use crate::fish::*;
-use crate::map::Collision;
+use crate::gameday::*;
+use crate::inventory::*;
 use crate::resources::*;
 use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
 use crate::prob_calc::*;
+use crate::window::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -37,6 +39,30 @@ const PIXELS_PER_METER: f32 = 200.;
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
+
+#[derive(Resource)]
+pub struct StartFishingAnimation {
+    pub active: bool,
+    pub button_control_active: bool, 
+}
+
+#[derive(Resource)]
+pub struct FishingAnimationDuration(pub Timer);
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FishingMode {
+    #[default]
+    Overworld,
+    Fishing
+}
+impl FishingMode{
+    pub fn next(&self) -> Self {
+        match self {
+            FishingMode::Overworld => FishingMode::Fishing,
+            FishingMode::Fishing => FishingMode::Overworld,
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct FishingView {
@@ -520,8 +546,7 @@ fn setup (
         },
         AnimationTimer::new(0.2), 
         AnimationFrameCount(splash_layout_len), //number of different frames that we have
-        Splash::default(),
-        Animation::new()
+        Splash::default()
     ));
 
     let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
@@ -544,8 +569,7 @@ fn setup (
         },
         //AnimationTimer::new(0.2), 
         AnimationFrameCount(wave_layout_len), //number of different frames that we have
-        Wave,
-        //Animation::new()
+        Wave
     ));
 
 
@@ -572,7 +596,6 @@ fn setup (
         },
         OnScreenLure,
         AnimationFrameCount(baits_layout_len),
-        Animation::new(),
         AnimationTimer::new(0.2), //number of different frames that we have
     ));
 
