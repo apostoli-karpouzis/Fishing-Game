@@ -143,12 +143,12 @@ fn setup(
     println!("window w {}", (-WIN_H));
 
     let mut j = 0.;
-    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 2. {
+    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
         //println!("rinning j");
         let mut i = 0;
         let mut t = Vec3::new(-x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
         println!("spawning at {}", (OLD_TILE_SIZE * j) + y_bound);
-        while (i as f32) * OLD_TILE_SIZE < WIN_W {
+        while (i as f32) * OLD_TILE_SIZE < WIN_W * 1.75 {
             //println!("rinning i");
             //IF THE SPRITE SHEET FOR BACKGROUND IS MADE LARGER, THIS NEEDS TO GROW
             let mut random_index = rng.gen_range(0..29);
@@ -200,7 +200,83 @@ fn setup(
     }
     // ^ END OF GRASS CODE
 
+    // After the grass spawning loop
 
+let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
+let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore_sheet.png");
+let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
+let shore_layout_handle = texture_atlases.add(shore_layout);
+
+let beach_width = WIN_W * 0.5;
+let grass_end = WIN_W * 3.5;
+let beach_start = grass_end;
+let beach_end = beach_start + beach_width;
+
+let mut j = 0.;
+while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
+    let mut i = 0.;
+    let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
+    
+    while (i as f32) * OLD_TILE_SIZE < beach_width {
+        if(i <= 1.){
+            // Spawn sand
+            commands.spawn((
+            SpriteBundle {
+                texture: sand_sheet_handle.clone(),
+                transform: Transform {
+                    translation: t,
+                    ..default()
+                },
+                ..default()
+            },
+            TextureAtlas {
+                index: 0,
+                layout: shore_layout_handle.clone(),
+            },
+            ));
+        }else if i == 2. {  // This will be the middle column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 3,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATER,
+            ));
+        } else if i >= 3. {  // This will be the rightmost column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 4,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATER,
+            ));
+        }
+
+        i += 1.;
+        t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+    }
+    j += 1.;
+}
+    
+    
     //start of water code
     let water_sheet_handle = asset_server.load("tiles/water.png");
     for y in -10..0 {

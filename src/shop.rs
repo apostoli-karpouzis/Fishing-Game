@@ -93,23 +93,23 @@ fn spawn_shop(
     ));
     commands.spawn((
         ShopItem{
-            name: "Rocks".to_string(),
-            price: 1000,
             is_bought: false
+            name: "Surf Fishing Rod".to_string(),
+            price: 150,
         },
     ));
     commands.spawn((
         ShopItem{
-            name: "Tree".to_string(),
-            price: 20,
             is_bought: false
+            name: "Braided Fishing Line".to_string(),
+            price: 50,
         }
     ));
     commands.spawn((
         ShopItem{
-            name: "Water".to_string(),
-            price: 240,
             is_bought: false
+            name: "Monofilament Fishing Line".to_string(),
+            price: 25,
         }
     ));
     commands.spawn((
@@ -148,9 +148,9 @@ fn display_shop_items(
     
     let fishing_rod_texture = asset_server.load("fishingRod.png");
     let lure_texture = asset_server.load("pixil-frame-0 (64).png");
-    let rocks_texture = asset_server.load("Rocks.png");
-    let tree_texture = asset_server.load("tiles/tree.png");
-    let water_texture = asset_server.load("tiles/water.png");
+    let surf_rod_texture = asset_server.load("surfFishingRod.png");
+    let monofil_texture = asset_server.load("monofil-line.png");
+    let braided_line_texture = asset_server.load("braided-line.png");
     let fish_texture = asset_server.load("fish/bass.png");
     let sold_texture: Handle<Image> = asset_server.load("sold.png");
 
@@ -176,9 +176,9 @@ fn display_shop_items(
             let texture = match item.name.as_str() {
                 "Fishing Rod" => fishing_rod_texture.clone(),
                 "Lure" => lure_texture.clone(),
-                "Rocks" => rocks_texture.clone(),
-                "Tree" => tree_texture.clone(),
-                "Water" => water_texture.clone(),
+                "Surf Fishing Rod" => surf_rod_texture.clone(),
+                "Monofilament Fishing Line" => monofil_texture.clone(),
+                "Braided Fishing Line" => braided_line_texture.clone(),
                 "Fish" => fish_texture.clone(),
                 _ => {
                     println!("No texture found for item: {}", item.name);
