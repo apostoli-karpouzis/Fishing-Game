@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use crate::{
-    map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
-};
+use crate::gameday::*;
+use crate::inventory::*;
+use crate::map::*;
+use crate::player::*;
 use crate::resources::*;
 
 #[derive(Component)]
@@ -9,6 +10,27 @@ struct ShopEntrance;
 
 #[derive(Resource)]
 pub struct HoverEntity(pub Entity);
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ShopingMode {
+    #[default]
+    Overworld,
+    Shop
+}
+
+impl ShopingMode{
+    pub fn next(&self) -> Self {
+        match self {
+            ShopingMode::Overworld => ShopingMode::Shop,
+            ShopingMode::Shop => ShopingMode::Overworld,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct ShopState {
+    pub is_open: bool,
+}
 
 #[derive(Component)]
 struct ShopItem {
@@ -247,7 +269,7 @@ fn display_shop_items(
 fn check_shop_entrance(
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), With<Player>>,
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
-    time_of_day: Res<resources::GameDayTimer>,
+    time_of_day: Res<GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
     mut shop_state: ResMut<ShopState>,
     mut original_camera_pos: ResMut<OriginalCameraPosition>,

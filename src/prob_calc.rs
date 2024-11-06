@@ -1,10 +1,22 @@
 use bevy::prelude::*;
 use rand::Rng;
-use crate::resources::*;
 use crate::fish::*;
+use crate::gameday::*;
 use crate::species::*;
 use crate::weather::*;
-use crate::fishing_view::*;
+
+#[derive(Resource)]
+pub struct ProbTimer{
+    pub timer: Timer,
+}
+
+impl ProbTimer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Repeating),
+        }
+    }    
+} 
 
 pub fn calc_fish_prob(
     fish: &Fish, 
