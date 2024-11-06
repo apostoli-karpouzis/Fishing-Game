@@ -284,7 +284,7 @@ fn setup (
     //spawn example fish
     //BEMMY
     //BASS
-    let cool_fish_handle: Handle<Image> = asset_server.load("awesomeFishy.png");
+    let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
     commands.spawn((
         SpriteBundle {
             texture: cool_fish_handle.clone(),
@@ -408,7 +408,7 @@ fn setup (
         Collision,
     ));
 
-    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
 
     commands.spawn((
         SpriteBundle {
@@ -426,7 +426,7 @@ fn setup (
     ));
     
     //powerbar view
-    let bar_sheet_handle = asset_server.load("fishingStuff/powerBar.png");
+    let bar_sheet_handle = asset_server.load("fishing_view/power_bar.png");
     commands.spawn((
         SpriteBundle {
             texture: bar_sheet_handle.clone(),
@@ -442,7 +442,7 @@ fn setup (
         PowerBar
     ));
 
-    let player_fishing_handle = asset_server.load("fishingStuff/backFishingSprite.png");
+    let player_fishing_handle = asset_server.load("fishing_view/back_fishing_sprite.png");
     commands.spawn((
         SpriteBundle {
             texture: player_fishing_handle.clone(),
@@ -457,7 +457,7 @@ fn setup (
         },
     ));
 
-    let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
+    let fishing_rod_handle = asset_server.load("rods/default.png");
 
     let fishing_rod_material = materials.add(Color::srgb(0.0, 0.0, 0.0));
     
@@ -505,7 +505,7 @@ fn setup (
         FishingLine::new(&FishingLineType::MONOFILILMENT)
     ));
 
-    let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
+    let splashes_sheet_handle: Handle<Image> = asset_server.load("fishing_view/splashes.png");
     let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let splash_layout_len = splash_layout.textures.len();
     let splash_layout_handle = texture_atlases.add(splash_layout);
@@ -526,7 +526,7 @@ fn setup (
         Animation::new()
     ));
 
-    let waves_sheet_handle: Handle<Image> = asset_server.load("waves/waves.png");
+    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
     let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
     let wave_layout_len = wave_layout.textures.len();
     let wave_layout_handle = texture_atlases.add(wave_layout);
@@ -552,7 +552,7 @@ fn setup (
 
 
 
-    let baits_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/Baits/Baits.png");
+    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
     let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let baits_layout_len = baits_layout.textures.len();
     let baits_layout_handle = texture_atlases.add(baits_layout);
@@ -579,7 +579,7 @@ fn setup (
     ));
 
 
-    let baits_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/Baits/Baits.png");
+    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
     let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let baits_layout_len = baits_layout.textures.len();
     let baits_layout_handle = texture_atlases.add(baits_layout);
@@ -607,7 +607,7 @@ fn setup (
         Bobber::default(),
     ));
 
-    /*let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    /*let bobber_handle = asset_server.load("fishing_view/bobber.png");
     commands.spawn((
         SpriteBundle {
             texture: bobber_handle.clone(),
@@ -635,8 +635,8 @@ fn setup (
     ));*/
 
     //spawning in the lilypad
-    let lily_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/lilypad.png");
-    let deep_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/deep.png");
+    let lily_sheet_handle: Handle<Image> = asset_server.load("fishing_view/lilypad.png");
+    let deep_sheet_handle: Handle<Image> = asset_server.load("fishing_view/deep.png");
     commands.spawn((
         SpriteBundle {
             texture: lily_sheet_handle.clone(),

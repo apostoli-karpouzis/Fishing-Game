@@ -51,7 +51,7 @@ fn spawn_shop(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
-    let shop = asset_server.load("shop.png");
+    let shop = asset_server.load("tiles/shop.png");
     commands.spawn((
         SpriteBundle {
             texture: shop,
@@ -71,7 +71,7 @@ fn spawn_shop(
         Tile::new("shopEntrance", true, Vec2::new(64., 64.))
     ));
     commands.spawn(SpriteBundle{
-        texture: asset_server.load("inventory.png"),
+        texture: asset_server.load("shop/inventory.png"),
         transform: Transform::from_xyz(3000., 3000., 1.),
        ..default()
     });
@@ -118,7 +118,7 @@ fn spawn_shop(
         }
     );
 
-    let hover_texture = asset_server.load("hover.png");
+    let hover_texture = asset_server.load("shop/hover.png");
     let hover_entity = commands.spawn(SpriteBundle {
         texture: hover_texture,
         transform: Transform {
@@ -144,13 +144,13 @@ fn display_shop_items(
     }
 
     
-    let fishing_rod_texture = asset_server.load("fishingRod.png");
-    let lure_texture = asset_server.load("pixil-frame-0 (64).png");
-    let surf_rod_texture = asset_server.load("surfFishingRod.png");
-    let monofil_texture = asset_server.load("monofil-line.png");
-    let braided_line_texture = asset_server.load("braided-line.png");
+    let fishing_rod_texture = asset_server.load("rods/default.png");
+    let lure_texture = asset_server.load("lures/lure1.png");
+    let surf_rod_texture = asset_server.load("rods/surf.png");
+    let monofil_texture = asset_server.load("lines/monofilament.png");
+    let braided_line_texture = asset_server.load("lines/braided.png");
     let fish_texture = asset_server.load("fish/bass.png");
-    let sold_texture: Handle<Image> = asset_server.load("sold.png");
+    let sold_texture: Handle<Image> = asset_server.load("shop/sold.png");
 
     //slot positions
     let slot_positions = [
@@ -163,7 +163,7 @@ fn display_shop_items(
     ];
 
 
-    let font: Handle<Font> = asset_server.load("pixel.ttf");
+    let font: Handle<Font> = asset_server.load("fonts/pixel.ttf");
 
 
     for (i, (entity, item)) in shop_items.iter().enumerate() {

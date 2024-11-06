@@ -129,8 +129,8 @@ fn setup(
     
     //GRASS CODE V
     
-    //let bg_texture_handle = asset_server.load("test_bg.png");
-    let grass_sheet_handle = asset_server.load("ground_sheet.png");
+    //let bg_texture_handle = asset_server.load("map/test_bg.png");
+    let grass_sheet_handle = asset_server.load("map/ground_sheet.png");
     let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
@@ -203,7 +203,7 @@ fn setup(
     // After the grass spawning loop
 
 let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
-let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore_sheet.png");
+let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore.png");
 let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
 let shore_layout_handle = texture_atlases.add(shore_layout);
 
@@ -301,7 +301,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
 
     //PLAYER
 
-    let player_sheet_handle = asset_server.load("characters/full-spritesheet-64x128-256x640.png");
+    let player_sheet_handle = asset_server.load("characters/full_spritesheet.png");
     let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
