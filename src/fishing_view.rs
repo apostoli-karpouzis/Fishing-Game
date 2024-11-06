@@ -54,8 +54,6 @@ pub enum FishingState {
     ReelingHooked
 }
 
-
-
 #[derive(Component)]
 struct OnScreenLure;
 
@@ -125,7 +123,7 @@ impl FishingLineType {
     
     pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
     pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
-    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(1000., Color::srgb(0.9, 0.9, 0.9));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
 }
 
 #[derive(Component, Default)]
@@ -247,9 +245,9 @@ impl Plugin for FishingViewPlugin {
                 (
                     //animate_fishing_line_unhooked.run_if(in_state(FishingState::ReelingUnhooked)),
                     animate_fishing_line_hooked,
-                    animate_fishing_rod,
                     is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
+                animate_fishing_rod.after(is_line_broken),
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
                 animate_splash.after(cast_line)
