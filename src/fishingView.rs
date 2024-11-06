@@ -920,14 +920,14 @@ fn is_fish_hooked (
         //also add weight of the bobber to the fish
         println!("collision");
 
-        //if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+        if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
             *bobber_visibility = Visibility::Hidden;
             fish_physics.mass = fish_physics.mass + bobber_physics.mass;
             commands.entity(bobber_entity_id).remove::<Hooked>();
             commands.entity(entity_id).insert(Hooked);
             next_state.set(FishingState::ReelingHooked);
             break;
-        //}  
+        }  
     }
 }
 
