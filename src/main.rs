@@ -78,6 +78,8 @@ fn main() {
         .add_systems(Update, update_clock_display)
         .add_systems(Update, update_weather_display)
 
+        .add_systems(Update, handle_inventory)
+
         // Overworld systems (player movement, animations)
         .add_systems(Update,
             (

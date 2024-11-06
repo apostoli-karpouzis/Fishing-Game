@@ -1,3 +1,5 @@
+use std::path::is_separator;
+
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 use crate::{
     map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
@@ -14,12 +16,16 @@ pub struct HoverEntity(pub Entity);
 struct ShopItem {
     name: String,
     price: u32,
+    is_bought: bool,
 }
 
 #[derive(Resource)]
 struct SelectedShopItem {
     index: usize,
 }
+
+#[derive(Component)]
+struct SoldSprite;
 
 #[derive(Resource)]
 struct OriginalCameraPosition(Vec3);
@@ -38,7 +44,7 @@ impl Plugin for ShopPlugin {
 fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
-            coins: 0,
+            coins: 1000,
             items: Vec::new(),
         },
 ));
@@ -75,28 +81,33 @@ fn spawn_shop(
         ShopItem {
             name: "Fishing Rod".to_string(),
             price: 50,
+            is_bought: false
         },
     ));
     commands.spawn((
         ShopItem{
             name: "Lure".to_string(),
             price: 20,
+            is_bought: false
         }
     ));
     commands.spawn((
         ShopItem{
+            is_bought: false
             name: "Surf Fishing Rod".to_string(),
             price: 150,
         },
     ));
     commands.spawn((
         ShopItem{
+            is_bought: false
             name: "Braided Fishing Line".to_string(),
             price: 50,
         }
     ));
     commands.spawn((
         ShopItem{
+            is_bought: false
             name: "Monofilament Fishing Line".to_string(),
             price: 25,
         }
@@ -105,6 +116,7 @@ fn spawn_shop(
         ShopItem{
             name: "Fish".to_string(),
             price: 500,
+            is_bought: false
         }
     ));
 
@@ -140,6 +152,7 @@ fn display_shop_items(
     let monofil_texture = asset_server.load("monofil-line.png");
     let braided_line_texture = asset_server.load("braided-line.png");
     let fish_texture = asset_server.load("fish/bass.png");
+    let sold_texture: Handle<Image> = asset_server.load("sold.png");
 
     //slot positions
     let slot_positions = [
@@ -157,6 +170,9 @@ fn display_shop_items(
 
     for (i, (entity, item)) in shop_items.iter().enumerate() {
         if let Some(&position) = slot_positions.get(i) {
+            let mut position_sold = position;
+            position_sold.z += 1 as f32;
+            position_sold.y += 30 as f32;
             let texture = match item.name.as_str() {
                 "Fishing Rod" => fishing_rod_texture.clone(),
                 "Lure" => lure_texture.clone(),
@@ -177,6 +193,13 @@ fn display_shop_items(
                     ..Default::default()
                 })
                 .with_children(|parent| {
+
+                    parent.spawn(SpriteBundle{
+                        texture: sold_texture.clone(),
+                        transform: Transform::from_translation(position_sold),
+                        visibility: Visibility::Visible,
+                        ..Default::default()
+                    });
                     
                     parent.spawn(Text2dBundle {
                         text: Text::from_section(
@@ -205,11 +228,22 @@ fn display_shop_items(
                         ..Default::default()
                     });
                 });
+
+            commands.spawn((
+                SpriteBundle {
+                texture: sold_texture.clone(),
+                transform: Transform::from_translation(position_sold),
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            },
+            SoldSprite,
+            ));
         } else {
             println!("No available slots");
         }
+        }
     }
-}
+
 
 
 fn check_shop_entrance(
@@ -246,9 +280,10 @@ fn handle_purchase(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     shop_state: Res<ShopState>,
-    shop_items: Query<(Entity, &ShopItem)>,
+    mut shop_items: Query<&mut ShopItem>,
     mut player_inventory: Query<&mut PlayerInventory>,
     selected_item: Res<SelectedShopItem>,
+    mut sold_spite: Query<&mut Visibility, With<SoldSprite>>,
 ) {
     if !shop_state.is_open {
         return;
@@ -257,14 +292,23 @@ fn handle_purchase(
     if keyboard_input.just_pressed(KeyCode::KeyE) { // Use Enter key to purchase
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
-            let items: Vec<_> = shop_items.iter().collect();
-            if let Some((item_entity, shop_item)) = items.get(selected_item.index) {
-                if inventory.coins >= shop_item.price {
+            let mut items: Vec<_> = shop_items.iter().collect();
+            // let mut sold_sprites:Vec<_> = sold_spite.iter().collect();
+            if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
+                if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
                     inventory.items.push(shop_item.name.clone());
+                    shop_item.is_bought = true;
+
+                    if let Some(mut sold_sprite_visibility) = sold_spite.iter_mut().nth(selected_item.index) {
+                        *sold_sprite_visibility  = Visibility::Visible;
+                    }
                     println!("Purchased: {}", shop_item.name);
-                } else {
+                } else if inventory.coins < shop_item.price{
                     println!("Not enough coins to purchase {}", shop_item.name);
+                }
+                else {
+                    println!("Shop item has already been purchased");
                 }
             }
         }
