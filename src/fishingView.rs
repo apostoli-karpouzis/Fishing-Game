@@ -28,6 +28,9 @@ const ROD_MIN_ROTATION: f32 = -1.2;
 const ROD_MAX_ROTATION: f32 = 1.2;
 const ROD_ROTATION_SPEED: f32 = PI / 2.;
 
+const BENDING_RESOLUTION: f32 = 0.01;
+const PIXELS_PER_METER: f32 = 200.;
+
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
@@ -35,7 +38,8 @@ const REEL_IN_SPEED: f32 = 150.;
 #[derive(Resource)]
 pub struct FishingView {
     pub rod_rotation: f32,
-    pub power: f32
+    pub power: f32,
+    pub segments: Vec<Entity>
 }
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -55,7 +59,24 @@ struct PowerBar;
 
 #[derive(Component)]
 pub struct FishingRod {
-    pub length: f32
+    pub length: f32,
+    pub rod_type: &'static FishingRodType,
+    pub rod_material: Handle<ColorMaterial>
+}
+
+pub struct FishingRodType {
+    pub length: f32,
+    pub radius: f32,
+    pub thickness: f32,
+    pub shear_modulus: f32,
+}
+
+impl FishingRodType {
+    pub const fn new(length: f32, radius: f32, thickness: f32, shear_modulus: f32) -> Self {
+        Self { length, radius, thickness, shear_modulus }
+    }
+
+    pub const NORMAL: FishingRodType = FishingRodType::new(1.5, 0.015, 0.004, 72E9);
 }
 
 #[derive(Resource)]
@@ -184,7 +205,7 @@ impl Plugin for FishingViewPlugin {
         app
         .init_state::<FishingMode>()
         .init_state::<FishingState>()
-        .insert_resource(FishingView { rod_rotation: 0., power: 0. })
+        .insert_resource(FishingView { rod_rotation: 0., power: 0., segments: Vec::new() })
         .insert_resource(ProbTimer::new(2.))
         .add_systems(Startup, setup)
         .add_systems(Update,
@@ -211,6 +232,7 @@ impl Plugin for FishingViewPlugin {
                 (
                     //animate_fishing_line_unhooked.run_if(in_state(FishingState::ReelingUnhooked)),
                     animate_fishing_line_hooked,
+                    animate_fishing_rod,
                     is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
                 draw_fishing_line.after(animate_fishing_line_hooked),
@@ -229,6 +251,7 @@ impl Plugin for FishingViewPlugin {
 fn setup (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut fishing_view: ResMut<FishingView>,
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -425,7 +448,10 @@ fn setup (
     ));
 
     let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
-    commands.spawn((
+
+    let fishing_rod_material = materials.add(Color::srgb(0.0, 0.0, 0.0));
+    
+    let fishing_rod = commands.spawn((
         SpriteBundle {
             texture: fishing_rod_handle.clone(),
                         sprite: Sprite{
@@ -438,9 +464,26 @@ fn setup (
             ..default()
         },
         FishingRod {
-            length: 300.
+            length: 300.,
+            rod_type: &FishingRodType::NORMAL,
+            rod_material: fishing_rod_material.clone()
         }
     ));
+
+    let segment_count: usize = (FishingRodType::NORMAL.length / BENDING_RESOLUTION) as usize;
+
+    for i in 0..segment_count {
+        let segment = commands.spawn(
+            MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, FishingLine::WIDTH))),
+                material: fishing_rod_material.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            }
+        );
+
+        fishing_view.segments.push(segment.id());
+    }
 
     commands.spawn((
         MaterialMesh2dBundle {
@@ -980,6 +1023,50 @@ fn is_fish_caught (
         commands.entity(entity_id).remove::<Hooked>();
 
         next_state.set(FishingState::Idle);
+    }
+}
+
+fn animate_fishing_rod (
+    mut commands: Commands,
+    fishing_view: Res<FishingView>,
+    fishing_rod: Query<&FishingRod, With<FishingRod>>,
+    hooked_object: Query<&PhysicsObject, With<Hooked>>
+) {
+    let rod_state = fishing_rod.single();
+    
+    let force = if hooked_object.is_empty() {
+        0.
+    } else {
+        let physics_object = hooked_object.single();
+        physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length() // Temporary value
+    };
+
+    let rod_type = rod_state.rod_type;
+    let thickness_ratio = rod_type.thickness / rod_type.radius;
+    let thickness_ratio_inverse = 1. - thickness_ratio;
+
+    let mut pos_x = 0.;
+    let mut pos_y = 0.;
+    let mut theta = 0.;
+
+    for i in 0..fishing_view.segments.len() {
+        let x = i as f32 * BENDING_RESOLUTION;
+        let bending_moment_area = 1.0 / 2.0 * (x + x + BENDING_RESOLUTION) * force * BENDING_RESOLUTION;
+        let r2 = rod_type.radius * (thickness_ratio + x / rod_type.length * thickness_ratio_inverse);
+        let r1 = r2 - rod_type.thickness;
+        let second_moment_area = PI / 2. * (f32::powi(r2, 4) - f32::powi(r1, 4));
+        let dt = bending_moment_area / (rod_type.shear_modulus * second_moment_area);
+  
+        theta += dt;
+        pos_x += BENDING_RESOLUTION * f32::cos(theta);
+        pos_y += BENDING_RESOLUTION * f32::sin(theta);
+
+        // Display
+        let screen_ = FISHINGROOMX + pos_x * PIXELS_PER_METER;
+        let screen_y = FISHINGROOMY + 100. + pos_y * PIXELS_PER_METER;
+
+        let mut entity = commands.entity(fishing_view.segments[i]);
+        entity.insert(Transform::from_xyz(screen_, screen_y, 950.));
     }
 }
 
