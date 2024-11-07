@@ -13,7 +13,7 @@ use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
-use crate::probCalc::*;
+use crate::prob_calc::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -53,8 +53,6 @@ pub enum FishingState {
     ReelingUnhooked,
     ReelingHooked
 }
-
-
 
 #[derive(Component)]
 struct OnScreenLure;
@@ -125,7 +123,7 @@ impl FishingLineType {
     
     pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
     pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
-    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(1000., Color::srgb(0.9, 0.9, 0.9));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
 }
 
 #[derive(Component, Default)]
@@ -247,9 +245,9 @@ impl Plugin for FishingViewPlugin {
                 (
                     //animate_fishing_line_unhooked.run_if(in_state(FishingState::ReelingUnhooked)),
                     animate_fishing_line_hooked,
-                    animate_fishing_rod,
                     is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
+                animate_fishing_rod.after(is_line_broken),
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
                 animate_splash.after(cast_line)
@@ -284,7 +282,7 @@ fn setup (
     //spawn example fish
     //BEMMY
     //BASS
-    let cool_fish_handle: Handle<Image> = asset_server.load("awesomeFishy.png");
+    let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
     commands.spawn((
         SpriteBundle {
             texture: cool_fish_handle.clone(),
@@ -316,27 +314,6 @@ fn setup (
             //age: 5.,
             hunger: 10.,
             touching_lure: false,
-        },
-        Fish {
-            name: "bass",
-            id: 0,
-            is_caught: false,
-            is_alive: true,
-            touching_lure: false,
-            length: 8.0,
-            width: 5.0,
-            weight: 2.0,
-            time_of_day: (0, 12),
-            weather: Weather::Sunny,
-            depth: (0,5),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0.,0.,0.),
-            change_y: Vec3::new(0.,0.,0.),
-            //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            age: 6.0,
-            hunger: 10.0
         },
         InPond,
         BASS,
@@ -375,27 +352,6 @@ fn setup (
             hunger: 7.,
             touching_lure: false,
             
-        },
-        Fish {
-            name: "catfish",
-            id: 0,
-            is_caught: false,
-            is_alive: true,
-            touching_lure: false,
-            length: 8.0,
-            width: 5.0,
-            weight: 2.0,
-            time_of_day: (0, 12),
-            weather: Weather::Sunny,
-            depth: (0,5),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0.,0.,0.),
-            change_y: Vec3::new(0.,0.,0.),
-            //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            age: 6.0,
-            hunger: 10.0
         },
         InPond,
         CATFISH,
@@ -450,7 +406,7 @@ fn setup (
         Collision,
     ));
 
-    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/fishingView.png");
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
 
     commands.spawn((
         SpriteBundle {
@@ -468,7 +424,7 @@ fn setup (
     ));
     
     //powerbar view
-    let bar_sheet_handle = asset_server.load("fishingStuff/powerBar.png");
+    let bar_sheet_handle = asset_server.load("fishing_view/power_bar.png");
     commands.spawn((
         SpriteBundle {
             texture: bar_sheet_handle.clone(),
@@ -484,7 +440,7 @@ fn setup (
         PowerBar
     ));
 
-    let player_fishing_handle = asset_server.load("fishingStuff/backFishingSprite.png");
+    let player_fishing_handle = asset_server.load("fishing_view/back_fishing_sprite.png");
     commands.spawn((
         SpriteBundle {
             texture: player_fishing_handle.clone(),
@@ -499,7 +455,7 @@ fn setup (
         },
     ));
 
-    let fishing_rod_handle = asset_server.load("fishingStuff/fishingRod.png");
+    let fishing_rod_handle = asset_server.load("rods/default.png");
 
     let fishing_rod_material = materials.add(Color::srgb(0.0, 0.0, 0.0));
     
@@ -547,7 +503,7 @@ fn setup (
         FishingLine::new(&FishingLineType::MONOFILILMENT)
     ));
 
-    let splashes_sheet_handle: Handle<Image> = asset_server.load("splashes/splashes.png");
+    let splashes_sheet_handle: Handle<Image> = asset_server.load("fishing_view/splashes.png");
     let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let splash_layout_len = splash_layout.textures.len();
     let splash_layout_handle = texture_atlases.add(splash_layout);
@@ -568,7 +524,7 @@ fn setup (
         Animation::new()
     ));
 
-    let waves_sheet_handle: Handle<Image> = asset_server.load("waves/waves.png");
+    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
     let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
     let wave_layout_len = wave_layout.textures.len();
     let wave_layout_handle = texture_atlases.add(wave_layout);
@@ -594,7 +550,7 @@ fn setup (
 
 
 
-    let baits_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/Baits/Baits.png");
+    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
     let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let baits_layout_len = baits_layout.textures.len();
     let baits_layout_handle = texture_atlases.add(baits_layout);
@@ -621,7 +577,7 @@ fn setup (
     ));
 
 
-    let baits_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/Baits/Baits.png");
+    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
     let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let baits_layout_len = baits_layout.textures.len();
     let baits_layout_handle = texture_atlases.add(baits_layout);
@@ -649,7 +605,7 @@ fn setup (
         Bobber::default(),
     ));
 
-    /*let bobber_handle = asset_server.load("fishingStuff/bobber.png");
+    /*let bobber_handle = asset_server.load("fishing_view/bobber.png");
     commands.spawn((
         SpriteBundle {
             texture: bobber_handle.clone(),
@@ -677,8 +633,8 @@ fn setup (
     ));*/
 
     //spawning in the lilypad
-    let lily_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/lilypad.png");
-    let deep_sheet_handle: Handle<Image> = asset_server.load("fishingStuff/deep.png");
+    let lily_sheet_handle: Handle<Image> = asset_server.load("fishing_view/lilypad.png");
+    let deep_sheet_handle: Handle<Image> = asset_server.load("fishing_view/deep.png");
     commands.spawn((
         SpriteBundle {
             texture: lily_sheet_handle.clone(),
@@ -720,14 +676,14 @@ fn setup (
 
 
 fn move_fish(
-    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, Without<PhysicsObject> ,With<Collision>)>,
+    mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
     mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
     //mut fish_direction: ResMut<FishBoundsDir>
 ) {
     let mut rng = rand::thread_rng();
-    let mut obstRng = rand::thread_rng();
+    let mut obst_rng = rand::thread_rng();
     config.timer.tick(time.delta());
     //let mut obst_details = obst_details.single_mut();
 
@@ -740,16 +696,15 @@ fn move_fish(
         if config.timer.finished() {
 
 
-            let mut move_type: i32 = rng.gen_range(0..9); 
-            let dir: i32 = obstRng.gen_range(0..9);
+            let move_type: i32 = rng.gen_range(0..9); 
+            let dir: i32 = obst_rng.gen_range(0..9);
             //finding where to go in relation to the 
             //position in relation to x row
-            for (mut obst_details, ObsticalType) in obst_details.iter_mut(){
+            for (mut obst_details, obstical_type) in obst_details.iter_mut(){
                 //go back and account for margin of error done
                 
-                if *ObsticalType == ObstType::Fissure{
+                if *obstical_type == ObstType::Fissure{
                     if fish_details.name == "catfish"{
-                        //for the catfish they move toward the fissure
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
                 
@@ -763,17 +718,13 @@ fn move_fish(
                             fish_details.change_y = Vec3::new(0., 0.5, 0.);
                 
                         }
-                        else if obst_details.translation.y < fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
                         }
-                    }
-                    else{
-                        //move_type = 5;
                     }
                 }
-                else if *ObsticalType == ObstType::Pad{
+                else if *obstical_type == ObstType::Pad{
                     if fish_details.name == "bass"{
-                        //for the fissure they move toward the bass
                         if obst_details.translation.x >= fish_pos.translation.x{
                             fish_details.change_x = Vec3::new(0.5, 0., 0.);
                 
@@ -787,12 +738,9 @@ fn move_fish(
                             fish_details.change_y = Vec3::new(0., 0.5, 0.);
                 
                         }
-                        else if obst_details.translation.y < fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                        else if obst_details.translation.x < fish_pos.translation.x{
+                            fish_details.change_x = Vec3::new(0.0, -0.5, 0.);
                         }
-                    }
-                    else{
-                        //move_type = 5;
                     }
                 }
                 //for each collision object add a 
@@ -807,7 +755,7 @@ fn move_fish(
             
 
             //println!("numer is {} {:?}", dir, fish_details.name);
-            if move_type >= 6{
+            if move_type >= 4{
                 if dir == 0 {
                     fish_details.change_x = Vec3::new(0., 0., 0.);
                     fish_details.change_y = Vec3::new(0., 0.5, 0.);
@@ -1171,14 +1119,14 @@ fn is_done_reeling(
 fn is_fish_caught (
     mut commands: Commands,
     fishing_view: Res<FishingView>,
-    mut playerInventory: Query<&mut PlayerInventory>,
+    mut player_inventory: Query<&mut PlayerInventory>,
     mut next_state: ResMut<NextState<FishingState>>,
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
     mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
 ) {
     let (rod_info, rod_transform) = rod.single();
     let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
-    let mut inventory_info = playerInventory.single_mut();
+    let mut inventory_info = player_inventory.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let catch_pos = rod_transform.translation.with_z(0.) + (rod_info.length / 4. * angle_vector).extend(0.);
@@ -1202,19 +1150,29 @@ fn is_fish_caught (
 fn animate_fishing_rod (
     mut commands: Commands,
     fishing_view: Res<FishingView>,
-    fishing_rod: Query<&FishingRod, With<FishingRod>>,
-    hooked_object: Query<&PhysicsObject, With<Hooked>>
+    fishing_rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
+    hooked_object: Query<(&Species, &PhysicsObject), With<Hooked>>
 ) {
-    let rod_state = fishing_rod.single();
+    let (rod_info, rod_transform) = fishing_rod.single();
     
     let force = if hooked_object.is_empty() {
         0.
     } else {
-        let physics_object = hooked_object.single();
-        physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length() // Temporary value
+        let (fish_species, physics_object) = hooked_object.single();
+
+        // Temporary 2D calculation
+        let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
+        let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(physics_object.rotation.z));
+        let fish_pos = physics_object.position.xy() + fish_offset;
+        let line_dir = fish_pos - rod_end;
+        let rod_dir = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
+        let angle = Vec2::angle_between(line_dir, rod_dir);
+
+        (physics_object.forces.player.length() + physics_object.forces.water.length() + physics_object.forces.own.length()) * f32::abs(f32::sin(angle))
     };
 
-    let rod_type = rod_state.rod_type;
+    let rod_type = rod_info.rod_type;
     let thickness_ratio = rod_type.thickness / rod_type.radius;
     let thickness_ratio_inverse = 1. - thickness_ratio;
 
@@ -1360,7 +1318,7 @@ fn draw_fishing_line (
     mut meshes: ResMut<Assets<Mesh>>,
     mut line: Query<(&mut Transform, &mut Mesh2dHandle, &mut FishingLine), (With<FishingLine>, Without<FishingRod>)>,
 ) {
-    println!("drawing line");
+    //println!("drawing line");
     let (mut line_transform, mut line_mesh, line_info) = line.single_mut();
 
     let pos_delta = line_info.end - line_info.start;

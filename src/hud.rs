@@ -16,7 +16,7 @@ pub fn spawn_money_display(commands: &mut Commands, asset_server: &Res<AssetServ
         TextBundle::from_section(
             "Money: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -36,7 +36,7 @@ pub fn spawn_clock_display(commands: &mut Commands, asset_server: &Res<AssetServ
         TextBundle::from_section(
             "Time: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -56,7 +56,7 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
         TextBundle::from_section(
             "Weather: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -73,11 +73,11 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
 
 
 pub fn update_money_display(
-    playerInventory: Query<&mut PlayerInventory>,
+    player_inventory: Query<&mut PlayerInventory>,
     mut query: Query<&mut Text, With<MoneyDisplay>>,
 ) {
     let mut text = query.single_mut();
-    let inventory_info = playerInventory.single();
+    let inventory_info = player_inventory.single();
     text.sections[0].value = format!("Money: {}", inventory_info.coins);
 }
 

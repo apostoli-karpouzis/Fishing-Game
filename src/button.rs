@@ -1,6 +1,3 @@
-use crate::fishingView::*;
-use crate::map::*;
-use crate::player::*;
 use crate::resources::*;
 use bevy::prelude::*;
 
@@ -176,7 +173,7 @@ pub fn spawn_fishing_button(commands: &mut Commands, asset_server: &Res<AssetSer
                     parent.spawn(TextBundle::from_section(
                         "Throw Rod(X)",
                         TextStyle {
-                            font: asset_server.load("pixel.ttf"),
+                            font: asset_server.load("fonts/pixel.ttf"),
                             font_size: 40.0,
                             color: Color::srgb(0.9, 0.9, 0.9),
                         },
@@ -206,7 +203,7 @@ pub fn spawn_fishing_button(commands: &mut Commands, asset_server: &Res<AssetSer
                         parent.spawn(TextBundle::from_section(
                             "Shop(E)",
                             TextStyle {
-                                font: asset_server.load("pixel.ttf"),
+                                font: asset_server.load("fonts/pixel.ttf"),
                                 font_size: 40.0,
                                 color: Color::srgb(0.9, 0.9, 0.9),
                             },

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::weather::*;
-use crate::fishingView::*;
+use crate::fishing_view::*;
 
 
 

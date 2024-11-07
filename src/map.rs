@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::player::*;
-use crate::fishingZone::*;
+use crate::fishing_zone::*;
 use crate::resources::*;
 
 pub const TILE_SIZE: f32 = 16.;
@@ -70,7 +70,7 @@ impl Tile {
     pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
     pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
-    pub const Shop: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
+    pub const SHOP: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
 }
 
 #[derive(Clone)]

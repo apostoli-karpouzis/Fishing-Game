@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::fish::*;
 use crate::species::*;
-use crate::fishingView::*;
+use crate::fishing_view::*;
 use crate::player::*;
 use crate::map::*;
 use std::f32;
@@ -82,7 +82,7 @@ pub fn calculate_player_force (
         return;
     }
 
-    println!("calculating player force...");
+    //println!("calculating player force...");
     let (rod_transform, rod_info) = fishing_rod.single();
     let mut object_physics = hooked_object.single_mut();
 
