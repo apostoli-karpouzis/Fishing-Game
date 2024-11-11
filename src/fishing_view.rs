@@ -1387,28 +1387,31 @@ fn animate_waves (
     objects: Query<&PhysicsObject, (With<PhysicsObject>, With<Fish>)>, 
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
 ) {
-    let object = objects.single();
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
-
-    let magnitude = object.forces.water.length();
-
-    if magnitude == 0. {
-        *wave_visibility = Visibility::Hidden;
-        return
-    }
     
-    if magnitude < 200. {
-        wave_texture.index = 0;
-    } else if magnitude < 400. {
-        wave_texture.index = 1;
-    } else if magnitude < 600. {
-        wave_texture.index = 2;
-    } else {
-        wave_texture.index = 3;
+    // Currently only supports one object and only supports fish
+    for physics_object in objects.iter() {
+        let magnitude = physics_object.forces.water.length();
+    
+        if magnitude == 0. {
+            *wave_visibility = Visibility::Hidden;
+            return
+        }
+        
+        if magnitude < 200. {
+            wave_texture.index = 0;
+        } else if magnitude < 400. {
+            wave_texture.index = 1;
+        } else if magnitude < 600. {
+            wave_texture.index = 2;
+        } else {
+            wave_texture.index = 3;
+        }
+    
+        *wave_visibility = Visibility::Visible;
+        wave_transform.translation = physics_object.position.with_z(902.);
+        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
+        return;
     }
-
-    *wave_visibility = Visibility::Visible;
-    wave_transform.translation = object.position.with_z(902.);
-    wave_transform.rotation = Quat::from_rotation_z(f32::atan2(object.forces.water.y, object.forces.water.x) - PI / 2.);
 }
 
