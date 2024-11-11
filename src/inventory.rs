@@ -8,6 +8,7 @@ pub struct PlayerInventory {
     pub lures: Vec<ShopItem>,
     pub lines: Vec<ShopItem>,
     pub lure_index: usize,
+    pub line_index: usize,
 }
 
 pub fn handle_inventory (
@@ -18,6 +19,7 @@ pub fn handle_inventory (
     let inventory = player_inventory.single();
     let items: Vec<_> = inventory.items.iter().collect();
     let lures: Vec<_> = inventory.lures.iter().collect();
+    let lines: Vec<_> = inventory.lines.iter().collect();
     if keyboard_input.just_pressed(KeyCode::KeyE) && !shop_state.is_open{
         for item in items {
             println!("{}", item.name);
@@ -25,6 +27,9 @@ pub fn handle_inventory (
 
         for lure in lures{
             println!("lures: {}", lure.name);
+        }
+        for line in lines{
+            println!("lines: {}", line.name);
         }
     }
 }

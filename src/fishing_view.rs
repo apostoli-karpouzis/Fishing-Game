@@ -1029,6 +1029,7 @@ fn switch_equipment (
     let mut bait_texture = bait_lure.single_mut();
     let (mut line_properties, mut line_material) = line.single_mut();
     let lures: Vec<_> = inventory.lures.iter().collect();
+    let lines: Vec<_> = inventory.lines.iter().collect();
 
     if input.just_pressed(KeyCode::KeyX) {
         if inventory.lure_index == lures.len() - 1 
@@ -1054,15 +1055,25 @@ fn switch_equipment (
         }
     }
 
-    if input.just_pressed(KeyCode::KeyM) {
-        match line_properties.line_type {
-            &FishingLineType::MONOFILILMENT => {
+
+    else if input.just_pressed(KeyCode::KeyM) {
+        let mut current_line = String::from("");
+        if inventory.line_index == lines.len() - 1 {
+            current_line.push_str( lines.get(0).unwrap().name);
+            inventory.line_index = 0;
+        }else{
+            current_line.push_str( lines.get(inventory.line_index + 1).unwrap().name);
+            inventory.line_index = inventory.line_index + 1;
+        }   
+
+        match current_line.as_str() {
+            "FluoroCarbon Fishing Line" => {
                 line_properties.line_type = &FishingLineType::FLUOROCARBON;
             }
-            &FishingLineType::FLUOROCARBON => {
+            "Braided Fishing Line" => {
                 line_properties.line_type = &FishingLineType::BRAIDED;
             }
-            &FishingLineType::BRAIDED => {
+            "Monofilament Fishing Line" => {
                 line_properties.line_type = &FishingLineType::MONOFILILMENT;
             }
             _ => {}
