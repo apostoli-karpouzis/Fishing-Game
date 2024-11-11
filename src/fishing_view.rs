@@ -8,6 +8,7 @@ use bevy::sprite::*;
 use rand::Rng;
 use crate::fish::*;
 use crate::gameday::*;
+use crate::interface::*;
 use crate::inventory::*;
 use crate::resources::*;
 use crate::weather::*;
@@ -48,21 +49,6 @@ pub struct StartFishingAnimation {
 
 #[derive(Resource)]
 pub struct FishingAnimationDuration(pub Timer);
-
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FishingMode {
-    #[default]
-    Overworld,
-    Fishing
-}
-impl FishingMode{
-    pub fn next(&self) -> Self {
-        match self {
-            FishingMode::Overworld => FishingMode::Fishing,
-            FishingMode::Fishing => FishingMode::Overworld,
-        }
-    }
-}
 
 #[derive(Resource)]
 pub struct FishingView {
@@ -242,7 +228,6 @@ pub struct FishingViewPlugin;
 impl Plugin for FishingViewPlugin {
     fn build(&self, app: &mut App) {
         app
-        .init_state::<FishingMode>()
         .init_state::<FishingState>()
         .insert_resource(FishingView { rod_rotation: 0., power: 0., segments: Vec::new() })
         .insert_resource(ProbTimer::new(2.))
@@ -277,10 +262,10 @@ impl Plugin for FishingViewPlugin {
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
                 animate_splash.after(cast_line)
-            ).run_if(in_state(FishingMode::Fishing))
+            ).run_if(in_state(CurrentInterface::Fishing))
         )
-        .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
-        .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
+        .add_systems(OnEnter(CurrentInterface::Fishing), fishing_transition)
+        .add_systems(OnExit(CurrentInterface::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
         .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface);

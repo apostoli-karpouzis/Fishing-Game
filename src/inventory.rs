@@ -9,12 +9,11 @@ pub struct PlayerInventory {
 
 pub fn handle_inventory (
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    player_inventory: Query<&mut PlayerInventory>,
-    shop_state: Res<ShopState>,
+    player_inventory: Query<&mut PlayerInventory>
 ) {
     let inventory = player_inventory.single();
     let items: Vec<_> = inventory.items.iter().collect();
-    if keyboard_input.just_pressed(KeyCode::KeyE) && !shop_state.is_open{
+    if keyboard_input.just_pressed(KeyCode::KeyE) {
         for item in items {
             println!("{}", item);
         }
