@@ -835,7 +835,7 @@ fn fish_area_bobber(
         {
             //there is no hit
             fishes_details.touching_lure = false;
-            println!("no hit");
+            //println!("no hit");
             return;
         }
         fishes_details.touching_lure = true;
@@ -1006,43 +1006,59 @@ fn switch_equipment (
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
     mut line: Query<(&mut FishingLine, &mut Handle<ColorMaterial>), With<FishingLine>>,
+    mut player_inventory: Query<&mut PlayerInventory>,
 
 ) {
+    let mut inventory = player_inventory.single_mut();
     let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
     let (mut line_properties, mut line_material) = line.single_mut();
-
-    if input.just_pressed(KeyCode::KeyZ) {
-        if bait_texture.index == 2 
-        {
-            bait_texture.index = 0;
-            screen_texture.index = 0;
-        } else {
-            bait_texture.index = bait_texture.index + 1;
-            screen_texture.index = screen_texture.index + 1;
-        }
-    }
+    let lures: Vec<_> = inventory.lures.iter().collect();
+    let lines: Vec<_> = inventory.lines.iter().collect();
 
     if input.just_pressed(KeyCode::KeyX) {
-        if bait_texture.index == 0 
+        if inventory.lure_index == lures.len() - 1 
         {
-            bait_texture.index = 2;
-            screen_texture.index = 2;
+            bait_texture.index = lures.get(0).unwrap().index;
+            screen_texture.index = lures.get(0).unwrap().index;
+            inventory.lure_index =  0;
         } else {
-            bait_texture.index = bait_texture.index - 1;
-            screen_texture.index = screen_texture.index - 1;
+            bait_texture.index = lures.get(inventory.lure_index + 1).unwrap().index;
+            screen_texture.index = lures.get(inventory.lure_index + 1).unwrap().index;
+            inventory.lure_index =  inventory.lure_index + 1;
+        }
+    }else if input.just_pressed(KeyCode::KeyZ) {
+        if inventory.lure_index == 0 
+        {
+            bait_texture.index = lures.get(lures.len() - 1).unwrap().index;
+            screen_texture.index = lures.get(lures.len() - 1).unwrap().index;
+            inventory.lure_index =  lures.len() - 1;
+        } else {
+            bait_texture.index = lures.get(inventory.lure_index - 1).unwrap().index;
+            screen_texture.index = lures.get(inventory.lure_index - 1).unwrap().index;
+            inventory.lure_index =  inventory.lure_index - 1;
         }
     }
 
-    if input.just_pressed(KeyCode::KeyM) {
-        match line_properties.line_type {
-            &FishingLineType::MONOFILILMENT => {
+
+    else if input.just_pressed(KeyCode::KeyM) {
+        let mut current_line = String::from("");
+        if inventory.line_index == lines.len() - 1 {
+            current_line.push_str( lines.get(0).unwrap().name);
+            inventory.line_index = 0;
+        }else{
+            current_line.push_str( lines.get(inventory.line_index + 1).unwrap().name);
+            inventory.line_index = inventory.line_index + 1;
+        }   
+
+        match current_line.as_str() {
+            "FluoroCarbon Fishing Line" => {
                 line_properties.line_type = &FishingLineType::FLUOROCARBON;
             }
-            &FishingLineType::FLUOROCARBON => {
+            "Braided Fishing Line" => {
                 line_properties.line_type = &FishingLineType::BRAIDED;
             }
-            &FishingLineType::BRAIDED => {
+            "Monofilament Fishing Line" => {
                 line_properties.line_type = &FishingLineType::MONOFILILMENT;
             }
             _ => {}

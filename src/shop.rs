@@ -11,12 +11,29 @@ struct ShopEntrance;
 #[derive(Resource)]
 pub struct HoverEntity(pub Entity);
 
-#[derive(Component)]
-struct ShopItem {
-    name: String,
-    price: u32,
-    is_bought: bool,
+#[derive(PartialEq, Default, Clone)]
+pub enum ItemType{
+    #[default]
+    LINE,
+    LURE
 }
+
+#[derive(Component, Default, Clone)]
+pub struct ShopItem {
+    pub name: &'static str,
+    pub price: u32,
+    pub is_bought: bool,
+    pub index: usize,
+    pub item_type: ItemType,
+}
+
+impl ShopItem {
+    pub const fn new(name: &'static str, price: u32, is_bought: bool, index: usize, item_type: ItemType) -> Self {
+        Self { name,  price, is_bought, index, item_type}
+    }
+}
+
+
 
 #[derive(Resource)]
 struct SelectedShopItem {
@@ -52,7 +69,12 @@ fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
             coins: 1000,
-            items: Vec::new(),
+            items: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE), 
+            ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
+            lures: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)]),
+            lines: Vec::from([ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
+            lure_index: 0,
+            line_index: 0,
         },
 ));
 }
@@ -86,44 +108,54 @@ fn spawn_shop(
     });
     commands.spawn((
         ShopItem {
-            name: "Fishing Rod".to_string(),
+            name: "Swim Bait",
             price: 50,
-            is_bought: false
+            is_bought: false,
+            index: 2,
+            item_type: ItemType::LURE,
         },
     ));
     commands.spawn(
         ShopItem{
-            name: "Lure".to_string(),
+            name: "Frog Bait",
             price: 20,
-            is_bought: false
+            is_bought: false,
+            index: 1,
+            item_type: ItemType::LURE,
         }
     );
     commands.spawn(
         ShopItem{
-            name: "Surf Fishing Rod".to_string(),
+            name: "Surf Fishing Rod",
             is_bought: false,
             price: 150,
+            ..default()
         },
     );
     commands.spawn(
         ShopItem{
-            name: "Braided Fishing Line".to_string(),
+            name: "Braided Fishing Line",
             is_bought: false,
             price: 50,
+            item_type: ItemType::LINE,
+            ..default()
         }
     );
     commands.spawn(
         ShopItem{
-            name: "Monofilament Fishing Line".to_string(),
+            name: "FluoroCarbon Fishing Line",
             is_bought: false,
             price: 25,
+            item_type: ItemType::LINE,
+            ..default()
         }
     );
     commands.spawn(
         ShopItem{
-            name: "Fish".to_string(),
+            name: "Fish",
             price: 500,
-            is_bought: false
+            is_bought: false,
+            ..default()
         }
     );
 
@@ -147,8 +179,8 @@ fn display_shop_items(
     shop_items: Query<(Entity, &ShopItem)>,
     asset_server: Res<AssetServer>
 ) {
-    let fishing_rod_texture = asset_server.load("rods/default.png");
-    let lure_texture = asset_server.load("lures/lure1.png");
+    let swim_bait_texture = asset_server.load("lures/swim_bait.png");
+    let frog_bait_texture = asset_server.load("lures/frog_bait.png");
     let surf_rod_texture = asset_server.load("rods/surf.png");
     let monofil_texture = asset_server.load("lines/monofilament.png");
     let braided_line_texture = asset_server.load("lines/braided.png");
@@ -174,11 +206,11 @@ fn display_shop_items(
             let mut position_sold = position;
             position_sold.z += 1 as f32;
             position_sold.y += 30 as f32;
-            let texture = match item.name.as_str() {
-                "Fishing Rod" => fishing_rod_texture.clone(),
-                "Lure" => lure_texture.clone(),
+            let texture = match item.name {
+                "Swim Bait" => swim_bait_texture.clone(),
+                "Frog Bait" => frog_bait_texture.clone(),
                 "Surf Fishing Rod" => surf_rod_texture.clone(),
-                "Monofilament Fishing Line" => monofil_texture.clone(),
+                "FluoroCarbon Fishing Line" => monofil_texture.clone(),
                 "Braided Fishing Line" => braided_line_texture.clone(),
                 "Fish" => fish_texture.clone(),
                 _ => {
@@ -204,7 +236,7 @@ fn display_shop_items(
                     
                     parent.spawn(Text2dBundle {
                         text: Text::from_section(
-                            item.name.clone(),
+                            item.name,
                             TextStyle {
                                 font: font.clone(),
                                 font_size: 30.0,
@@ -293,7 +325,13 @@ fn handle_purchase(
             if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
                 if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
-                    inventory.items.push(shop_item.name.clone());
+                    inventory.items.push(shop_item.clone());
+                    if shop_item.item_type == ItemType::LURE {
+                        inventory.lures.push(shop_item.clone());
+                    }
+                    else if shop_item.item_type == ItemType::LINE{
+                        inventory.lines.push(shop_item.clone());
+                    }
                     shop_item.is_bought = true;
 
                     if let Some(mut sold_sprite_visibility) = sold_spite.iter_mut().nth(selected_item.index) {
