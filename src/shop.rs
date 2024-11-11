@@ -41,7 +41,7 @@ pub struct ShopState {
 
 #[derive(Component, Default, Clone)]
 pub struct ShopItem {
-    pub name: String,
+    pub name: &'static str,
     pub price: u32,
     pub is_bought: bool,
     pub index: usize,
@@ -49,7 +49,7 @@ pub struct ShopItem {
 }
 
 impl ShopItem {
-    pub const fn new(name: String, price: u32, is_bought: bool, index: usize, item_type: ItemType) -> Self {
+    pub const fn new(name: &'static str, price: u32, is_bought: bool, index: usize, item_type: ItemType) -> Self {
         Self { name,  price, is_bought, index, item_type}
     }
 }
@@ -82,10 +82,12 @@ fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
             coins: 1000,
-            items: Vec::from([ShopItem::new("Bobber".to_string(), 0, true, 0, ItemType::LURE)]),
-            lures: Vec::from([ShopItem::new("Bobber".to_string(), 0, true, 0, ItemType::LURE)]),
-            lines: Vec::new(),
+            items: Vec::from([ShopItem::new("Bobber".clone(), 0, true, 0, ItemType::LURE), 
+            ShopItem::new("Monofilament Fishing Line".clone(), 0, true, 0, ItemType::LINE)]),
+            lures: Vec::from([ShopItem::new("Bobber".clone(), 0, true, 0, ItemType::LURE)]),
+            lines: Vec::from([ShopItem::new("Monofilament Fishing Line".clone(), 0, true, 0, ItemType::LINE)]),
             lure_index: 0,
+            line_index: 0,
         },
 ));
 }
@@ -119,7 +121,7 @@ fn spawn_shop(
     });
     commands.spawn((
         ShopItem {
-            name: "Swim Bait".to_string(),
+            name: "Swim Bait".clone(),
             price: 50,
             is_bought: false,
             index: 2,
@@ -128,7 +130,7 @@ fn spawn_shop(
     ));
     commands.spawn(
         ShopItem{
-            name: "Frog Bait".to_string(),
+            name: "Frog Bait".clone(),
             price: 20,
             is_bought: false,
             index: 1,
@@ -137,7 +139,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Surf Fishing Rod".to_string(),
+            name: "Surf Fishing Rod".clone(),
             is_bought: false,
             price: 150,
             ..default()
@@ -145,23 +147,25 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Braided Fishing Line".to_string(),
+            name: "Braided Fishing Line".clone(),
             is_bought: false,
             price: 50,
+            item_type: ItemType::LINE,
             ..default()
         }
     );
     commands.spawn(
         ShopItem{
-            name: "Monofilament Fishing Line".to_string(),
+            name: "FluoroCarbon Fishing Line".clone(),
             is_bought: false,
             price: 25,
+            item_type: ItemType::LINE,
             ..default()
         }
     );
     commands.spawn(
         ShopItem{
-            name: "Fish".to_string(),
+            name: "Fish".clone(),
             price: 500,
             is_bought: false,
             ..default()
@@ -221,11 +225,11 @@ fn display_shop_items(
             let mut position_sold = position;
             position_sold.z += 1 as f32;
             position_sold.y += 30 as f32;
-            let texture = match item.name.as_str() {
+            let texture = match item.name {
                 "Swim Bait" => swim_bait_texture.clone(),
                 "Frog Bait" => frog_bait_texture.clone(),
                 "Surf Fishing Rod" => surf_rod_texture.clone(),
-                "Monofilament Fishing Line" => monofil_texture.clone(),
+                "FluoroCarbon Fishing Line" => monofil_texture.clone(),
                 "Braided Fishing Line" => braided_line_texture.clone(),
                 "Fish" => fish_texture.clone(),
                 _ => {
@@ -348,6 +352,9 @@ fn handle_purchase(
                     inventory.items.push(shop_item.clone());
                     if shop_item.item_type == ItemType::LURE {
                         inventory.lures.push(shop_item.clone());
+                    }
+                    else if shop_item.item_type == ItemType::LINE{
+                        inventory.lines.push(shop_item.clone());
                     }
                     shop_item.is_bought = true;
 
