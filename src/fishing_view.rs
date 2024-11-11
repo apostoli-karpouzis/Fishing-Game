@@ -6,6 +6,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy::sprite::*;
 use rand::Rng;
+use crate::fish;
 use crate::fish::*;
 use crate::map::Collision;
 use crate::resources::*;
@@ -224,7 +225,7 @@ impl Plugin for FishingViewPlugin {
         .add_systems(Update,
             (
                 move_fish,
-                fish_area_bobber,
+                fish_area_bobber.run_if(in_state(FishingState::ReelingUnhooked)).after(move_fish),
                 power_bar_cast.run_if(in_state(FishingState::Idle)),
                 switch_equipment.run_if(in_state(FishingState::Idle)),
                 rod_rotate,
@@ -296,26 +297,7 @@ fn setup (
             },
             ..default()
         },
-        FishDetails {
-            name: "bass",
-            fish_id: 1,
-            length: rng.gen_range(4..8),
-            width: rng.gen_range(1..3),
-            weight: rng.gen_range(3..10),
-            time_of_day: (2,15),
-            weather: Weather::Sunny,
-            depth: (0,5),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0.,0.,0.),
-            change_y: Vec3::new(0.,0.,0.),
-            //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            //age: 5.,
-            hunger: 10.,
-            touching_lure: false,
-        },
-        Fish {
+        Fish{
             name: "bass",
             id: 0,
             is_caught: false,
@@ -337,7 +319,7 @@ fn setup (
             hunger: 10.0
         },
         InPond,
-        BASS,
+        //BASS,
         Collision,
     ));
 
@@ -355,28 +337,9 @@ fn setup (
             },
             ..default()
         },
-        FishDetails {
-            name: "catfish",
-            fish_id: 2,
-            length: rng.gen_range(5..12),
-            width: rng.gen_range(3..5),
-            weight: rng.gen_range(3..10),
-            time_of_day: (2,15),
-            weather: Weather::Rainy,
-            depth: (5,20),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0.,0.,0.),
-            change_y: Vec3::new(0.,0.,0.),
-            //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
-            hunger: 7.,
-            touching_lure: false,
-            
-        },
         Fish {
             name: "catfish",
-            id: 0,
+            id: 1,
             is_caught: false,
             is_alive: true,
             touching_lure: false,
@@ -396,7 +359,7 @@ fn setup (
             hunger: 10.0
         },
         InPond,
-        CATFISH,
+        //CATFISH,
         Collision,
     ));
 
@@ -718,7 +681,7 @@ fn setup (
 
 
 fn move_fish(
-    mut fish_details: Query<(&mut FishDetails, &mut Transform), (With<InPond>, With<Collision>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<PondObstruction>)>,
     mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
@@ -742,7 +705,7 @@ fn move_fish(
             let dir: i32 = obst_rng.gen_range(0..9);
             //finding where to go in relation to the 
             //position in relation to x row
-            for (mut obst_details, obstical_type) in obst_details.iter_mut(){
+            for (obst_details, obstical_type) in obst_details.iter_mut(){
                 //go back and account for margin of error done
                 
                 if *obstical_type == ObstType::Fissure{
@@ -853,7 +816,7 @@ fn move_fish(
 
 
 fn fish_area_bobber(
-    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<Bobber>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<Bobber>)>,
     bobber: Query<(&Transform, &Tile), With<Bobber>>,
 ) {
     //let (bob, tile) = bobber.single_mut();
@@ -861,6 +824,10 @@ fn fish_area_bobber(
     for (mut fishes_details, fish_pos) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
         let bobber_position = bob.translation;
+        
+        //println!("fish {:?} {} x {} y \n bobber:  {} x {} y ", fishes_details.name, fish_pos.translation.x, fish_pos.translation.y, bobber_position.x, bobber_position.y);
+        
+        //let bobber_position = bob.translation;
 
         if fish_pos_loc.y - 180. / 2. > bobber_position.y + tile.hitbox.y / 2.
             || fish_pos_loc.y + 180. / 2. < bobber_position.y - tile.hitbox.y / 2.
@@ -869,11 +836,11 @@ fn fish_area_bobber(
         {
             //there is no hit
             fishes_details.touching_lure = false;
-            println!("no hit");
+            //println!("no hit");
             return;
         }
         fishes_details.touching_lure = true;
-        println!("numer is {:?} {:?}", fishes_details.name, fishes_details.touching_lure);
+        println!("fish {:?}, {:?}", fishes_details.name, fish_pos.translation);
         println!("bobber hit");
     }
 }

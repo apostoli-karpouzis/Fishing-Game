@@ -51,6 +51,7 @@ pub enum GameState {
 }
 
 
+
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FishingMode {
     #[default]
