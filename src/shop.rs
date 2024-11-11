@@ -82,10 +82,10 @@ fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
             coins: 1000,
-            items: Vec::from([ShopItem::new("Bobber".clone(), 0, true, 0, ItemType::LURE), 
-            ShopItem::new("Monofilament Fishing Line".clone(), 0, true, 0, ItemType::LINE)]),
-            lures: Vec::from([ShopItem::new("Bobber".clone(), 0, true, 0, ItemType::LURE)]),
-            lines: Vec::from([ShopItem::new("Monofilament Fishing Line".clone(), 0, true, 0, ItemType::LINE)]),
+            items: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE), 
+            ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
+            lures: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)]),
+            lines: Vec::from([ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
             lure_index: 0,
             line_index: 0,
         },
@@ -121,7 +121,7 @@ fn spawn_shop(
     });
     commands.spawn((
         ShopItem {
-            name: "Swim Bait".clone(),
+            name: "Swim Bait",
             price: 50,
             is_bought: false,
             index: 2,
@@ -130,7 +130,7 @@ fn spawn_shop(
     ));
     commands.spawn(
         ShopItem{
-            name: "Frog Bait".clone(),
+            name: "Frog Bait",
             price: 20,
             is_bought: false,
             index: 1,
@@ -139,7 +139,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Surf Fishing Rod".clone(),
+            name: "Surf Fishing Rod",
             is_bought: false,
             price: 150,
             ..default()
@@ -147,7 +147,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Braided Fishing Line".clone(),
+            name: "Braided Fishing Line",
             is_bought: false,
             price: 50,
             item_type: ItemType::LINE,
@@ -156,7 +156,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "FluoroCarbon Fishing Line".clone(),
+            name: "FluoroCarbon Fishing Line",
             is_bought: false,
             price: 25,
             item_type: ItemType::LINE,
@@ -165,7 +165,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Fish".clone(),
+            name: "Fish",
             price: 500,
             is_bought: false,
             ..default()
@@ -255,7 +255,7 @@ fn display_shop_items(
                     
                     parent.spawn(Text2dBundle {
                         text: Text::from_section(
-                            item.name.clone(),
+                            item.name,
                             TextStyle {
                                 font: font.clone(),
                                 font_size: 30.0,
