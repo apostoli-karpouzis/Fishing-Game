@@ -56,6 +56,7 @@ impl ShopItem {
 
 
 
+
 #[derive(Resource)]
 struct SelectedShopItem {
     index: usize,
@@ -323,6 +324,7 @@ fn check_shop_entrance(
             let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
             camera.translation = new_position;
             shop_state.is_open = true;
+            
             println!("Shop open");
         }
     }
@@ -456,4 +458,7 @@ fn exit_shop (
     }
 }
 
+pub fn shop_open(shop_state: Res<ShopState>) -> bool {
+    shop_state.is_open
+}
 

@@ -100,6 +100,27 @@ pub fn update_weather_tint(weather_state: Res<WeatherState>,
     }
 }
 
+pub fn update_weather_tint_in_shop(weather_state: Res<WeatherState>, 
+    mut query: Query<&mut Sprite, (With<WeatherTintOverlay>, Without<LightningFlash>)>,
+) {
+    if let Ok(mut sprite) = query.get_single_mut() {
+        match weather_state.current_weather {
+            Weather::Cloudy => { 
+                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+            },
+            Weather::Rainy => { 
+                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+            },
+            Weather::Thunderstorm => { 
+                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+            },
+            _ => {
+                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+            }
+        }
+    }
+}
+
 pub fn spawn_weather_tint_overlay(mut commands: Commands){
     commands.spawn((SpriteBundle {
         sprite: Sprite {

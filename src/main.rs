@@ -71,15 +71,7 @@ fn main() {
                 ).after(move_player)
             ).run_if(in_state(FishingMode::Overworld))
         )
-
-        // Weather updates
-        .add_systems(Update, update_weather)
-        .add_systems(Update, update_weather_tint.after(update_weather))
-
         
-        // Check if we've hooked any fish
-        //.add_systems(Update, hook_fish)
-
         .insert_resource(ShopState {is_open: false})        
         .add_plugins(
             (
@@ -87,6 +79,16 @@ fn main() {
                 ShopPlugin
             )
         )
+
+        // Weather updates
+        .add_systems(Update, update_weather)
+        .add_systems(Update, update_weather_tint)
+        .add_systems(Update, update_weather_tint_in_shop.run_if(shop_open))
+        
+        
+        // Check if we've hooked any fish
+        //.add_systems(Update, hook_fish)
+        
         .run();
 }
 
