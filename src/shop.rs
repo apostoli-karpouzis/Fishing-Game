@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use crate::gameday::*;
+use crate::interface::CurrentInterface;
 use crate::inventory::*;
 use crate::map::*;
 use crate::player::*;
-use crate::resources::*;
 
 #[derive(Component)]
 struct ShopEntrance;
@@ -11,32 +11,11 @@ struct ShopEntrance;
 #[derive(Resource)]
 pub struct HoverEntity(pub Entity);
 
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ShopingMode {
-    #[default]
-    Overworld,
-    Shop
-}
-
 #[derive(PartialEq, Default, Clone)]
 pub enum ItemType{
     #[default]
     LINE,
     LURE
-}
-
-impl ShopingMode{
-    pub fn next(&self) -> Self {
-        match self {
-            ShopingMode::Overworld => ShopingMode::Shop,
-            ShopingMode::Shop => ShopingMode::Overworld,
-        }
-    }
-}
-
-#[derive(Resource)]
-pub struct ShopState {
-    pub is_open: bool,
 }
 
 #[derive(Component, Default, Clone)]
@@ -72,9 +51,17 @@ pub struct ShopPlugin;
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
-        .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop, display_shop_items))
         .insert_resource(SelectedShopItem {index: 0})
-        .insert_resource(OriginalCameraPosition(Vec3::ZERO));
+        .insert_resource(OriginalCameraPosition(Vec3::ZERO))
+        .add_systems(Update, check_shop_entrance.run_if(in_state(CurrentInterface::Overworld)))
+        .add_systems(Update,
+            (
+                handle_purchase,
+                update_selected_item,
+                exit_shop
+            ).run_if(in_state(CurrentInterface::Shop))
+        )
+        .add_systems(OnTransition { exited: CurrentInterface::Overworld, entered: CurrentInterface::Shop }, display_shop_items);
 
     }
 }
@@ -191,14 +178,8 @@ fn spawn_shop(
 fn display_shop_items(
     mut commands: Commands,
     shop_items: Query<(Entity, &ShopItem)>,
-    asset_server: Res<AssetServer>,
-    shop_state: Res<ShopState>,
+    asset_server: Res<AssetServer>
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
-    
     let swim_bait_texture = asset_server.load("lures/swim_bait.png");
     let frog_bait_texture = asset_server.load("lures/frog_bait.png");
     let surf_rod_texture = asset_server.load("rods/surf.png");
@@ -304,8 +285,8 @@ fn check_shop_entrance(
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
     time_of_day: Res<GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
-    mut shop_state: ResMut<ShopState>,
     mut original_camera_pos: ResMut<OriginalCameraPosition>,
+    mut next_interface: ResMut<NextState<CurrentInterface>>
 ){
     let (mut pt, mut pd, mut pl, _pa, mut pi ) = player_query.single_mut();
     let (e_tran,e_tile) = entrance_query.single();
@@ -317,14 +298,13 @@ fn check_shop_entrance(
         return;
     }else{
         if *pd == PlayerDirection::Back 
-        && time_of_day.hour < 21 && !shop_state.is_open{
+        && time_of_day.hour < 21 {
             let mut camera = camera_query.single_mut();
             original_camera_pos.0 = camera.translation;
             println!("{}", original_camera_pos.0);
             let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
             camera.translation = new_position;
-            shop_state.is_open = true;
-            
+            next_interface.set(CurrentInterface::Shop);
             println!("Shop open");
         }
     }
@@ -333,16 +313,11 @@ fn check_shop_entrance(
 fn handle_purchase(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    shop_state: Res<ShopState>,
     mut shop_items: Query<&mut ShopItem>,
     mut player_inventory: Query<&mut PlayerInventory>,
     selected_item: Res<SelectedShopItem>,
     mut sold_spite: Query<&mut Visibility, With<SoldSprite>>,
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
     if keyboard_input.just_pressed(KeyCode::KeyE) { // Use Enter key to purchase
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
@@ -379,14 +354,9 @@ fn update_selected_item(
     input: Res<ButtonInput<KeyCode>>,
     mut selected_item: ResMut<SelectedShopItem>,
     shop_items: Query<&ShopItem>,
-    shop_state: Res<ShopState>,
     hover_entity: Res<HoverEntity>,
     mut hover_query: Query<&mut Transform>,
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
     let cols = 3;
     let rows = 2;
 
@@ -442,23 +412,18 @@ fn update_selected_item(
 
 fn exit_shop (
     input: Res<ButtonInput<KeyCode>>,
-    mut shop_state: ResMut<ShopState>,
+    mut next_interface: ResMut<NextState<CurrentInterface>>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
     original_camera_pos: Res<OriginalCameraPosition>,
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), (With<Player>, Without<Camera>)>
 ){
-    if input.just_pressed(KeyCode::Escape) && shop_state.is_open {
+    if input.just_pressed(KeyCode::Escape) {
         let mut camera = camera_query.single_mut();
         let (mut pt,mut pd, _pl, _pa, _pi) = player_query.single_mut();
         pt.translation = Vec3::new(1024., -180., 1.);
         *pd = PlayerDirection::Front;
         camera.translation = original_camera_pos.0;
-        shop_state.is_open = false;
+        next_interface.set(CurrentInterface::Overworld);
         println!("Shop closed");
     }
 }
-
-pub fn shop_open(shop_state: Res<ShopState>) -> bool {
-    shop_state.is_open
-}
-

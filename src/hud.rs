@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::gameday::*;
 use crate::inventory::*;
 use crate::weather::*;
-use crate::shop::*;
+use crate::interface::*;
 
 #[derive(Component)]
 pub struct MoneyDisplay;
@@ -86,11 +86,11 @@ pub fn update_money_display(
 pub fn update_clock_display(
     time: Res<GameDayTimer>,
     mut query: Query<(&mut Text, &mut Visibility), With<ClockDisplay>>,
-    shop_state: Res<ShopState>,
+    interface: Res<State<CurrentInterface>>,
 ) {
     let (mut text, mut visibility) = query.single_mut();
     text.sections[0].value = format!("Hour: {}", time.hour);
-    if shop_state.is_open {
+    if interface.eq(&CurrentInterface::Shop) {
         *visibility = Visibility::Hidden;
     }
     else {
@@ -101,10 +101,10 @@ pub fn update_clock_display(
 pub fn update_weather_display(
     weather: Res<WeatherState>,
     mut query: Query<(&mut Text, &mut Visibility), With<WeatherDisplay>>,
-    shop_state: Res<ShopState>,
+    interface: Res<State<CurrentInterface>>,
 ) {
     let (mut text, mut visibility) = query.single_mut();
-    if shop_state.is_open {
+    if interface.eq(&CurrentInterface::Shop) {
         *visibility = Visibility::Hidden;
     }
     else {

@@ -58,15 +58,10 @@ pub fn move_player(
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    mut fish_button: Query<&mut Visibility, With<FishingButton>>,
-    shop_state: Res<ShopState>,
+    mut fish_button: Query<&mut Visibility, With<FishingButton>>
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
-
-    if shop_state.is_open {
-        return;
-    }
 
     // Map transition
     if state.eq(&MapState::MapTransition) {

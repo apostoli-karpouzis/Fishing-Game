@@ -5,6 +5,7 @@ pub mod fishing_view;
 pub mod fishing_zone;
 pub mod gameday;
 pub mod hud;
+pub mod interface;
 pub mod inventory;
 pub mod map;
 pub mod physics;

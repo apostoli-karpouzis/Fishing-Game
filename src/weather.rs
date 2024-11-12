@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use rand::{seq::SliceRandom,};
 
+use crate::interface::CurrentInterface;
+
 const WEATHER_UPDATE_PERIOD: f32 = 30.;
 
 #[derive(Resource)]
@@ -80,42 +82,26 @@ pub fn update_weather(
 // }
 
 pub fn update_weather_tint(weather_state: Res<WeatherState>, 
+    current_interface: Res<State<CurrentInterface>>,
     mut query: Query<&mut Sprite, (With<WeatherTintOverlay>, Without<LightningFlash>)>,
 ) {
     if let Ok(mut sprite) = query.get_single_mut() {
-        match weather_state.current_weather {
-            Weather::Cloudy => { 
-                sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.25);
-            },
-            Weather::Rainy => { 
-                sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.5);
-            },
-            Weather::Thunderstorm => { 
-                sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.6);
-            },
-            _ => {
-                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
-            }
-        }
-    }
-}
-
-pub fn update_weather_tint_in_shop(weather_state: Res<WeatherState>, 
-    mut query: Query<&mut Sprite, (With<WeatherTintOverlay>, Without<LightningFlash>)>,
-) {
-    if let Ok(mut sprite) = query.get_single_mut() {
-        match weather_state.current_weather {
-            Weather::Cloudy => { 
-                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
-            },
-            Weather::Rainy => { 
-                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
-            },
-            Weather::Thunderstorm => { 
-                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
-            },
-            _ => {
-                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+        if current_interface.eq(&CurrentInterface::Shop) {
+            sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+        } else {
+            match weather_state.current_weather {
+                Weather::Cloudy => { 
+                    sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.25);
+                },
+                Weather::Rainy => { 
+                    sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.5);
+                },
+                Weather::Thunderstorm => { 
+                    sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.6);
+                },
+                _ => {
+                    sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+                }
             }
         }
     }
