@@ -319,7 +319,7 @@ fn setup (
             hunger: 10.0
         },
         InPond,
-        //BASS,
+        BASS,
         Collision,
     ));
 
@@ -359,7 +359,7 @@ fn setup (
             hunger: 10.0
         },
         InPond,
-        //CATFISH,
+        CATFISH,
         Collision,
     ));
 
@@ -816,12 +816,19 @@ fn move_fish(
 
 
 fn fish_area_bobber(
-    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<Bobber>)>,
-    bobber: Query<(&Transform, &Tile), With<Bobber>>,
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<Bobber>)>,
+    mut bobber: Query<(&Transform, &Tile, &mut Visibility), (With<Bobber>, Without<InPond>, Without<Species>, Without<Fish>)>,
+    //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
+    weather: Res<WeatherState>,
+    timer: Res<GameDayTimer>,
+    mut prob_timer: ResMut<ProbTimer>,
+    mut next_state: ResMut<NextState<FishingState>>,
+    time: Res<Time>,
+    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>, //add this in as the fish query, change the position of it at the end 
 ) {
     //let (bob, tile) = bobber.single_mut();
-    let (bob, tile) = bobber.single();
-    for (mut fishes_details, fish_pos) in fish_details.iter_mut() {
+    let (bob, tile, mut bobber_vis) = bobber.single_mut();
+    for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
         let bobber_position = bob.translation;
         
@@ -829,19 +836,36 @@ fn fish_area_bobber(
         
         //let bobber_position = bob.translation;
 
-        if fish_pos_loc.y - 180. / 2. > bobber_position.y + tile.hitbox.y / 2.
-            || fish_pos_loc.y + 180. / 2. < bobber_position.y - tile.hitbox.y / 2.
-            || fish_pos_loc.x + 320. / 2. < bobber_position.x - tile.hitbox.x / 2.
-            || fish_pos_loc.x - 320. / 2. > bobber_position.x + tile.hitbox.x / 2.
+        if fish_pos_loc.y - 180. / 2. > bobber_position.y + 50.
+            || fish_pos_loc.y + 180. / 2. < bobber_position.y - 50.
+            || fish_pos_loc.x + 320. / 2. < bobber_position.x - 50.
+            || fish_pos_loc.x - 320. / 2. > bobber_position.x + 50.
         {
             //there is no hit
-            fishes_details.touching_lure = false;
+            fish_details.touching_lure = false;
+            //println!("fish {:?}, {:?}", fishes_details.name, fish_pos.translation);
             //println!("no hit");
-            return;
+            continue;
         }
-        fishes_details.touching_lure = true;
-        println!("fish {:?}, {:?}", fishes_details.name, fish_pos.translation);
+        fish_details.touching_lure = true;
+        println!("fish {:?}, {:?}", fish_details.name, fish_pos.translation);
         println!("bobber hit");
+
+        //let deets = fish_details
+        if hook_fish((&mut fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+            *bobber_vis = Visibility::Hidden; //yes
+            *fish_vis = Visibility::Hidden; //yes
+
+            //unhide the actual fish
+            //fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
+            //commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
+            //commands.entity(entity_id).insert(Hooked); //yes
+            break;
+            //next_state.set(FishingState::ReelingHooked); //yes
+            //break; //yes
+        }  
+        
+        
     }
 }
 
@@ -1068,16 +1092,16 @@ fn update_fishing_interface (
 }
 //BENLOOK
 fn is_fish_hooked (
-    mut commands: Commands,
+    /*mut commands: Commands,
     mut next_state: ResMut<NextState<FishingState>>,
     mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),  With<Bobber>>,
     mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
     weather: Res<WeatherState>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
-    time: Res<Time>
+    time: Res<Time>*/
 ) {
-    let (bobber_transform, tile,  bobber_entity_id, bobber_physics, mut bobber_visibility) = bobber.single_mut();
+    /*let (bobber_transform, tile,  bobber_entity_id, bobber_physics, mut bobber_visibility) = bobber.single_mut();
     let bobber_position = bobber_transform.translation;
 
     for (entity_id, fish_details, fish_species, mut fish_physics) in fishes.iter_mut() {
@@ -1101,7 +1125,7 @@ fn is_fish_hooked (
             next_state.set(FishingState::ReelingHooked);
             break;
         }  
-    }
+    }*/
 }
 
 fn is_done_reeling(

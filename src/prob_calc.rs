@@ -7,7 +7,7 @@ use crate::weather::*;
 use crate::fishing_view::*;
 
 pub fn calc_fish_prob(
-    fish: &Fish, 
+    fish: &mut Fish, 
     species: &Species, 
     weather: &Res<WeatherState>, 
     time: &Res<GameDayTimer>) -> f32
@@ -44,7 +44,7 @@ pub fn calc_fish_prob(
 }
 
 pub fn hook_fish(
-    mut potential_fish: (&Fish, &Species),
+    mut potential_fish: (&mut Fish, &Species),
     weather: &Res<WeatherState>,
     timer: &Res<GameDayTimer>,
     mut prob_timer: &mut ResMut<ProbTimer>,
@@ -55,6 +55,7 @@ pub fn hook_fish(
         if prob_timer.timer.just_finished() {
                 let (fish, species) = potential_fish;
                 let prob = 100. * calc_fish_prob(fish, species, &weather, &timer);
+                println!("ok");
                 let mut prob_rng = rand::thread_rng();
                 let roll = prob_rng.gen_range(0..100);
                 println!("Prob: {}\tRoll: {}", prob, roll);
