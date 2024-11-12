@@ -71,13 +71,13 @@ pub fn update_weather(
     }
 }
 
-pub fn rain_particle_system(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
-) {
-    //TODO: implement rain_particle_system
-}
+// pub fn rain_particle_system(
+//     mut commands: Commands,
+//     mut materials: ResMut<Assets<ColorMaterial>>,
+//     mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
+// ) {
+//     //TODO: implement rain_particle_system
+// }
 
 pub fn update_weather_tint(weather_state: Res<WeatherState>, 
     mut query: Query<&mut Sprite, (With<WeatherTintOverlay>, Without<LightningFlash>)>,
