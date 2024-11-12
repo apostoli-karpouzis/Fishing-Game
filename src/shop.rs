@@ -166,8 +166,8 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Fish",
-            price: 500,
+            name: "Polarized Sun Glasses",
+            price: 100,
             is_bought: false,
             ..default()
         }
@@ -204,7 +204,7 @@ fn display_shop_items(
     let surf_rod_texture = asset_server.load("rods/surf.png");
     let monofil_texture = asset_server.load("lines/monofilament.png");
     let braided_line_texture = asset_server.load("lines/braided.png");
-    let fish_texture = asset_server.load("fish/bass.png");
+    let glasses_texture = asset_server.load("shop/polarized_glasses.png");
     let sold_texture: Handle<Image> = asset_server.load("shop/sold.png");
 
     //slot positions
@@ -232,7 +232,7 @@ fn display_shop_items(
                 "Surf Fishing Rod" => surf_rod_texture.clone(),
                 "FluoroCarbon Fishing Line" => monofil_texture.clone(),
                 "Braided Fishing Line" => braided_line_texture.clone(),
-                "Fish" => fish_texture.clone(),
+                "Polarized Sun Glasses" => glasses_texture.clone(),
                 _ => {
                     println!("No texture found for item: {}", item.name);
                     continue;
