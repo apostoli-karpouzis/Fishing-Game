@@ -1,6 +1,4 @@
-use crate::resources::*;
 use crate::fishing_view::*;
-use crate::shop::*;
 use bevy::prelude::*;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);

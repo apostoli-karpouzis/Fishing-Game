@@ -6,9 +6,9 @@ pub struct FishingZone {
 }
 
 impl FishingZone {
-    fn new(current: Vec3) -> Self {
-        Self { current }
-    }
+    // fn new(current: Vec3) -> Self {
+    //     Self { current }
+    // }
 
     pub const DEFAULT: FishingZone = FishingZone {
         current: Vec3::ZERO
