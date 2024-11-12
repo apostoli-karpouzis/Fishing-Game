@@ -58,13 +58,11 @@ pub fn move_player(
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    mut fish_button: Query<&mut Visibility, (With<Button>, With<FishingButton>)>,
-    mut shop_button: Query<&mut Visibility, (With<Button>, With<ShopingButton>, Without<FishingButton>)>,
+    mut fish_button: Query<&mut Visibility, With<FishingButton>>
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
-    let mut shop_button_visibility = shop_button.single_mut();
-    
+
     // Map transition
     if state.eq(&MapState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
@@ -172,16 +170,13 @@ pub fn move_player(
             match tile {
                 &Tile::WATER => {
                     *fish_button_visibility = Visibility::Visible;
-                    *shop_button_visibility = Visibility::Hidden;
                 }
                 &Tile::SHOP => {
                     *fish_button_visibility = Visibility::Hidden;
-                    *shop_button_visibility = Visibility::Visible;
                 }
                 _ => {
 
                     *fish_button_visibility = Visibility::Hidden;
-                    *shop_button_visibility = Visibility::Hidden;
                 }
             }
         }
@@ -191,7 +186,6 @@ pub fn move_player(
 
     // No collision
     *fish_button_visibility = Visibility::Hidden;
-    *shop_button_visibility = Visibility::Hidden;
     pt.translation = new_pos;
 }
 

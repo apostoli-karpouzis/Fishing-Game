@@ -53,7 +53,6 @@ fn main() {
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
-        .add_systems(Update, shop_button_system)
 
         .add_systems(Update, update_money_display)
         .add_systems(Update, update_clock_display)
@@ -85,6 +84,7 @@ fn main() {
                 ShopPlugin
             )
         )
+        
         .run();
 }
 
