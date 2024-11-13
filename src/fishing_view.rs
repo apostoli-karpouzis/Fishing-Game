@@ -74,6 +74,12 @@ struct OnScreenLure;
 struct PowerBar;
 
 #[derive(Component)]
+struct MysteryFish;
+
+#[derive(Component)]
+struct PhysicsFish;
+
+#[derive(Component)]
 pub struct FishingRod {
     pub length: f32,
     pub rod_type: &'static FishingRodType,
@@ -97,6 +103,11 @@ impl FishingRodType {
 
 #[derive(Resource)]
 struct DirectionTimer {
+    pub timer: Timer,
+}
+
+#[derive(Resource)]
+struct exclamationTimer {
     pub timer: Timer,
 }
 
@@ -289,6 +300,11 @@ fn setup (
         // create the repeating timer
         timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
     });
+
+    commands.insert_resource(exclamationTimer{
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(2), TimerMode::Repeating),
+    });
     //let mut fish: HashMap<String, Species> = HashMap::new();
 
     //spawn example fish
@@ -302,6 +318,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
@@ -332,7 +349,52 @@ fn setup (
         InPond,
         BASS,
         Collision,
+        MysteryFish,
     ));
+
+
+    /*let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Fish{
+            name: "Salmon",
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        InPond,
+        SALMON,
+        Collision,
+        MysteryFish,
+    ));
+    */
 
     //FISH BOX
     commands.spawn((
@@ -342,10 +404,12 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
                 ..default()
             },
+            
             ..default()
         },
         Fish {
@@ -372,6 +436,7 @@ fn setup (
         InPond,
         CATFISH,
         Collision,
+        MysteryFish,
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
@@ -391,7 +456,7 @@ fn setup (
             ..default()
         },
         BASS,
-        Fish {
+        Fish{
             name: "Bass2",
             id: 0,
             is_caught: false,
@@ -412,7 +477,7 @@ fn setup (
             age: 6.0,
             hunger: 10.0
         },
-        PhysicsObject {
+        PhysicsObject{
             mass: 2.0,
             position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
             rotation: Vec3::ZERO,
@@ -421,6 +486,57 @@ fn setup (
         },
         InPond,
         Collision,
+        PhysicsFish,
+    ));
+
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+                ..default()
+            },
+            ..default()
+        },
+        CATFISH,
+        Fish{
+            name: "Catfish2",
+            id: 1,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        PhysicsObject{
+            mass: 3.0,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            rotation: Vec3::ZERO,
+            velocity: Vec3::ZERO,
+            forces: Forces::default()
+        },
+        InPond,
+        Collision,
+        PhysicsFish,
     ));
 
     let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
@@ -455,6 +571,21 @@ fn setup (
             ..default()
         },
         PowerBar
+    ));
+
+    let player_fishing_handle = asset_server.load("fishing_view/back_fishing_sprite.png");
+    commands.spawn((
+        SpriteBundle {
+            texture: player_fishing_handle.clone(),
+                        sprite: Sprite{
+                        ..default() 
+                        },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
+                ..default()
+            },
+            ..default()
+        },
     ));
 
     let player_fishing_handle = asset_server.load("fishing_view/back_fishing_sprite.png");
@@ -826,15 +957,16 @@ fn move_fish(
 
 fn fish_area_bobber(
     mut commands: Commands,
-    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<Bobber>)>,
-    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, Without<InPond>, Without<Species>, Without<Fish>)>,
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Bobber>)>,
+    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Bobber>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
     weather: Res<WeatherState>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
     mut next_state: ResMut<NextState<FishingState>>,
     time: Res<Time>,
-    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<Fish>, Without<Bobber>)>, //add this in as the fish query, change the position of it at the end 
+    
 ) {
     //let (bob, tile) = bobber.single_mut();
     //let (bob, tile, mut bobber_vis) = bobber.single_mut();
@@ -862,20 +994,39 @@ fn fish_area_bobber(
         println!("fish {:?}, {:?}", fish_details.name, fish_pos.translation);
         println!("bobber hit");
 
-        //let deets = fish_details
+        //let (entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) = fishes.single_mut();
+
+        
+
+        //ERROR HERE
         if hook_fish((&mut fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
-            let (entity_id, fish_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) = fishes.single_mut();
-
-            *bobber_vis = Visibility::Hidden; //yes
-            *fish_vis = Visibility::Hidden; //yes
-            *fishy_vis = Visibility::Visible;
-
-            //unhide the actual fish
-            fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
-            commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
-            commands.entity(entity_id).insert(Hooked); //yes
-            next_state.set(FishingState::ReelingHooked);
-            break;
+            for(entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) in fishes.iter_mut(){
+                if fishy_details.id == fish_details.id{ //fish number matches the other number of the caught fish
+                    println!("FIRST: {:?}", fishy_transform.translation);
+                    fishy_transform.translation = bobber_position;
+                    fish_physics.position = bobber_position;
+                    //fishy_transform.translation = fish_physics.position.with_z(901.);
+                    *bobber_vis = Visibility::Hidden; //yes
+                    *fish_vis = Visibility::Hidden; //yes
+                    *fishy_vis = Visibility::Visible;
+                    fishy_details.is_caught = true;
+                    //println!("FIRST: {:?}", fishy_transform.translation);
+                    
+                    println!("SECOND: {:?}", fishy_transform.translation);
+                    //for (physics_object, mut transform) in objects.iter_mut() {
+                        //transform.translation = physics_object.position.with_z(901.);
+                    //unhide the actual fish
+                    fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
+                    println!("fish name {:?}", fishy_details.name);
+                    commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
+                    commands.entity(entity_id).insert(Hooked); //yes
+                    next_state.set(FishingState::ReelingHooked);
+                    break;
+                }
+                else{
+                    println!("wrong fish this is a {:?}", fish_details.name);
+                }
+            }
             //next_state.set(FishingState::ReelingHooked); //yes
             //break; //yes
         }  
@@ -884,6 +1035,13 @@ fn fish_area_bobber(
     }
 }
 
+
+fn spawn_mark(
+    commands: Commands,
+    position: Vec3,
+){
+
+}
 
 fn fishing_transition (
     mut return_val: ResMut<PlayerReturnPos>,
@@ -1318,7 +1476,7 @@ fn animate_fishing_line_unhooked (
 
     bobber_transform.translation = line_end.extend(950.);
 }
-
+//do for multiple trpes of fishes
 fn animate_fishing_line_hooked (
     fishing_view: Res<FishingView>,
     rod: Query<(&FishingRod, &Transform), With<FishingRod>>,
@@ -1333,21 +1491,23 @@ fn animate_fishing_line_hooked (
     }
 
     let (rod_info, rod_transform) = rod.single();
-    let (fish_species, fish_physics) = fish.single_mut();
+    //let (fish_species, fish_physics) = fish.single_mut();   //ERROR HERE
     let mut line_info = line.single_mut();
     let bobber_physics = bobber.single_mut();
 
     let angle_vector = Vec2::from_angle(fishing_view.rod_rotation + PI / 2.);
     let rod_end = rod_transform.translation.xy() + rod_info.length / 2. * angle_vector;
-    let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
-    let fish_pos = fish_physics.position.xy() + fish_offset;
+    for(fish_species, fish_physics) in fish.iter_mut(){
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+        let fish_pos = fish_physics.position.xy() + fish_offset;
 
-    if *state.get() == FishingState::ReelingHooked{
-        line_info.start = rod_end;
-        line_info.end = fish_pos;
-    }else{
-        line_info.start = rod_end;
-        line_info.end = bobber_physics.position.xy();
+        if *state.get() == FishingState::ReelingHooked{
+            line_info.start = rod_end;
+            line_info.end = fish_pos;
+        }else{
+            line_info.start = rod_end;
+            line_info.end = bobber_physics.position.xy();
+        }
     }
 }
 
@@ -1425,13 +1585,13 @@ fn animate_splash(
 }
 
 fn animate_waves (
-    objects: Query<&PhysicsObject, (With<PhysicsObject>, With<Fish>)>, 
+    objects: Query<(&PhysicsObject, &Fish), (With<PhysicsObject>, With<Fish>)>, 
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
 ) {
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
     
     // Currently only supports one object and only supports fish
-    for physics_object in objects.iter() {
+    for (physics_object, fish) in objects.iter() {
         let magnitude = physics_object.forces.water.length();
     
         if magnitude == 0. {
@@ -1448,10 +1608,12 @@ fn animate_waves (
         } else {
             wave_texture.index = 3;
         }
-    
-        *wave_visibility = Visibility::Visible;
-        wave_transform.translation = physics_object.position.with_z(902.);
-        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
+        if fish.is_caught{
+            *wave_visibility = Visibility::Visible;
+        
+            wave_transform.translation = physics_object.position.with_z(902.);
+            wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
+        }
         return;
     }
 }
