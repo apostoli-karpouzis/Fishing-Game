@@ -1,43 +1,24 @@
 extern crate rand;
 use bevy::window::EnabledButtons;
-use bevy::{prelude::*, window::PresentMode};
+use bevy::time::Timer;
+use bevy::prelude::*;
+use bevy::window::PresentMode;
+use fishing_game::interface::CurrentInterface;
 use rand::Rng;
 
-mod physics;
-mod fish;
-mod species;
-mod camera; 
-mod player; 
-mod map; 
-mod resources;
-mod button;
-mod gameday;
-mod weather;
-mod fishing_view;
-mod fishing_zone;
-mod prob_calc;
-mod shop;
-mod hud;
-//mod species;
-
-
-use crate::physics::*;
-use crate::fish::*;
-use crate::species::*;
-use crate::camera::*;
-use crate::player::*;
-use crate::map::*;
-use crate::resources::*;
-use crate::button::*;
-use crate::gameday::*;
-use crate::weather::*;
-use crate::fishing_view::*;
-use crate::fishing_zone::*;
-
-use crate::hud::*;
-//use crate::species::*;
-use crate::prob_calc::*;
-
+use fishing_game::camera::*;
+use fishing_game::inventory::*;
+use fishing_game::player::*;
+use fishing_game::map::*;
+use fishing_game::resources::*;
+use fishing_game::button::*;
+use fishing_game::gameday::*;
+use fishing_game::weather::*;
+use fishing_game::fishing_view::*;
+use fishing_game::fishing_zone::*;
+use fishing_game::shop::*;
+use fishing_game::hud::*;
+use fishing_game::window::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -60,9 +41,9 @@ fn main() {
             }),
             ..default()
         }))
-        .init_state::<GameState>()
+        .init_state::<CurrentInterface>()
+        .init_state::<MapState>()
         .init_state::<Weather>()
-        .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
@@ -72,13 +53,12 @@ fn main() {
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
-        .add_systems(Update, shop_button_system)
 
         .add_systems(Update, update_money_display)
         .add_systems(Update, update_clock_display)
         .add_systems(Update, update_weather_display)
 
-        .add_systems(Update, handle_inventory)
+        .add_systems(Update, handle_inventory.run_if(in_state(CurrentInterface::Overworld)))
 
         // Overworld systems (player movement, animations)
         .add_systems(Update,
@@ -89,24 +69,22 @@ fn main() {
                     move_camera,
                     screen_edge_collision
                 ).after(move_player)
-            ).run_if(in_state(FishingMode::Overworld))
+            ).run_if(in_state(CurrentInterface::Overworld))
         )
 
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-
         
         // Check if we've hooked any fish
-        //.add_systems(Update, hook_fish)
-
-        .insert_resource(ShopState {is_open: false})        
+        //.add_systems(Update, hook_fish)     
         .add_plugins(
             (
                 FishingViewPlugin,
-                shop::ShopPlugin
+                ShopPlugin
             )
         )
+        
         .run();
 }
 

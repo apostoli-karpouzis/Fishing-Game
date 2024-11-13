@@ -1,6 +1,9 @@
 use bevy::prelude::*;
-use super::map::*;
-use super::resources::*;
+use crate::map::*;
+use crate::shop::*;
+use crate::button::*;
+use crate::resources::*;
+use crate::window::*;
 use std::time::Duration;
 
 pub const PLAYER_WIDTH: f32 = 64.;
@@ -8,6 +11,8 @@ pub const PLAYER_HEIGHT: f32 = 128.;
 
 const PLAYER_SPEED: f32 = 70.;
 const RUN_SPEED: f32 = 240.; // Added RUN_SPEED for running
+pub const ANIM_TIME: f32 = 0.125; // 8 fps
+pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
 
 const UP: KeyCode = KeyCode::KeyW;
 const LEFT: KeyCode = KeyCode::KeyA;
@@ -48,25 +53,18 @@ impl InputStack {
 }
 
 pub fn move_player(
-    state: Res<State<GameState>>,
+    state: Res<State<MapState>>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    mut fish_button: Query<&mut Visibility, (With<Button>, With<FishingButton>)>,
-    mut shop_button: Query<&mut Visibility, (With<Button>, With<ShopingButton>, Without<FishingButton>)>,
-    mut shop_state: ResMut<ShopState>,
+    mut fish_button: Query<&mut Visibility, With<FishingButton>>
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
-    let mut shop_button_visibility = shop_button.single_mut();
-
-    if shop_state.is_open {
-        return;
-    }
 
     // Map transition
-    if state.eq(&GameState::MapTransition) {
+    if state.eq(&MapState::MapTransition) {
         let elapsed: f32 = time.elapsed_seconds() - animation.start_time;
         
         if elapsed < animation.duration {
@@ -172,16 +170,13 @@ pub fn move_player(
             match tile {
                 &Tile::WATER => {
                     *fish_button_visibility = Visibility::Visible;
-                    *shop_button_visibility = Visibility::Hidden;
                 }
                 &Tile::SHOP => {
                     *fish_button_visibility = Visibility::Hidden;
-                    *shop_button_visibility = Visibility::Visible;
                 }
                 _ => {
 
                     *fish_button_visibility = Visibility::Hidden;
-                    *shop_button_visibility = Visibility::Hidden;
                 }
             }
         }
@@ -191,7 +186,6 @@ pub fn move_player(
 
     // No collision
     *fish_button_visibility = Visibility::Hidden;
-    *shop_button_visibility = Visibility::Hidden;
     pt.translation = new_pos;
 }
 
@@ -237,19 +231,5 @@ pub fn animate_player(
         }
     } else {
         texture_atlas.index = dir_add;
-    }
-}
-
-pub fn handle_inventory (
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    player_inventory: Query<&mut PlayerInventory>,
-    shop_state: Res<ShopState>,
-) {
-    let inventory = player_inventory.single();
-    let items: Vec<_> = inventory.items.iter().collect();
-    if keyboard_input.just_pressed(KeyCode::KeyE) && !shop_state.is_open{
-        for item in items {
-            println!("{}", item);
-        }
     }
 }

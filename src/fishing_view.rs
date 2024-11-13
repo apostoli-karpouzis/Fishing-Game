@@ -8,13 +8,16 @@ use bevy::sprite::*;
 use rand::Rng;
 use crate::fish;
 use crate::fish::*;
-use crate::map::Collision;
+use crate::gameday::*;
+use crate::interface::*;
+use crate::inventory::*;
 use crate::resources::*;
 use crate::weather::*;
 use crate::map::*;
 use crate::physics::*;
 use crate::species::*;
 use crate::prob_calc::*;
+use crate::window::*;
 
 const TUG: KeyCode = KeyCode::KeyP;
 const REEL: KeyCode = KeyCode::KeyO;
@@ -38,6 +41,15 @@ const PIXELS_PER_METER: f32 = 200.;
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
+
+#[derive(Resource)]
+pub struct StartFishingAnimation {
+    pub active: bool,
+    pub button_control_active: bool, 
+}
+
+#[derive(Resource)]
+pub struct FishingAnimationDuration(pub Timer);
 
 #[derive(Resource)]
 pub struct FishingView {
@@ -217,7 +229,6 @@ pub struct FishingViewPlugin;
 impl Plugin for FishingViewPlugin {
     fn build(&self, app: &mut App) {
         app
-        .init_state::<FishingMode>()
         .init_state::<FishingState>()
         .insert_resource(FishingView { rod_rotation: 0., power: 0., segments: Vec::new() })
         .insert_resource(ProbTimer::new(2.))
@@ -252,10 +263,10 @@ impl Plugin for FishingViewPlugin {
                 draw_fishing_line.after(animate_fishing_line_hooked),
                 animate_waves.after(simulate_physics),
                 animate_splash.after(cast_line)
-            ).run_if(in_state(FishingMode::Fishing))
+            ).run_if(in_state(CurrentInterface::Fishing))
         )
-        .add_systems(OnEnter(FishingMode::Fishing), fishing_transition)
-        .add_systems(OnExit(FishingMode::Fishing), overworld_transition)
+        .add_systems(OnEnter(CurrentInterface::Fishing), fishing_transition)
+        .add_systems(OnExit(CurrentInterface::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
         .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface);
@@ -526,8 +537,7 @@ fn setup (
         },
         AnimationTimer::new(0.2), 
         AnimationFrameCount(splash_layout_len), //number of different frames that we have
-        Splash::default(),
-        Animation::new()
+        Splash::default()
     ));
 
     let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
@@ -550,8 +560,7 @@ fn setup (
         },
         //AnimationTimer::new(0.2), 
         AnimationFrameCount(wave_layout_len), //number of different frames that we have
-        Wave,
-        //Animation::new()
+        Wave
     ));
 
 
@@ -578,7 +587,6 @@ fn setup (
         },
         OnScreenLure,
         AnimationFrameCount(baits_layout_len),
-        Animation::new(),
         AnimationTimer::new(0.2), //number of different frames that we have
     ));
 
@@ -1038,43 +1046,59 @@ fn switch_equipment (
     mut screen_lure: Query< &mut TextureAtlas, With<OnScreenLure> >,
     mut bait_lure: Query< &mut TextureAtlas , (With<Bobber>, Without<OnScreenLure>)>,
     mut line: Query<(&mut FishingLine, &mut Handle<ColorMaterial>), With<FishingLine>>,
+    mut player_inventory: Query<&mut PlayerInventory>,
 
 ) {
+    let mut inventory = player_inventory.single_mut();
     let mut screen_texture  = screen_lure.single_mut();
     let mut bait_texture = bait_lure.single_mut();
     let (mut line_properties, mut line_material) = line.single_mut();
-
-    if input.just_pressed(KeyCode::KeyZ) {
-        if bait_texture.index == 2 
-        {
-            bait_texture.index = 0;
-            screen_texture.index = 0;
-        } else {
-            bait_texture.index = bait_texture.index + 1;
-            screen_texture.index = screen_texture.index + 1;
-        }
-    }
+    let lures: Vec<_> = inventory.lures.iter().collect();
+    let lines: Vec<_> = inventory.lines.iter().collect();
 
     if input.just_pressed(KeyCode::KeyX) {
-        if bait_texture.index == 0 
+        if inventory.lure_index == lures.len() - 1 
         {
-            bait_texture.index = 2;
-            screen_texture.index = 2;
+            bait_texture.index = lures.get(0).unwrap().index;
+            screen_texture.index = lures.get(0).unwrap().index;
+            inventory.lure_index =  0;
         } else {
-            bait_texture.index = bait_texture.index - 1;
-            screen_texture.index = screen_texture.index - 1;
+            bait_texture.index = lures.get(inventory.lure_index + 1).unwrap().index;
+            screen_texture.index = lures.get(inventory.lure_index + 1).unwrap().index;
+            inventory.lure_index =  inventory.lure_index + 1;
+        }
+    }else if input.just_pressed(KeyCode::KeyZ) {
+        if inventory.lure_index == 0 
+        {
+            bait_texture.index = lures.get(lures.len() - 1).unwrap().index;
+            screen_texture.index = lures.get(lures.len() - 1).unwrap().index;
+            inventory.lure_index =  lures.len() - 1;
+        } else {
+            bait_texture.index = lures.get(inventory.lure_index - 1).unwrap().index;
+            screen_texture.index = lures.get(inventory.lure_index - 1).unwrap().index;
+            inventory.lure_index =  inventory.lure_index - 1;
         }
     }
 
-    if input.just_pressed(KeyCode::KeyM) {
-        match line_properties.line_type {
-            &FishingLineType::MONOFILILMENT => {
+
+    else if input.just_pressed(KeyCode::KeyM) {
+        let mut current_line = String::from("");
+        if inventory.line_index == lines.len() - 1 {
+            current_line.push_str( lines.get(0).unwrap().name);
+            inventory.line_index = 0;
+        }else{
+            current_line.push_str( lines.get(inventory.line_index + 1).unwrap().name);
+            inventory.line_index = inventory.line_index + 1;
+        }   
+
+        match current_line.as_str() {
+            "FluoroCarbon Fishing Line" => {
                 line_properties.line_type = &FishingLineType::FLUOROCARBON;
             }
-            &FishingLineType::FLUOROCARBON => {
+            "Braided Fishing Line" => {
                 line_properties.line_type = &FishingLineType::BRAIDED;
             }
-            &FishingLineType::BRAIDED => {
+            "Monofilament Fishing Line" => {
                 line_properties.line_type = &FishingLineType::MONOFILILMENT;
             }
             _ => {}
@@ -1404,28 +1428,31 @@ fn animate_waves (
     objects: Query<&PhysicsObject, (With<PhysicsObject>, With<Fish>)>, 
     mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
 ) {
-    let object = objects.single();
     let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
-
-    let magnitude = object.forces.water.length();
-
-    if magnitude == 0. {
-        *wave_visibility = Visibility::Hidden;
-        return
-    }
     
-    if magnitude < 200. {
-        wave_texture.index = 0;
-    } else if magnitude < 400. {
-        wave_texture.index = 1;
-    } else if magnitude < 600. {
-        wave_texture.index = 2;
-    } else {
-        wave_texture.index = 3;
+    // Currently only supports one object and only supports fish
+    for physics_object in objects.iter() {
+        let magnitude = physics_object.forces.water.length();
+    
+        if magnitude == 0. {
+            *wave_visibility = Visibility::Hidden;
+            return
+        }
+        
+        if magnitude < 200. {
+            wave_texture.index = 0;
+        } else if magnitude < 400. {
+            wave_texture.index = 1;
+        } else if magnitude < 600. {
+            wave_texture.index = 2;
+        } else {
+            wave_texture.index = 3;
+        }
+    
+        *wave_visibility = Visibility::Visible;
+        wave_transform.translation = physics_object.position.with_z(902.);
+        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
+        return;
     }
-
-    *wave_visibility = Visibility::Visible;
-    wave_transform.translation = object.position.with_z(902.);
-    wave_transform.rotation = Quat::from_rotation_z(f32::atan2(object.forces.water.y, object.forces.water.x) - PI / 2.);
 }
 
