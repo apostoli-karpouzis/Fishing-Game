@@ -372,6 +372,7 @@ fn setup (
                 custom_size: Some(Vec2::new(100.,100.)),
                 ..default()
             },
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
                 ..default()
@@ -816,18 +817,20 @@ fn move_fish(
 
 
 fn fish_area_bobber(
+    mut commands: Commands,
     mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<Bobber>)>,
-    mut bobber: Query<(&Transform, &Tile, &mut Visibility), (With<Bobber>, Without<InPond>, Without<Species>, Without<Fish>)>,
+    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, Without<InPond>, Without<Species>, Without<Fish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
     weather: Res<WeatherState>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
     mut next_state: ResMut<NextState<FishingState>>,
     time: Res<Time>,
-    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>, //add this in as the fish query, change the position of it at the end 
+    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<Fish>, Without<Bobber>)>, //add this in as the fish query, change the position of it at the end 
 ) {
     //let (bob, tile) = bobber.single_mut();
-    let (bob, tile, mut bobber_vis) = bobber.single_mut();
+    //let (bob, tile, mut bobber_vis) = bobber.single_mut();
+    let (bob, tile,  bobber_entity_id, bobber_physics, mut bobber_vis) = bobber.single_mut();
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
         let bobber_position = bob.translation;
@@ -853,13 +856,17 @@ fn fish_area_bobber(
 
         //let deets = fish_details
         if hook_fish((&mut fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
+            let (entity_id, fish_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) = fishes.single_mut();
+
             *bobber_vis = Visibility::Hidden; //yes
             *fish_vis = Visibility::Hidden; //yes
+            *fishy_vis = Visibility::Visible;
 
             //unhide the actual fish
-            //fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
-            //commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
-            //commands.entity(entity_id).insert(Hooked); //yes
+            fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
+            commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
+            commands.entity(entity_id).insert(Hooked); //yes
+            next_state.set(FishingState::ReelingHooked);
             break;
             //next_state.set(FishingState::ReelingHooked); //yes
             //break; //yes
