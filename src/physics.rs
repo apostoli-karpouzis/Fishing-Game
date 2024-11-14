@@ -70,7 +70,7 @@ pub fn bend_fishing_rod (
         let line_dir = fish_pos - rod_end;
         let angle = Vec2::angle_between(rod_dir, line_dir);
 
-        (physics_object.forces.player.length() - physics_object.forces.water.length() - physics_object.forces.own.length()) * f32::sin(angle)
+        (physics_object.forces.water.length() + physics_object.forces.own.length()) * f32::sin(angle)
     };
 
     let rod_type = rod_info.rod_type;
