@@ -100,7 +100,7 @@ impl FishingRodType {
     }
     
     pub const NORMAL: FishingRodType = FishingRodType::new("rods/default.png", 1.5, 0.015, 0.004, 3450E6, 72E9, Color::BLACK);
-    pub const SURF: FishingRodType = FishingRodType::new("rods/surf.png", 2., 0.015, 0.004, 3450E6, 72E9, Color::WHITE);
+    pub const SURF: FishingRodType = FishingRodType::new("rods/surf.png", 2., 0.015, 0.004, 3450E6, 72E9, Color::BLACK);
 }
 
 #[derive(Resource)]
@@ -269,13 +269,10 @@ impl Plugin for FishingViewPlugin {
                 simulate_physics.after(calculate_fish_force),
                 cast_line.run_if(in_state(FishingState::Casting)),
                 (
-                    (
-                        is_fish_hooked,
-                        is_done_reeling
-                    ).run_if(in_state(FishingState::ReelingUnhooked)),
+                    is_done_reeling.run_if(in_state(FishingState::ReelingUnhooked)),
                     is_fish_caught.run_if(in_state(FishingState::ReelingHooked)),
                 ).after(simulate_physics),
-                move_physics_objects.after(is_fish_hooked).after(is_fish_caught),
+                move_physics_objects.after(is_fish_caught),
                 (
                     animate_fishing_line.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
                     is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
@@ -527,9 +524,6 @@ fn setup (
     commands.spawn((
         SpriteBundle {
             texture: fishing_rod_handle.clone(),
-                        sprite: Sprite{
-                        ..default() 
-                        },
             transform: Transform {
                 translation: Vec3::new(PLAYER_POSITION.x, PLAYER_POSITION.y, 901.),
                 ..default()
@@ -987,9 +981,10 @@ fn power_bar_cast(
 fn switch_rod (
     mut commands: Commands,
     input: Res<ButtonInput<KeyCode>>,
+    asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut rod: Query<(&mut FishingRod, &Transform), With<FishingRod>>,
+    mut rod: Query<(&mut FishingRod, &mut Handle<Image>, &Transform), With<FishingRod>>,
     segments: Query<(Entity, &Mesh2dHandle), With<FishingRodSegment>>,
     mut player_inventory: Query<&mut PlayerInventory>
  ) {
@@ -997,7 +992,7 @@ fn switch_rod (
         return;
     }
 
-    let (mut rod_info, rod_transform) = rod.single_mut();
+    let (mut rod_info, mut rod_texture, rod_transform) = rod.single_mut();
     let mut inventory = player_inventory.single_mut();
 
     inventory.rod_index = if inventory.rod_index == inventory.rods.len() - 1 { 0 } else { inventory.rod_index + 1 };
@@ -1012,6 +1007,7 @@ fn switch_rod (
     rod_info.rod_type = new_type;
     materials.remove(&rod_info.material);
     rod_info.material = materials.add(new_type.blank_color);
+    *rod_texture = asset_server.load(new_type.texture);
     rod_info.tip_pos = (rod_transform.translation.xy() + new_type.length * PIXELS_PER_METER * Vec2::from_angle(rod_info.rotation)).extend(0.);
 
     // Remove old segments
@@ -1112,44 +1108,6 @@ fn begin_cast (
     line_info.cast_distance = power_bar_info.power / MAX_POWER * MAX_CAST_DISTANCE;
     commands.entity(entity_id).insert(Hooked);
     *bobber_visibililty = Visibility::Visible;
-}
-
-//BENLOOK
-fn is_fish_hooked (
-    /*mut commands: Commands,
-    mut next_state: ResMut<NextState<FishingState>>,
-    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),  With<Bobber>>,
-    mut fishes: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
-    weather: Res<WeatherState>,
-    timer: Res<GameDayTimer>,
-    mut prob_timer: ResMut<ProbTimer>,
-    time: Res<Time>*/
-) {
-    /*let (bobber_transform, tile,  bobber_entity_id, bobber_physics, mut bobber_visibility) = bobber.single_mut();
-    let bobber_position = bobber_transform.translation;
-
-    for (entity_id, fish_details, fish_species, mut fish_physics) in fishes.iter_mut() {
-        if fish_physics.position.y - fish_details.width / 2. > bobber_position.y + tile.hitbox.y / 2.
-        || fish_physics.position.y + fish_details.width / 2. < bobber_position.y - tile.hitbox.y / 2. 
-        || fish_physics.position.x + fish_details.width / 2. < bobber_position.x - tile.hitbox.x / 2. 
-        || fish_physics.position.x - fish_details.width / 2. > bobber_position.x + tile.hitbox.x / 2.
-        {
-            continue;
-        }
-    
-        //no longer reeling in bobber so remove that entity. instead add the fish as the hooked entity.
-        //also add weight of the bobber to the fish
-        println!("collision");
-
-        if hook_fish((fish_details, fish_species), &weather, &timer, &mut prob_timer, &time){
-            *bobber_visibility = Visibility::Hidden;
-            fish_physics.mass = fish_physics.mass + bobber_physics.mass;
-            commands.entity(bobber_entity_id).remove::<Hooked>();
-            commands.entity(entity_id).insert(Hooked);
-            next_state.set(FishingState::ReelingHooked);
-            break;
-        }  
-    }*/
 }
 
 fn is_done_reeling(
@@ -1379,7 +1337,7 @@ fn animate_waves (
     
         *wave_visibility = Visibility::Visible;
         wave_transform.translation = physics_object.position.with_z(902.);
-        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x));
+        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
         return;
     }
 }
