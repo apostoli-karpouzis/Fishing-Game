@@ -107,7 +107,7 @@ struct DirectionTimer {
 }
 
 #[derive(Resource)]
-struct exclamationTimer {
+struct ExclamationTimer {
     pub timer: Timer,
 }
 
@@ -166,6 +166,9 @@ struct InPond;
 
 #[derive(Component)]
 pub struct IsBass;
+
+#[derive(Component)]
+pub struct exclam_point;
 
 #[derive(Component)]
 pub struct PondObstruction;
@@ -301,9 +304,9 @@ fn setup (
         timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
     });
 
-    commands.insert_resource(exclamationTimer{
+    commands.insert_resource(ExclamationTimer{
         // create the repeating timer
-        timer: Timer::new(Duration::from_secs(2), TimerMode::Repeating),
+        timer: Timer::new(Duration::from_secs(2), TimerMode::Once),
     });
     //let mut fish: HashMap<String, Species> = HashMap::new();
 
@@ -588,20 +591,25 @@ fn setup (
         },
     ));
 
-    let player_fishing_handle = asset_server.load("fishing_view/back_fishing_sprite.png");
+    let exclamation_point_handle = asset_server.load("fishing_view/ExclamationPoint.png");
     commands.spawn((
         SpriteBundle {
-            texture: player_fishing_handle.clone(),
+            texture: exclamation_point_handle.clone(),
+                                    
                         sprite: Sprite{
                         ..default() 
                         },
+
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 901.),
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
             },
+            visibility: Visibility::Hidden,
             ..default()
         },
+        exclam_point,
     ));
+    
 
     let fishing_rod_handle = asset_server.load("rods/default.png");
 
@@ -960,16 +968,19 @@ fn fish_area_bobber(
     mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Bobber>)>,
     mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
     mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Bobber>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
+    mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Bobber>, Without<PhysicsFish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
     weather: Res<WeatherState>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
     mut next_state: ResMut<NextState<FishingState>>,
     time: Res<Time>,
+    mut config: ResMut<ExclamationTimer>,
     
 ) {
     //let (bob, tile) = bobber.single_mut();
     //let (bob, tile, mut bobber_vis) = bobber.single_mut();
+    let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
     let (bob, tile,  bobber_entity_id, bobber_physics, mut bobber_vis) = bobber.single_mut();
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
@@ -1003,7 +1014,22 @@ fn fish_area_bobber(
             for(entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) in fishes.iter_mut(){
                 if fishy_details.id == fish_details.id{ //fish number matches the other number of the caught fish
                     println!("FIRST: {:?}", fishy_transform.translation);
+                    println!("FIRST: {:?}", exclam_transform.translation);
                     fishy_transform.translation = bobber_position;
+                    exclam_transform.translation = bobber_position;
+                    exclam_transform.translation.y += 40.;
+                    *exclam_vis = Visibility::Visible;
+                    
+
+                    config.timer.tick(time.delta());
+
+                    if config.timer.finished()
+                    {
+                        println!("hiding it");
+                        *exclam_vis = Visibility::Hidden;
+                    }
+                    
+                    println!("SECOND: {:?}", exclam_transform.translation);
                     fish_physics.position = bobber_position;
                     //fishy_transform.translation = fish_physics.position.with_z(901.);
                     *bobber_vis = Visibility::Hidden; //yes
