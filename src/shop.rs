@@ -11,14 +11,15 @@ struct ShopEntrance;
 #[derive(Resource)]
 pub struct HoverEntity(pub Entity);
 
-#[derive(PartialEq, Default, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum ItemType{
-    #[default]
+    ROD,
     LINE,
-    LURE
+    LURE,
+    COSMETIC
 }
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Clone)]
 pub struct ShopItem {
     pub name: &'static str,
     pub price: u32,
@@ -32,9 +33,6 @@ impl ShopItem {
         Self { name,  price, is_bought, index, item_type}
     }
 }
-
-
-
 
 #[derive(Resource)]
 struct SelectedShopItem {
@@ -70,10 +68,24 @@ fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
             coins: 1000,
-            items: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE), 
-            ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
-            lures: Vec::from([ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)]),
-            lines: Vec::from([ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)]),
+            items: Vec::from([
+                ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Bobber", 0, true, 0, ItemType::LURE),
+                ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)
+                ]),
+            rods: Vec::from([
+                ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD)
+                ]),
+            lures: Vec::from(
+                [ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)
+                ]),
+            lines: Vec::from([
+                ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)
+                ]),
+            cosmetics: Vec::new(),
+            rod_index: 0,
             lure_index: 0,
             line_index: 0,
         },
@@ -130,7 +142,8 @@ fn spawn_shop(
             name: "Surf Fishing Rod",
             is_bought: false,
             price: 150,
-            ..default()
+            index: 3,
+            item_type: ItemType::ROD
         },
     );
     commands.spawn(
@@ -138,8 +151,8 @@ fn spawn_shop(
             name: "Braided Fishing Line",
             is_bought: false,
             price: 50,
-            item_type: ItemType::LINE,
-            ..default()
+            index: 0,
+            item_type: ItemType::LINE
         }
     );
     commands.spawn(
@@ -147,16 +160,17 @@ fn spawn_shop(
             name: "FluoroCarbon Fishing Line",
             is_bought: false,
             price: 25,
-            item_type: ItemType::LINE,
-            ..default()
+            index: 0,
+            item_type: ItemType::LINE
         }
     );
     commands.spawn(
         ShopItem{
             name: "Polarized Sun Glasses",
-            price: 100,
             is_bought: false,
-            ..default()
+            price: 100,
+            index: 0,
+            item_type: ItemType::COSMETIC
         }
     );
 
@@ -321,18 +335,21 @@ fn handle_purchase(
     if keyboard_input.just_pressed(KeyCode::KeyE) { // Use Enter key to purchase
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
-            let mut items: Vec<_> = shop_items.iter().collect();
             // let mut sold_sprites:Vec<_> = sold_spite.iter().collect();
             if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
                 if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
                     inventory.items.push(shop_item.clone());
-                    if shop_item.item_type == ItemType::LURE {
-                        inventory.lures.push(shop_item.clone());
-                    }
-                    else if shop_item.item_type == ItemType::LINE{
-                        inventory.lines.push(shop_item.clone());
-                    }
+
+                    let category = match shop_item.item_type  {
+                        ItemType::ROD => &mut inventory.rods,
+                        ItemType::LURE => &mut inventory.lures,
+                        ItemType::LINE => &mut inventory.lines,
+                        ItemType::COSMETIC => &mut inventory.cosmetics,
+                    };
+
+                    category.push(shop_item.clone());
+
                     shop_item.is_bought = true;
 
                     if let Some(mut sold_sprite_visibility) = sold_spite.iter_mut().nth(selected_item.index) {
