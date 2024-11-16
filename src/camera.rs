@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use crate::map::*;
 use crate::player::*;
-use crate::resources::*;
 
 pub fn move_camera(
     mut camera: Query<(&mut Transform, &mut Animation), (With<Camera>, Without<Player>)>,

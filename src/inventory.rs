@@ -5,31 +5,38 @@ use crate::shop::*;
 pub struct PlayerInventory {
     pub coins: u32,
     pub items: Vec<ShopItem>,
+    pub rods: Vec<ShopItem>,
     pub lures: Vec<ShopItem>,
     pub lines: Vec<ShopItem>,
+    pub cosmetics: Vec<ShopItem>,
+    pub rod_index: usize,
     pub lure_index: usize,
     pub line_index: usize,
 }
 
 pub fn handle_inventory (
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    player_inventory: Query<&mut PlayerInventory>,
-    shop_state: Res<ShopState>,
-) {
-    let inventory = player_inventory.single();
-    let items: Vec<_> = inventory.items.iter().collect();
-    let lures: Vec<_> = inventory.lures.iter().collect();
-    let lines: Vec<_> = inventory.lines.iter().collect();
-    if keyboard_input.just_pressed(KeyCode::KeyE) && !shop_state.is_open{
-        for item in items {
-            println!("{}", item.name);
-        }
+    player_inventory: Query<&mut PlayerInventory>
+) {    
+    if !keyboard_input.just_pressed(KeyCode::KeyE) {
+        return;
+    }
 
-        for lure in lures{
-            println!("lures: {}", lure.name);
-        }
-        for line in lines{
-            println!("lines: {}", line.name);
-        }
+    let inventory = player_inventory.single();
+        
+    for rod in inventory.rods.iter() {
+        println!("rods: {}", rod.name);
+    }
+
+    for lure in inventory.lures.iter() {
+        println!("lures: {}", lure.name);
+    }
+
+    for line in inventory.lines.iter() {
+        println!("lines: {}", line.name);
+    }
+
+    for cosmetic in inventory.cosmetics.iter() {
+        println!("cosmetics: {}", cosmetic.name);
     }
 }

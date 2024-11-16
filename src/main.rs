@@ -3,6 +3,7 @@ use bevy::window::EnabledButtons;
 use bevy::time::Timer;
 use bevy::prelude::*;
 use bevy::window::PresentMode;
+use fishing_game::interface::CurrentInterface;
 use rand::Rng;
 
 use fishing_game::camera::*;
@@ -40,9 +41,9 @@ fn main() {
             }),
             ..default()
         }))
+        .init_state::<CurrentInterface>()
         .init_state::<MapState>()
         .init_state::<Weather>()
-        .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
@@ -52,13 +53,12 @@ fn main() {
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
-        .add_systems(Update, shop_button_system)
 
         .add_systems(Update, update_money_display)
         .add_systems(Update, update_clock_display)
         .add_systems(Update, update_weather_display)
 
-        .add_systems(Update, handle_inventory)
+        .add_systems(Update, handle_inventory.run_if(in_state(CurrentInterface::Overworld)))
 
         // Overworld systems (player movement, animations)
         .add_systems(Update,
@@ -69,24 +69,22 @@ fn main() {
                     move_camera,
                     screen_edge_collision
                 ).after(move_player)
-            ).run_if(in_state(FishingMode::Overworld))
+            ).run_if(in_state(CurrentInterface::Overworld))
         )
 
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-
         
         // Check if we've hooked any fish
-        //.add_systems(Update, hook_fish)
-
-        .insert_resource(ShopState {is_open: false})        
+        //.add_systems(Update, hook_fish)     
         .add_plugins(
             (
                 FishingViewPlugin,
                 ShopPlugin
             )
         )
+        
         .run();
 }
 
@@ -291,7 +289,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
-                current: Vec3::new(-50.0, 0., 0.)
+                current: Vec3::new(-10.0, 0., 0.)
             },
             layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
             objects: Vec::new()
