@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use crate::map::*;
-use crate::shop::*;
 use crate::button::*;
 use crate::resources::*;
 use crate::window::*;

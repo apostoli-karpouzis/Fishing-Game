@@ -292,7 +292,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
-                current: Vec3::new(-50.0, 0., 0.)
+                current: Vec3::new(-10.0, 0., 0.)
             },
             layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
             objects: Vec::new()
