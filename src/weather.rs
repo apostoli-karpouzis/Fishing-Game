@@ -37,7 +37,7 @@ pub struct LightningFlash {
 impl Default for WeatherState {
     fn default() -> Self {
         Self {
-            current_weather: Weather::Rainy,
+            current_weather: Weather::Sunny,
             change_timer: Timer::from_seconds(WEATHER_UPDATE_PERIOD, TimerMode::Repeating),
         }
     }
