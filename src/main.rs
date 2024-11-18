@@ -75,6 +75,9 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, rain_particle_system.run_if(run_if_raining))
+        .add_systems(OnEnter(Weather::Sunny), despawn_rain_particles)
+        .add_systems(OnEnter(Weather::Cloudy), despawn_rain_particles)
         
         // Check if we've hooked any fish
         //.add_systems(Update, hook_fish)     
