@@ -1,10 +1,14 @@
 extern crate rand;
 
+use std::hash::{Hash, Hasher};
 use std::f32;
 use std::f32::consts::PI;
 use std::time::Duration;
 use bevy::prelude::*;
+use bevy::scene::ron::de::Position;
 use bevy::sprite::*;
+use bevy::utils::hashbrown::HashMap;
+use bevy::utils::HashSet;
 use rand::Rng;
 use crate::fish::*;
 use crate::gameday::*;
@@ -26,6 +30,8 @@ const SWITCH_ROD: KeyCode = KeyCode::KeyN;
 const SWITCH_LINE: KeyCode = KeyCode::KeyM;
 const SWITCH_BAIT_NEXT: KeyCode = KeyCode::KeyX;
 const SWITCH_BAIT_PREV: KeyCode = KeyCode::KeyZ;
+
+pub const PARTICLECOUNT: usize = 10;
 
 const CATCH_MARGIN: f32 = 30.;
 
@@ -80,6 +86,43 @@ pub struct FishingRod {
     pub segments: Vec<Entity>,
     pub tip_pos: Vec3
 }
+
+#[derive(Component, Default)]
+pub struct ParticleList{
+    pub particle_list: Vec<Particle>
+}
+
+#[derive(Component, Clone)]
+
+pub struct Particle{
+    pub position: Vec3,
+    pub velocity: Vec3,
+    pub mass: f32,
+}
+
+impl Particle{
+    pub const fn new(position: Vec3, velocity: Vec3, mass: f32) -> Self{
+        Self{position, velocity, mass}
+    }
+}
+
+impl Hash for Particle {
+    fn hash<H: Hasher>(&self, state: &mut H){
+        self.position.x as i32;
+        self.position.y as i32;
+        self.position.z as i32; 
+    }
+}
+
+impl PartialEq for Particle {
+    fn eq(&self, other: &Self) -> bool {
+        self.position.x as i32 == other.position.x as i32 &&
+        self.position.y as i32 == other.position.y as i32 &&
+        self.position.z as i32 == other.position.z as i32 
+    }
+}
+
+impl Eq for Particle {}
 
 #[derive(Component)]
 struct FishingRodSegment;
@@ -518,6 +561,19 @@ fn setup (
 
         rod_info.segments.push(segment.id());
     }
+
+    let mut particle_info: ParticleList = ParticleList{
+        particle_list : Vec::with_capacity(PARTICLECOUNT), 
+        ..default()
+    };
+
+    for i in  0 .. PARTICLECOUNT {
+        let particlepos =  Vec3::new(0.,0.,0.);
+        particle_info.particle_list.push(Particle::new(particlepos, Vec3::new(0., 0., 0.),10. ));
+    }
+
+    commands.spawn(particle_info);
+
 
     let fishing_rod_handle = asset_server.load(default_rod_type.texture);
     
@@ -1036,6 +1092,9 @@ fn switch_rod (
 
         rod_info.segments.push(entity);
     }
+
+
+
 }
 
 fn switch_line (
@@ -1084,9 +1143,9 @@ fn switch_bait (
     }
 
     let new_bait = match inventory.lures[inventory.lure_index].name {
-        "Ball Lure" => &Lure::BALL,
-        "Frog Lure" => &Lure::FROG,
-        "Fish Lure" => &Lure::FISH,
+        "Ball Bait" => &Lure::BALL,
+        "Frog Bait" => &Lure::FROG,
+        "Swim Bait" => &Lure::FISH,
         _ => &Lure::BALL
     };
     
