@@ -6,6 +6,7 @@ use crate::player::*;
 use crate::map::*;
 use std::f32;
 use f32::consts::PI;
+use std::collections::HashSet;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
@@ -110,6 +111,26 @@ pub fn bend_fishing_rod (
     
     rod_info.tip_pos = (rod_transform.translation.xy() + position.rotate(base_rotation) * PIXELS_PER_METER).extend(0.);
     line_info.start = rod_info.tip_pos;
+}
+
+pub fn get_particle_positions(
+    mut particles: Query<&mut ParticleList, With<ParticleList>>
+){
+    let mut particle_info = particles.single_mut();
+    let particle_list = &mut particle_info.particle_list;
+    let mut particle_hash: HashSet<&Particle> = HashSet::new();
+    for  particle in particle_list.iter_mut(){
+        //do movement calculations here
+        particle.position = particle.position + particle.velocity;
+        if !particle_hash.insert(particle) {
+            let mut collision_particle = particle_hash.get(particle).unwrap(); //get particle we are colliding with
+            let particle_velocity = ((2.* collision_particle.mass * collision_particle.velocity) + (particle.velocity* (particle.mass + collision_particle.mass)))/(particle.mass + collision_particle.mass); 
+            let collision_particle_velocity = ((particle.mass * particle.velocity) + (collision_particle.mass * collision_particle.velocity) - (particle.mass * particle.velocity))/(collision_particle.mass);
+        }
+
+    }
+
+
 }
 
 pub fn is_line_broken (
