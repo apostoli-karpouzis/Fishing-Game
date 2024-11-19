@@ -114,6 +114,7 @@ pub fn bend_fishing_rod (
 }
 
 pub fn get_particle_positions(
+    mut particles: Query<&mut ParticleList, With<ParticleList>>
 ){
     let mut particle_info = particles.single_mut();
     let particle_list = &mut particle_info.particle_list;
