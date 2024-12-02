@@ -126,23 +126,6 @@ pub const CATFISH: Species = Species::new(
     0.2,
 );
 
-//Salmon
-pub const TUNA: Species = Species::new(
-    "Tuna",
-    Vec2::new(-36., 0.),
-    (30., 50.),
-    (20., 30.),
-    (60., 100.),
-    (0.07, 0.95),
-    (12, 18),
-    Weather::Cloudy,
-    (5, 20),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
-    (5,4),
-    0.3,
-);
-
-
 //Tuna
 pub const TUNA: Species = Species::new(
     "Tuna",
