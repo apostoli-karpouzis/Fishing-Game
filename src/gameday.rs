@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use crate::interface::CurrentInterface;
 
 #[derive(Component, PartialEq)]
 pub enum TimePeriod{
@@ -22,6 +23,9 @@ impl GameDayTimer {
     }    
 }
 
+#[derive(Component)]
+pub struct DayTintOverlay;
+
 pub const TIME_PER_PERIOD: f32 = 10.;
 
 pub fn run_game_timer(
@@ -37,3 +41,39 @@ pub fn run_game_timer(
     
 }
 
+pub fn day_tint(
+    timer: Res<GameDayTimer>,
+    current_interface: Res<State<CurrentInterface>>,
+    mut day_overlay: Query<&mut Sprite, With<DayTintOverlay>>
+) {
+    if let Ok(mut sprite) = day_overlay.get_single_mut() {
+        if current_interface.eq(&CurrentInterface::Shop){
+            sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+        }
+        else{
+            if timer.hour > 5 && timer.hour < 19 {
+                sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
+            }
+            else if timer.hour == 5 || timer.hour == 19{
+                sprite.color = Color::srgba(0.1, 0.1, 0.3, 0.5);
+            }
+            else {
+                sprite.color = Color::srgba(0.1, 0.1, 0.3, 0.7);
+            }
+        }
+    }
+}
+
+pub fn spawn_day_tint_overlay(mut commands: Commands){
+    commands.spawn((SpriteBundle {
+        sprite: Sprite {
+            color: Color::srgba(0.5, 0.5, 0.5, 0.0),
+            custom_size: Some(Vec2::new(10000.,10000.)),
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 0.0, 999.),
+       ..default()
+    },
+    DayTintOverlay
+    ));
+}

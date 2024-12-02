@@ -45,11 +45,12 @@ fn main() {
         .init_state::<MapState>()
         .init_state::<Weather>()
         .init_resource::<WeatherState>()
-        .add_systems(Startup, (setup, spawn_weather_tint_overlay))
+        .add_systems(Startup, (setup, spawn_weather_tint_overlay, spawn_day_tint_overlay))
 
     
         //Run the game timer
         .add_systems(Update, run_game_timer)
+        .add_systems(Update, day_tint.after(run_game_timer))
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
