@@ -75,6 +75,9 @@ fn main() {
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
+        .add_systems(Update, rain_particle_system.run_if(run_if_raining))
+        .add_systems(OnEnter(Weather::Sunny), despawn_rain_particles)
+        .add_systems(OnEnter(Weather::Cloudy), despawn_rain_particles)
         
         // Check if we've hooked any fish
         //.add_systems(Update, hook_fish)     
@@ -289,7 +292,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
-                current: Vec3::new(-50.0, 0., 0.)
+                current: Vec3::new(-10.0, 0., 0.)
             },
             layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
             objects: Vec::new()
