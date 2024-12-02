@@ -97,36 +97,35 @@ impl<'a> SpeciesTable<'a> {
 //Bass
 
 pub const BASS: Species = Species::new(
-            "Bass", 
-            Vec2::new(-36., 0.),
-            (10.,15.), 
-            (5.,7.), 
-            (20.,40.), 
-            (0.06, 0.94),
-            (0,22),
-            Weather::Sunny, 
-            (0,20),
-            (FISHINGROOMX as i32 + 90, FISHINGROOMY as i32 + 50),
-            (10,10),
-            0.3,
-
-        );
+    "Bass", 
+    Vec2::new(-36., 0.),
+    (10.,15.), 
+    (5.,7.), 
+    (20.,40.), 
+    (0.06, 0.94),
+    (0,22),
+    Weather::Sunny, 
+    (0,20),
+    (FISHINGROOMX as i32 + 90, FISHINGROOMY as i32 + 50),
+    (10,10),
+    0.3,
+);
 
 //Catfish
 pub const CATFISH: Species = Species::new(
-            "Catfish", 
-            Vec2::new(-36., 0.),
-            (15.,25.), 
-            (10.,12.), 
-            (50., 70.), 
-            (0.05, 0.89), 
-            (0,18),
-            Weather::Rainy, 
-            (20,40),
-            (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
-            (5, 4),
-            0.2,
-        );
+    "Catfish", 
+    Vec2::new(-36., 0.),
+    (15.,25.), 
+    (10.,12.), 
+    (50., 70.), 
+    (0.05, 0.89), 
+    (0,18),
+    Weather::Rainy, 
+    (20,40),
+    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (5, 4),
+    0.2,
+);
 
 //Salmon
 pub const SALMON: Species = Species::new(
@@ -142,4 +141,54 @@ pub const SALMON: Species = Species::new(
     (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
     (5,4),
     0.3,
+);
+
+
+//Salmon
+pub const TUNA: Species = Species::new(
+    "Tuna",
+    Vec2::new(-36., 0.),
+    (30., 50.),
+    (90., 130.),
+    (90., 230.),
+    (0.37, 0.95),
+    (1, 7),
+    Weather::Thunderstorm,
+    (5, 20),
+    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (5,4),
+    0.5,
+);
+
+//Salmon
+pub const MAHIMAHI: Species = Species::new(
+    "Mahi-mahi",
+    Vec2::new(-36., 0.),
+    (50., 80.),
+    (20., 30.),
+    (80., 130.),
+    (0.27, 0.95),
+    (9, 18),
+    Weather::Thunderstorm,
+    (25, 200),
+    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (5,4),
+    0.4,
+);
+
+//Salmon
+pub const SWORDFISH: Species = Species::new(
+    "Swordfish",
+    Vec2::new(-36., 0.),
+    (130., 150.),
+    (50., 70.),
+    (60., 100.),
+    (0.17, 0.95),
+    (18, 24),
+    //is sunny just clear at night?
+    Weather::Sunny,
+    (100, 500),
+    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (5,4),
+    0.4,
 );
