@@ -95,7 +95,6 @@ impl<'a> SpeciesTable<'a> {
 //Fish library starts here
 
 //Bass
-
 pub const BASS: Species = Species::new(
     "Bass", 
     Vec2::new(-36., 0.),
@@ -144,7 +143,7 @@ pub const TUNA: Species = Species::new(
 );
 
 
-//Salmon
+//Tuna
 pub const TUNA: Species = Species::new(
     "Tuna",
     Vec2::new(-36., 0.),
@@ -160,7 +159,7 @@ pub const TUNA: Species = Species::new(
     0.5,
 );
 
-//Salmon
+//Mahi-mahi
 pub const MAHIMAHI: Species = Species::new(
     "Mahi-mahi",
     Vec2::new(-36., 0.),
@@ -176,7 +175,7 @@ pub const MAHIMAHI: Species = Species::new(
     0.4,
 );
 
-//Salmon
+//Swordfish
 pub const SWORDFISH: Species = Species::new(
     "Swordfish",
     Vec2::new(-36., 0.),
@@ -191,4 +190,22 @@ pub const SWORDFISH: Species = Species::new(
     (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
     (5,4),
     0.4,
+);
+
+//Red Handfsih
+// our "rare" fish, can only be caught on sea floor during its 1 hour feed time
+pub const REDHANDFISH: Species = Species::new(
+    "Red Handfish",
+    Vec2::new(-36., 0.),
+    (13., 22.),
+    (5., 7.),
+    (60., 100.),
+    (0.06, 0.12),
+    (20, 21),
+    //is sunny just clear at night?
+    Weather::Sunny,
+    (499, 500),
+    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (5,4),
+    0.1,
 );
