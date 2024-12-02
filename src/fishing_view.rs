@@ -98,6 +98,11 @@ pub struct ParticleList{
     pub particle_list: Vec<Particle>
 }
 
+
+#[derive(Component, Default)]
+struct Bobber;
+
+
 #[derive(Component, Clone)]
 
 pub struct Particle{
@@ -858,6 +863,8 @@ fn setup (
         },Collision,
         AnimationFrameCount(baits_layout_len), //number of different frames that we have
         Lure::default(),
+        Bobber::default(),
+        
     ));
 
     /*let bobber_handle = asset_server.load("fishing_view/bobber.png");
@@ -1080,7 +1087,7 @@ fn fish_area_bobber(
 ) {
     //let (bob, tile) = bobber.single_mut();
     //let (bob, tile, mut bobber_vis) = bobber.single_mut();
-    let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
+    //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
     let (bob, tile,  bobber_entity_id, bobber_physics, mut bobber_vis) = bobber.single_mut();
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
@@ -1114,22 +1121,22 @@ fn fish_area_bobber(
             for(entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) in fishes.iter_mut(){
                 if fishy_details.id == fish_details.id{ //fish number matches the other number of the caught fish
                     println!("FIRST: {:?}", fishy_transform.translation);
-                    println!("FIRST: {:?}", exclam_transform.translation);
+                    //println!("FIRST: {:?}", exclam_transform.translation);
                     fishy_transform.translation = bobber_position;
-                    exclam_transform.translation = bobber_position;
-                    exclam_transform.translation.y += 40.;
-                    *exclam_vis = Visibility::Visible;
+                    //exclam_transform.translation = bobber_position;
+                    //exclam_transform.translation.y += 40.;
+                    //*exclam_vis = Visibility::Visible;
                     
 
                     config.timer.tick(time.delta());
 
-                    if config.timer.finished()
+                    /*if config.timer.finished()
                     {
                         println!("hiding it");
                         *exclam_vis = Visibility::Hidden;
-                    }
+                    }*/
                     
-                    println!("SECOND: {:?}", exclam_transform.translation);
+                    //println!("SECOND: {:?}", exclam_transform.translation);
                     fish_physics.position = bobber_position;
                     //fishy_transform.translation = fish_physics.position.with_z(901.);
                     *bobber_vis = Visibility::Hidden; //yes
@@ -1475,29 +1482,31 @@ fn cast_line (
 
 fn animate_fishing_line (
     rod: Query<&FishingRod, With<FishingRod>>,
-    mut fish: Query<(&Species, &PhysicsObject), With<Fish>>,
+    mut fish: Query<(&Species, &PhysicsObject), (With<Fish>, With<PhysicsFish>, Without<MysteryFish>)>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut bobber: Query<&PhysicsObject, With<Lure>>,
     state: Res<State<FishingState>>
 ) {
     let rod_info = rod.single();
-    let (fish_species, fish_physics) = fish.single_mut();
+    //let (fish_species, fish_physics) = fish.single_mut();
     let mut line_info = line.single_mut();
     let bobber_physics = bobber.single_mut();
 
-    let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
-    let fish_pos = fish_physics.position + fish_offset.extend(0.);
+    for(fish_species, fish_physics) in fish.iter_mut(){
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+        let fish_pos = fish_physics.position + fish_offset.extend(0.);
 
-    line_info.start = rod_info.tip_pos;
+        line_info.start = rod_info.tip_pos;
 
-    match state.get() {
-        FishingState::ReelingHooked => {
-            line_info.end = fish_pos;
-        },
-        FishingState::ReelingUnhooked => {
-            line_info.end = bobber_physics.position;
-        },
-        _ => {}
+        match state.get() {
+            FishingState::ReelingHooked => {
+                line_info.end = fish_pos;
+            },
+            FishingState::ReelingUnhooked => {
+                line_info.end = bobber_physics.position;
+            },
+            _ => {}
+        }
     }
 }
 
