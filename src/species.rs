@@ -129,8 +129,8 @@ pub const CATFISH: Species = Species::new(
         );
 
 //Salmon
-pub const SALMON: Species = Species::new(
-    "Salmon",
+pub const TUNA: Species = Species::new(
+    "Tuna",
     Vec2::new(-36., 0.),
     (30., 50.),
     (20., 30.),

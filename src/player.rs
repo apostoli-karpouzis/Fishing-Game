@@ -9,7 +9,8 @@ pub const PLAYER_WIDTH: f32 = 64.;
 pub const PLAYER_HEIGHT: f32 = 128.;
 
 const PLAYER_SPEED: f32 = 70.;
-const RUN_SPEED: f32 = 240.; // Added RUN_SPEED for running
+//240
+const RUN_SPEED: f32 = 540.; // Added RUN_SPEED for running
 pub const ANIM_TIME: f32 = 0.125; // 8 fps
 pub const FISHING_ANIM_TIME: f32 = 0.25; // 4 frames per second for fishing animation
 

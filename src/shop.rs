@@ -5,6 +5,9 @@ use crate::inventory::*;
 use crate::map::*;
 use crate::player::*;
 
+
+const OFFSET: f32 = 1000.;
+
 #[derive(Component)]
 struct ShopEntrance;
 
@@ -116,7 +119,7 @@ fn spawn_shop(
     ));
     commands.spawn(SpriteBundle{
         texture: asset_server.load("shop/inventory.png"),
-        transform: Transform::from_xyz(3000., 3000., 1.),
+        transform: Transform::from_xyz(3000., 3000. + OFFSET, 1.),
        ..default()
     });
     commands.spawn((
@@ -178,7 +181,7 @@ fn spawn_shop(
     let hover_entity = commands.spawn(SpriteBundle {
         texture: hover_texture,
         transform: Transform {
-            translation: Vec3::new(2620., 2860., 3.0), 
+            translation: Vec3::new(2620., 2860. + OFFSET, 3.0), 
             ..Default::default()
         },
         ..Default::default()
@@ -204,12 +207,12 @@ fn display_shop_items(
 
     //slot positions
     let slot_positions = [
-        Vec3::new(2620., 2820., 2.),
-        Vec3::new(3000., 2820., 2.),
-        Vec3::new(3400., 2820., 2.),
-        Vec3::new(2620., 3100., 2.),
-        Vec3::new(3000., 3100., 2.),
-        Vec3::new(3400., 3100., 2.),
+        Vec3::new(2620., 2820. + OFFSET, 2.),
+        Vec3::new(3000., 2820. + OFFSET, 2.),
+        Vec3::new(3400., 2820. + OFFSET, 2.),
+        Vec3::new(2620., 3100. + OFFSET, 2.),
+        Vec3::new(3000., 3100. + OFFSET, 2.),
+        Vec3::new(3400., 3100. + OFFSET, 2.),
     ];
 
 
@@ -316,7 +319,7 @@ fn check_shop_entrance(
             let mut camera = camera_query.single_mut();
             original_camera_pos.0 = camera.translation;
             println!("{}", original_camera_pos.0);
-            let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
+            let new_position = Vec3::new(3000.0, 3000.0 + OFFSET, camera.translation.z);
             camera.translation = new_position;
             next_interface.set(CurrentInterface::Shop);
             println!("Shop open");
@@ -406,17 +409,17 @@ fn update_selected_item(
 
     // Define slot positions
     let slot_positions = [
-        Vec3::new(2620., 2820., 2.),
-        Vec3::new(3000., 2820., 2.),
-        Vec3::new(3400., 2820., 2.),
-        Vec3::new(2620., 3100., 2.),
-        Vec3::new(3000., 3100., 2.),
-        Vec3::new(3400., 3100., 2.),
+        Vec3::new(2620., 2820. + OFFSET, 2.),
+        Vec3::new(3000., 2820. + OFFSET, 2.),
+        Vec3::new(3400., 2820. + OFFSET, 2.),
+        Vec3::new(2620., 3100. + OFFSET, 2.),
+        Vec3::new(3000., 3100. + OFFSET, 2.),
+        Vec3::new(3400., 3100. + OFFSET, 2.),
     ];
 
     if let Some(&position) = slot_positions.get(selected_item.index) {
         if let Ok(mut hover_transform) = hover_query.get_mut(hover_entity.0) {
-            let adjusted_x = if position == Vec3::new(3000., 2820., 2.) || position == Vec3::new(3000., 3100., 2.) {
+            let adjusted_x = if position == Vec3::new(3000., 2820.+ OFFSET, 2.) || position == Vec3::new(3000., 3100. + OFFSET, 2.) {
                 position.x + 2.0
             } else {
                 position.x - 10.0

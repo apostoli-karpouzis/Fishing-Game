@@ -6,8 +6,8 @@ use bevy::sprite::*;
 
 pub const TILE_SIZE: f32 = 16.;
 
-pub const MAP_WIDTH: usize = 4;
-pub const MAP_HEIGHT: usize = 4;
+pub const MAP_WIDTH: usize = 5;
+pub const MAP_HEIGHT: usize = 5;
 
 pub const GRID_COLUMNS: usize = (WIN_W / TILE_SIZE) as usize;
 pub const GRID_ROWS: usize = (WIN_H / TILE_SIZE) as usize;
@@ -152,7 +152,7 @@ fn setup(
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
     println!("map");
     let mut i: f32 = 0.;
-    while i <= 30.{
+    while i <= 35.{
         commands.spawn((
             SpriteBundle {
                 texture: tree_sheet_handle.clone(),
