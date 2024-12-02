@@ -1,43 +1,24 @@
 extern crate rand;
 use bevy::window::EnabledButtons;
-use bevy::{prelude::*, window::PresentMode};
+use bevy::time::Timer;
+use bevy::prelude::*;
+use bevy::window::PresentMode;
+use fishing_game::interface::CurrentInterface;
 use rand::Rng;
 
-mod physics;
-mod fish;
-mod species;
-mod camera; 
-mod player; 
-mod map; 
-mod resources;
-mod button;
-mod gameday;
-mod weather;
-mod fishingView;
-mod fishingZone;
-mod probCalc;
-mod shop;
-mod hud;
-//mod species;
-
-
-use crate::physics::*;
-use crate::fish::*;
-use crate::species::*;
-use crate::camera::*;
-use crate::player::*;
-use crate::map::*;
-use crate::resources::*;
-use crate::button::*;
-use crate::gameday::*;
-use crate::weather::*;
-use crate::fishingView::*;
-use crate::fishingZone::*;
-
-use crate::hud::*;
-//use crate::species::*;
-use crate::probCalc::*;
-
+use fishing_game::camera::*;
+use fishing_game::inventory::*;
+use fishing_game::player::*;
+use fishing_game::map::*;
+use fishing_game::resources::*;
+use fishing_game::button::*;
+use fishing_game::gameday::*;
+use fishing_game::weather::*;
+use fishing_game::fishing_view::*;
+use fishing_game::fishing_zone::*;
+use fishing_game::shop::*;
+use fishing_game::hud::*;
+use fishing_game::window::*;
 
 const OLD_TILE_SIZE: f32 = 64.;
 
@@ -60,9 +41,9 @@ fn main() {
             }),
             ..default()
         }))
-        .init_state::<GameState>()
+        .init_state::<CurrentInterface>()
+        .init_state::<MapState>()
         .init_state::<Weather>()
-        .init_state::<ShopingMode>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay))
 
@@ -72,11 +53,12 @@ fn main() {
 
         // Run the button system in both FishingMode and Overworld
         .add_systems(Update, fishing_button_system)
-        .add_systems(Update, shop_button_system)
 
         .add_systems(Update, update_money_display)
         .add_systems(Update, update_clock_display)
         .add_systems(Update, update_weather_display)
+
+        .add_systems(Update, handle_inventory.run_if(in_state(CurrentInterface::Overworld)))
 
         // Overworld systems (player movement, animations)
         .add_systems(Update,
@@ -87,24 +69,25 @@ fn main() {
                     move_camera,
                     screen_edge_collision
                 ).after(move_player)
-            ).run_if(in_state(FishingMode::Overworld))
+            ).run_if(in_state(CurrentInterface::Overworld))
         )
 
         // Weather updates
         .add_systems(Update, update_weather)
         .add_systems(Update, update_weather_tint.after(update_weather))
-
+        .add_systems(Update, rain_particle_system.run_if(run_if_raining))
+        .add_systems(OnEnter(Weather::Sunny), despawn_rain_particles)
+        .add_systems(OnEnter(Weather::Cloudy), despawn_rain_particles)
         
         // Check if we've hooked any fish
-        //.add_systems(Update, hook_fish)
-
-        .insert_resource(ShopState {is_open: false})        
+        //.add_systems(Update, hook_fish)     
         .add_plugins(
             (
                 FishingViewPlugin,
-                shop::ShopPlugin
+                ShopPlugin
             )
         )
+        
         .run();
 }
 
@@ -127,8 +110,8 @@ fn setup(
     
     //GRASS CODE V
     
-    //let bg_texture_handle = asset_server.load("test_bg.png");
-    let grass_sheet_handle = asset_server.load("ground_sheet.png");
+    //let bg_texture_handle = asset_server.load("map/test_bg.png");
+    let grass_sheet_handle = asset_server.load("map/ground_sheet.png");
     let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
@@ -201,14 +184,13 @@ fn setup(
     // After the grass spawning loop
 
 let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
-let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore_sheet.png");
+let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore.png");
 let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
 let shore_layout_handle = texture_atlases.add(shore_layout);
 
 let beach_width = WIN_W * 0.5;
 let grass_end = WIN_W * 3.5;
 let beach_start = grass_end;
-let beach_end = beach_start + beach_width;
 
 let mut j = 0.;
 while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
@@ -216,7 +198,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
     
     while (i as f32) * OLD_TILE_SIZE < beach_width {
-        if(i <= 1.){
+        if i <= 1.{
             // Spawn sand
             commands.spawn((
             SpriteBundle {
@@ -300,7 +282,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
 
     //PLAYER
 
-    let player_sheet_handle = asset_server.load("characters/full-spritesheet-64x128-256x640.png");
+    let player_sheet_handle = asset_server.load("characters/full_spritesheet.png");
     let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
@@ -310,7 +292,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     let map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
-                current: Vec3::new(-50.0, 0., 0.)
+                current: Vec3::new(-10.0, 0., 0.)
             },
             layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
             objects: Vec::new()
@@ -359,6 +341,22 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
         Tile::TREE,
         Collision,
     ));
+    commands.spawn((
+        SpriteBundle {
+            texture: tree_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(300., 300., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::TREE,
+        Collision,
+    ));
     
     //spawn_button(&mut commands, asset_server);
     //spawn_button(&mut commands, asset_server);
@@ -367,6 +365,8 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
     commands.insert_resource(
         GameDayTimer::new(10.),
     );
+
+    
 
     //let grass_layout_len = grass_layout.textures.len();
     //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 

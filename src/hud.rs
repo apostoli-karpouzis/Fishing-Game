@@ -1,6 +1,8 @@
 use bevy::prelude::*;
-use crate::resources::*;
+use crate::gameday::*;
+use crate::inventory::*;
 use crate::weather::*;
+use crate::interface::*;
 
 #[derive(Component)]
 pub struct MoneyDisplay;
@@ -16,7 +18,7 @@ pub fn spawn_money_display(commands: &mut Commands, asset_server: &Res<AssetServ
         TextBundle::from_section(
             "Money: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -36,7 +38,7 @@ pub fn spawn_clock_display(commands: &mut Commands, asset_server: &Res<AssetServ
         TextBundle::from_section(
             "Time: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -56,7 +58,7 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
         TextBundle::from_section(
             "Weather: 0",
             TextStyle {
-                font: asset_server.load("pixel.ttf"),
+                font: asset_server.load("fonts/pixel.ttf"),
                 font_size: 65.0,
                 color: Color::srgb(0.0, 0.0, 0.0),
             },
@@ -73,22 +75,22 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
 
 
 pub fn update_money_display(
-    playerInventory: Query<&mut PlayerInventory>,
+    player_inventory: Query<&mut PlayerInventory>,
     mut query: Query<&mut Text, With<MoneyDisplay>>,
 ) {
     let mut text = query.single_mut();
-    let inventory_info = playerInventory.single();
+    let inventory_info = player_inventory.single();
     text.sections[0].value = format!("Money: {}", inventory_info.coins);
 }
 
 pub fn update_clock_display(
     time: Res<GameDayTimer>,
     mut query: Query<(&mut Text, &mut Visibility), With<ClockDisplay>>,
-    shop_state: Res<ShopState>,
+    interface: Res<State<CurrentInterface>>,
 ) {
     let (mut text, mut visibility) = query.single_mut();
     text.sections[0].value = format!("Hour: {}", time.hour);
-    if shop_state.is_open {
+    if interface.eq(&CurrentInterface::Shop) {
         *visibility = Visibility::Hidden;
     }
     else {
@@ -99,10 +101,10 @@ pub fn update_clock_display(
 pub fn update_weather_display(
     weather: Res<WeatherState>,
     mut query: Query<(&mut Text, &mut Visibility), With<WeatherDisplay>>,
-    shop_state: Res<ShopState>,
+    interface: Res<State<CurrentInterface>>,
 ) {
     let (mut text, mut visibility) = query.single_mut();
-    if shop_state.is_open {
+    if interface.eq(&CurrentInterface::Shop) {
         *visibility = Visibility::Hidden;
     }
     else {

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::player::*;
-use crate::fishingZone::*;
-use crate::resources::*;
+use crate::fishing_zone::*;
+use crate::window::*;
 
 pub const TILE_SIZE: f32 = 16.;
 
@@ -70,7 +70,7 @@ impl Tile {
     pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
     pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
-    pub const Shop: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
+    pub const SHOP: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
 }
 
 #[derive(Clone)]
@@ -88,21 +88,47 @@ impl Object {
 #[derive(Component)]
 pub struct Collision;
 
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MapState {
+    #[default]
+    Normal,
+    MapTransition
+}
+
+#[derive(Component)]
+pub struct Animation {
+    pub start_time: f32,
+    pub duration: f32,
+    pub start_position: Vec3,
+    pub motion: Vec3,
+}
+
+impl Animation {
+    pub fn new() -> Self {
+        Self {
+            start_time: 0.,
+            duration: 0.,
+            start_position: Vec3::default(),
+            motion: Vec3::default(),
+        }
+    }
+}
+
 pub fn screen_edge_collision (
     mut player: Query<(&mut Location, &Transform, &PlayerDirection, &mut Animation), With<Player>>,
     mut camera: Query<(&mut Transform, &mut Animation), (With<Camera>, Without<Player>)>,
     time: Res<Time>,
-    state: Res<State<GameState>>,
-    mut next_state: ResMut<NextState<GameState>>,
+    state: Res<State<MapState>>,
+    mut next_state: ResMut<NextState<MapState>>,
 ) {
     let (mut map_location, pt, direction, mut player_animation) = player.single_mut();
     let (ct, mut camera_animation) = camera.single_mut();
 
-    if !state.eq(&GameState::Normal) {
+    if !state.eq(&MapState::Normal) {
         let elapsed: f32 = time.elapsed_seconds() - camera_animation.start_time;
         
-        if state.eq(&GameState::MapTransition) && elapsed >= MAP_TRANSITION_TIME {
-            next_state.set(GameState::Normal);
+        if state.eq(&MapState::MapTransition) && elapsed >= MAP_TRANSITION_TIME {
+            next_state.set(MapState::Normal);
         }
 
         return;
@@ -153,7 +179,7 @@ pub fn screen_edge_collision (
     }
 
     // Start map transition
-    next_state.set(GameState::MapTransition);
+    next_state.set(MapState::MapTransition);
 
     *player_animation = Animation {
         start_time: time.elapsed_seconds(),

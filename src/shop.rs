@@ -1,8 +1,9 @@
-use bevy::{input::keyboard::KeyboardInput, prelude::*};
-use crate::{
-    map::{Collision, Tile}, resources, Animation, InputStack, Location, Player, PlayerDirection, PLAYER_HEIGHT, PLAYER_WIDTH,
-};
-use crate::resources::*;
+use bevy::prelude::*;
+use crate::gameday::*;
+use crate::interface::CurrentInterface;
+use crate::inventory::*;
+use crate::map::*;
+use crate::player::*;
 
 #[derive(Component)]
 struct ShopEntrance;
@@ -10,16 +11,36 @@ struct ShopEntrance;
 #[derive(Resource)]
 pub struct HoverEntity(pub Entity);
 
-#[derive(Component)]
-struct ShopItem {
-    name: String,
-    price: u32,
+#[derive(PartialEq, Clone)]
+pub enum ItemType{
+    ROD,
+    LINE,
+    LURE,
+    COSMETIC
+}
+
+#[derive(Component, Clone)]
+pub struct ShopItem {
+    pub name: &'static str,
+    pub price: u32,
+    pub is_bought: bool,
+    pub index: usize,
+    pub item_type: ItemType,
+}
+
+impl ShopItem {
+    pub const fn new(name: &'static str, price: u32, is_bought: bool, index: usize, item_type: ItemType) -> Self {
+        Self { name,  price, is_bought, index, item_type}
+    }
 }
 
 #[derive(Resource)]
 struct SelectedShopItem {
     index: usize,
 }
+
+#[derive(Component)]
+struct SoldSprite;
 
 #[derive(Resource)]
 struct OriginalCameraPosition(Vec3);
@@ -28,9 +49,17 @@ pub struct ShopPlugin;
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
-        .add_systems(Update, (check_shop_entrance, handle_purchase, update_selected_item, exit_shop, display_shop_items))
         .insert_resource(SelectedShopItem {index: 0})
-        .insert_resource(OriginalCameraPosition(Vec3::ZERO));
+        .insert_resource(OriginalCameraPosition(Vec3::ZERO))
+        .add_systems(Update, check_shop_entrance.run_if(in_state(CurrentInterface::Overworld)))
+        .add_systems(Update,
+            (
+                handle_purchase,
+                update_selected_item,
+                exit_shop
+            ).run_if(in_state(CurrentInterface::Shop))
+        )
+        .add_systems(OnTransition { exited: CurrentInterface::Overworld, entered: CurrentInterface::Shop }, display_shop_items);
 
     }
 }
@@ -38,8 +67,27 @@ impl Plugin for ShopPlugin {
 fn setup_player_inventory(mut commands: Commands) {
     commands.spawn((
         PlayerInventory{
-            coins: 0,
-            items: Vec::new(),
+            coins: 1000,
+            items: Vec::from([
+                ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Bobber", 0, true, 0, ItemType::LURE),
+                ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)
+                ]),
+            rods: Vec::from([
+                ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
+                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD)
+                ]),
+            lures: Vec::from(
+                [ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)
+                ]),
+            lines: Vec::from([
+                ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)
+                ]),
+            cosmetics: Vec::new(),
+            rod_index: 0,
+            lure_index: 0,
+            line_index: 0,
         },
 ));
 }
@@ -47,7 +95,7 @@ fn spawn_shop(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
-    let shop = asset_server.load("shop.png");
+    let shop = asset_server.load("tiles/shop.png");
     commands.spawn((
         SpriteBundle {
             texture: shop,
@@ -57,7 +105,7 @@ fn spawn_shop(
             },
             ..default()
         },
-        Tile::Shop,
+        Tile::SHOP,
         Collision,
     ));
 
@@ -67,48 +115,66 @@ fn spawn_shop(
         Tile::new("shopEntrance", true, Vec2::new(64., 64.))
     ));
     commands.spawn(SpriteBundle{
-        texture: asset_server.load("inventory.png"),
+        texture: asset_server.load("shop/inventory.png"),
         transform: Transform::from_xyz(3000., 3000., 1.),
        ..default()
     });
     commands.spawn((
         ShopItem {
-            name: "Fishing Rod".to_string(),
+            name: "Swim Bait",
             price: 50,
+            is_bought: false,
+            index: 2,
+            item_type: ItemType::LURE,
         },
     ));
-    commands.spawn((
+    commands.spawn(
         ShopItem{
-            name: "Lure".to_string(),
+            name: "Frog Bait",
             price: 20,
+            is_bought: false,
+            index: 1,
+            item_type: ItemType::LURE,
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
-            name: "Surf Fishing Rod".to_string(),
+            name: "Surf Fishing Rod",
+            is_bought: false,
             price: 150,
+            index: 3,
+            item_type: ItemType::ROD
         },
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
-            name: "Braided Fishing Line".to_string(),
+            name: "Braided Fishing Line",
+            is_bought: false,
             price: 50,
+            index: 0,
+            item_type: ItemType::LINE
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
-            name: "Monofilament Fishing Line".to_string(),
+            name: "FluoroCarbon Fishing Line",
+            is_bought: false,
             price: 25,
+            index: 0,
+            item_type: ItemType::LINE
         }
-    ));
-    commands.spawn((
+    );
+    commands.spawn(
         ShopItem{
-            name: "Fish".to_string(),
-            price: 500,
+            name: "Polarized Sun Glasses",
+            is_bought: false,
+            price: 100,
+            index: 0,
+            item_type: ItemType::COSMETIC
         }
-    ));
+    );
 
-    let hover_texture = asset_server.load("hover.png");
+    let hover_texture = asset_server.load("shop/hover.png");
     let hover_entity = commands.spawn(SpriteBundle {
         texture: hover_texture,
         transform: Transform {
@@ -126,20 +192,15 @@ fn spawn_shop(
 fn display_shop_items(
     mut commands: Commands,
     shop_items: Query<(Entity, &ShopItem)>,
-    asset_server: Res<AssetServer>,
-    shop_state: Res<ShopState>,
+    asset_server: Res<AssetServer>
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
-    
-    let fishing_rod_texture = asset_server.load("fishingRod.png");
-    let lure_texture = asset_server.load("pixil-frame-0 (64).png");
-    let surf_rod_texture = asset_server.load("surfFishingRod.png");
-    let monofil_texture = asset_server.load("monofil-line.png");
-    let braided_line_texture = asset_server.load("braided-line.png");
-    let fish_texture = asset_server.load("fish/bass.png");
+    let swim_bait_texture = asset_server.load("lures/swim_bait.png");
+    let frog_bait_texture = asset_server.load("lures/frog_bait.png");
+    let surf_rod_texture = asset_server.load("rods/surf.png");
+    let monofil_texture = asset_server.load("lines/monofilament.png");
+    let braided_line_texture = asset_server.load("lines/braided.png");
+    let glasses_texture = asset_server.load("shop/polarized_glasses.png");
+    let sold_texture: Handle<Image> = asset_server.load("shop/sold.png");
 
     //slot positions
     let slot_positions = [
@@ -152,18 +213,21 @@ fn display_shop_items(
     ];
 
 
-    let font: Handle<Font> = asset_server.load("pixel.ttf");
+    let font: Handle<Font> = asset_server.load("fonts/pixel.ttf");
 
 
     for (i, (entity, item)) in shop_items.iter().enumerate() {
         if let Some(&position) = slot_positions.get(i) {
-            let texture = match item.name.as_str() {
-                "Fishing Rod" => fishing_rod_texture.clone(),
-                "Lure" => lure_texture.clone(),
+            let mut position_sold = position;
+            position_sold.z += 1 as f32;
+            position_sold.y += 30 as f32;
+            let texture = match item.name {
+                "Swim Bait" => swim_bait_texture.clone(),
+                "Frog Bait" => frog_bait_texture.clone(),
                 "Surf Fishing Rod" => surf_rod_texture.clone(),
-                "Monofilament Fishing Line" => monofil_texture.clone(),
+                "FluoroCarbon Fishing Line" => monofil_texture.clone(),
                 "Braided Fishing Line" => braided_line_texture.clone(),
-                "Fish" => fish_texture.clone(),
+                "Polarized Sun Glasses" => glasses_texture.clone(),
                 _ => {
                     println!("No texture found for item: {}", item.name);
                     continue;
@@ -177,10 +241,17 @@ fn display_shop_items(
                     ..Default::default()
                 })
                 .with_children(|parent| {
+
+                    parent.spawn(SpriteBundle{
+                        texture: sold_texture.clone(),
+                        transform: Transform::from_translation(position_sold),
+                        visibility: Visibility::Visible,
+                        ..Default::default()
+                    });
                     
                     parent.spawn(Text2dBundle {
                         text: Text::from_section(
-                            item.name.clone(),
+                            item.name,
                             TextStyle {
                                 font: font.clone(),
                                 font_size: 30.0,
@@ -205,20 +276,31 @@ fn display_shop_items(
                         ..Default::default()
                     });
                 });
+
+            commands.spawn((
+                SpriteBundle {
+                texture: sold_texture.clone(),
+                transform: Transform::from_translation(position_sold),
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            },
+            SoldSprite,
+            ));
         } else {
             println!("No available slots");
         }
+        }
     }
-}
+
 
 
 fn check_shop_entrance(
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), With<Player>>,
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
-    time_of_day: Res<resources::GameDayTimer>,
+    time_of_day: Res<GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
-    mut shop_state: ResMut<ShopState>,
     mut original_camera_pos: ResMut<OriginalCameraPosition>,
+    mut next_interface: ResMut<NextState<CurrentInterface>>
 ){
     let (mut pt, mut pd, mut pl, _pa, mut pi ) = player_query.single_mut();
     let (e_tran,e_tile) = entrance_query.single();
@@ -230,13 +312,13 @@ fn check_shop_entrance(
         return;
     }else{
         if *pd == PlayerDirection::Back 
-        && time_of_day.hour < 21 && !shop_state.is_open{
+        && time_of_day.hour < 21 {
             let mut camera = camera_query.single_mut();
             original_camera_pos.0 = camera.translation;
             println!("{}", original_camera_pos.0);
             let new_position = Vec3::new(3000.0, 3000.0, camera.translation.z);
             camera.translation = new_position;
-            shop_state.is_open = true;
+            next_interface.set(CurrentInterface::Shop);
             println!("Shop open");
         }
     }
@@ -245,26 +327,40 @@ fn check_shop_entrance(
 fn handle_purchase(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    shop_state: Res<ShopState>,
-    shop_items: Query<(Entity, &ShopItem)>,
+    mut shop_items: Query<&mut ShopItem>,
     mut player_inventory: Query<&mut PlayerInventory>,
     selected_item: Res<SelectedShopItem>,
+    mut sold_spite: Query<&mut Visibility, With<SoldSprite>>,
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
     if keyboard_input.just_pressed(KeyCode::KeyE) { // Use Enter key to purchase
         println!("Attempting to purchase");
         if let Ok(mut inventory) = player_inventory.get_single_mut() {
-            let items: Vec<_> = shop_items.iter().collect();
-            if let Some((item_entity, shop_item)) = items.get(selected_item.index) {
-                if inventory.coins >= shop_item.price {
+            // let mut sold_sprites:Vec<_> = sold_spite.iter().collect();
+            if let Some(mut shop_item) = shop_items.iter_mut().nth(selected_item.index) {
+                if inventory.coins >= shop_item.price && !shop_item.is_bought{
                     inventory.coins -= shop_item.price;
-                    inventory.items.push(shop_item.name.clone());
+                    inventory.items.push(shop_item.clone());
+
+                    let category = match shop_item.item_type  {
+                        ItemType::ROD => &mut inventory.rods,
+                        ItemType::LURE => &mut inventory.lures,
+                        ItemType::LINE => &mut inventory.lines,
+                        ItemType::COSMETIC => &mut inventory.cosmetics,
+                    };
+
+                    category.push(shop_item.clone());
+
+                    shop_item.is_bought = true;
+
+                    if let Some(mut sold_sprite_visibility) = sold_spite.iter_mut().nth(selected_item.index) {
+                        *sold_sprite_visibility  = Visibility::Visible;
+                    }
                     println!("Purchased: {}", shop_item.name);
-                } else {
+                } else if inventory.coins < shop_item.price{
                     println!("Not enough coins to purchase {}", shop_item.name);
+                }
+                else {
+                    println!("Shop item has already been purchased");
                 }
             }
         }
@@ -275,14 +371,9 @@ fn update_selected_item(
     input: Res<ButtonInput<KeyCode>>,
     mut selected_item: ResMut<SelectedShopItem>,
     shop_items: Query<&ShopItem>,
-    shop_state: Res<ShopState>,
     hover_entity: Res<HoverEntity>,
     mut hover_query: Query<&mut Transform>,
 ) {
-    if !shop_state.is_open {
-        return;
-    }
-
     let cols = 3;
     let rows = 2;
 
@@ -338,20 +429,18 @@ fn update_selected_item(
 
 fn exit_shop (
     input: Res<ButtonInput<KeyCode>>,
-    mut shop_state: ResMut<ShopState>,
+    mut next_interface: ResMut<NextState<CurrentInterface>>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
     original_camera_pos: Res<OriginalCameraPosition>,
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), (With<Player>, Without<Camera>)>
 ){
-    if input.just_pressed(KeyCode::Escape) && shop_state.is_open {
+    if input.just_pressed(KeyCode::Escape) {
         let mut camera = camera_query.single_mut();
         let (mut pt,mut pd, _pl, _pa, _pi) = player_query.single_mut();
         pt.translation = Vec3::new(1024., -180., 1.);
         *pd = PlayerDirection::Front;
         camera.translation = original_camera_pos.0;
-        shop_state.is_open = false;
+        next_interface.set(CurrentInterface::Overworld);
         println!("Shop closed");
     }
 }
-
-
