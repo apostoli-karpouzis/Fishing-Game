@@ -1,7 +1,8 @@
-use bevy::prelude::*;
-use crate::player::*;
 use crate::fishing_zone::*;
+use crate::player::*;
 use crate::window::*;
+use bevy::prelude::*;
+use bevy::sprite::*;
 
 pub const TILE_SIZE: f32 = 16.;
 
@@ -35,7 +36,11 @@ pub struct Map {
 
 impl Map {
     pub fn new(areas: Vec<Vec<Area>>, width: usize, height: usize) -> Self {
-        Self { areas, width, height }
+        Self {
+            areas,
+            width,
+            height,
+        }
     }
 }
 
@@ -43,12 +48,20 @@ impl Map {
 pub struct Area {
     pub zone: FishingZone,
     pub layout: [[&'static Tile; GRID_ROWS]; GRID_COLUMNS],
-    pub objects: Vec<Object>
+    pub objects: Vec<Object>,
 }
 
 impl Area {
-    pub fn new(zone: FishingZone, layout: [[&'static Tile; GRID_ROWS]; GRID_COLUMNS], objects: Vec<Object>) -> Self {
-        Self { zone, layout, objects }
+    pub fn new(
+        zone: FishingZone,
+        layout: [[&'static Tile; GRID_ROWS]; GRID_COLUMNS],
+        objects: Vec<Object>,
+    ) -> Self {
+        Self {
+            zone,
+            layout,
+            objects,
+        }
     }
 }
 
@@ -64,7 +77,11 @@ pub struct Tile {
 
 impl Tile {
     pub const fn new(id: &'static str, interactable: bool, hitbox: Vec2) -> Self {
-        Self { id, interactable, hitbox }
+        Self {
+            id,
+            interactable,
+            hitbox,
+        }
     }
 
     pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
@@ -76,7 +93,7 @@ impl Tile {
 #[derive(Clone)]
 pub struct Object {
     pub tile: &'static Tile,
-    pub position: Vec2
+    pub position: Vec2,
 }
 
 impl Object {
@@ -92,7 +109,7 @@ pub struct Collision;
 pub enum MapState {
     #[default]
     Normal,
-    MapTransition
+    MapTransition,
 }
 
 #[derive(Component)]
@@ -102,6 +119,11 @@ pub struct Animation {
     pub start_position: Vec3,
     pub motion: Vec3,
 }
+
+#[derive(Component)]
+pub struct MapPlugin;
+
+
 
 impl Animation {
     pub fn new() -> Self {
@@ -114,7 +136,45 @@ impl Animation {
     }
 }
 
-pub fn screen_edge_collision (
+impl Plugin for MapPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, setup);
+    }
+}
+
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
+    println!("map");
+    let mut i: f32 = 0.;
+    while i <= 30.{
+        commands.spawn((
+            SpriteBundle {
+                texture: tree_sheet_handle.clone(),
+                    sprite: Sprite {
+                    custom_size: Some(Vec2::new(100.,100.)),
+                    ..default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(-1280./2., (100.*i)-(720./2.), 900.),
+                    ..default()
+                },
+                ..default()
+            },
+            Tile::TREE,
+            Collision,
+        ));
+        i = i + 1.;
+    }
+    
+}
+
+pub fn screen_edge_collision(
     mut player: Query<(&mut Location, &Transform, &PlayerDirection, &mut Animation), With<Player>>,
     mut camera: Query<(&mut Transform, &mut Animation), (With<Camera>, Without<Player>)>,
     time: Res<Time>,
@@ -126,7 +186,7 @@ pub fn screen_edge_collision (
 
     if !state.eq(&MapState::Normal) {
         let elapsed: f32 = time.elapsed_seconds() - camera_animation.start_time;
-        
+
         if state.eq(&MapState::MapTransition) && elapsed >= MAP_TRANSITION_TIME {
             next_state.set(MapState::Normal);
         }
@@ -139,7 +199,9 @@ pub fn screen_edge_collision (
     let mut camera_offset: Vec3 = Vec3::ZERO;
 
     if *direction == PlayerDirection::Right {
-        if pt.translation.x + PLAYER_WIDTH / 2. >= WIN_W * map_location.x as f32 + WIN_W / 2. && map_location.x + 1 < map_location.map.width {
+        if pt.translation.x + PLAYER_WIDTH / 2. >= WIN_W * map_location.x as f32 + WIN_W / 2.
+            && map_location.x + 1 < map_location.map.width
+        {
             map_location.x += 1;
             player_offset = Vec3::new(PLAYER_WIDTH, 0., 0.);
             camera_offset = Vec3::new(WIN_W, 0., 0.);
@@ -149,7 +211,9 @@ pub fn screen_edge_collision (
     }
 
     if *direction == PlayerDirection::Left {
-        if pt.translation.x - PLAYER_WIDTH / 2. <= WIN_W * map_location.x as f32 - WIN_W / 2. && map_location.x != 0 {
+        if pt.translation.x - PLAYER_WIDTH / 2. <= WIN_W * map_location.x as f32 - WIN_W / 2.
+            && map_location.x != 0
+        {
             map_location.x -= 1;
             player_offset = Vec3::new(-PLAYER_WIDTH, 0., 0.);
             camera_offset = Vec3::new(-WIN_W, 0., 0.);
@@ -159,7 +223,9 @@ pub fn screen_edge_collision (
     }
 
     if *direction == PlayerDirection::Back {
-        if pt.translation.y + PLAYER_HEIGHT / 2. >= WIN_H * map_location.y as f32 + WIN_H / 2. && map_location.y + 1 < map_location.map.height {
+        if pt.translation.y + PLAYER_HEIGHT / 2. >= WIN_H * map_location.y as f32 + WIN_H / 2.
+            && map_location.y + 1 < map_location.map.height
+        {
             map_location.y += 1;
             player_offset = Vec3::new(0., PLAYER_HEIGHT, 0.);
             camera_offset = Vec3::new(0., WIN_H, 0.);
@@ -169,7 +235,9 @@ pub fn screen_edge_collision (
     }
 
     if *direction == PlayerDirection::Front {
-        if pt.translation.y - PLAYER_HEIGHT / 2. <= WIN_H * map_location.y as f32 - WIN_H / 2. && map_location.y != 0 {
+        if pt.translation.y - PLAYER_HEIGHT / 2. <= WIN_H * map_location.y as f32 - WIN_H / 2.
+            && map_location.y != 0
+        {
             map_location.y -= 1;
             player_offset = Vec3::new(0., -PLAYER_HEIGHT, 0.);
             camera_offset = Vec3::new(0., -WIN_H, 0.);
@@ -185,13 +253,13 @@ pub fn screen_edge_collision (
         start_time: time.elapsed_seconds(),
         duration: MAP_TRANSITION_TIME,
         start_position: pt.translation,
-        motion: player_offset
+        motion: player_offset,
     };
 
     *camera_animation = Animation {
         start_time: time.elapsed_seconds(),
         duration: MAP_TRANSITION_TIME,
         start_position: ct.translation,
-        motion: camera_offset
+        motion: camera_offset,
     }
 }

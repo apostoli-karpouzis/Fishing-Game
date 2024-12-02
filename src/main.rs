@@ -84,6 +84,7 @@ fn main() {
         .add_plugins(
             (
                 FishingViewPlugin,
+                MapPlugin,
                 ShopPlugin
             )
         )
@@ -115,20 +116,20 @@ fn setup(
     let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
-    println!("grasslayout.len {}", grass_layout_len);
+    //println!("grasslayout.len {}", grass_layout_len);
     let grass_layout_handle = texture_atlases.add(grass_layout);
 
     let mut rng = rand::thread_rng();
     let x_bound = WIN_W / 2. - OLD_TILE_SIZE / 2.;
     let y_bound = WIN_H / 2. - OLD_TILE_SIZE / 2.;
-    println!("window w {}", (-WIN_H));
+    //println!("window w {}", (-WIN_H));
 
     let mut j = 0.;
     while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 3.5 {
         //println!("rinning j");
         let mut i = 0;
         let mut t = Vec3::new(-x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
-        println!("spawning at {}", (OLD_TILE_SIZE * j) + y_bound);
+        //println!("spawning at {}", (OLD_TILE_SIZE * j) + y_bound);
         while (i as f32) * OLD_TILE_SIZE < WIN_W * 1.75 {
             //println!("rinning i");
             //IF THE SPRITE SHEET FOR BACKGROUND IS MADE LARGER, THIS NEEDS TO GROW
@@ -175,7 +176,7 @@ fn setup(
 
             i += 1;
             t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
-            println!("{}", t);
+            //println!("{}", t);
         }
         j += 1.0;
     }
