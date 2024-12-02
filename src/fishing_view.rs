@@ -321,7 +321,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
@@ -407,7 +407,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
                 ..default()
