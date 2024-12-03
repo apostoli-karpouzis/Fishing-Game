@@ -68,7 +68,7 @@ pub fn spawn_day_tint_overlay(mut commands: Commands){
     commands.spawn((SpriteBundle {
         sprite: Sprite {
             color: Color::srgba(0.5, 0.5, 0.5, 0.0),
-            custom_size: Some(Vec2::new(10000.,10000.)),
+            custom_size: Some(Vec2::new(20000.,20000.)),
             ..default()
         },
         transform: Transform::from_xyz(0.0, 0.0, 999.),
