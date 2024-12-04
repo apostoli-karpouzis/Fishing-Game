@@ -38,6 +38,11 @@ pub const FISHING_ROOM_Y: f32 = FISHING_ROOM_CENTER.y;
 
 pub const PLAYER_POSITION: Vec3 = Vec3::new(FISHING_ROOM_X-100., FISHING_ROOM_Y-(WIN_H/2.)+50., 902.);
 
+
+//pub const FISHINGROOMX: f32 = 8960.;
+//pub const FISHINGROOMY: f32 = 3600.;
+
+
 const POWER_BAR_Y_OFFSET: f32 = FISHING_ROOM_Y - 308.;
 const MAX_POWER: f32 = 250.;
 const POWER_FILL_SPEED: f32 = 250.;
@@ -359,10 +364,11 @@ impl Plugin for FishingViewPlugin {
                 animate_splash.after(cast_line)
             ).run_if(in_state(CurrentInterface::Fishing))
         )
-        .add_systems(OnEnter(CurrentInterface::Fishing), (fishing_transition.after(add_fish), add_fish))
+        .add_systems(OnEnter(CurrentInterface::Fishing), (fishing_transition, add_fish))
         .add_systems(OnExit(CurrentInterface::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
+        .add_systems(OnEnter(MidnightState::Midnight), fishPopulation)
         .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface)
         .add_systems(Update, fish_update.run_if(in_state(CurrentInterface::Fishing)));
     }
@@ -1046,8 +1052,8 @@ fn setup (
 
 
 fn move_fish(
-    mut fish_details: Query<(&mut Fish, &mut Transform), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<PondObstruction>)>,
-    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform), (With<FishLoc>, With<InPond>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<PondObstruction>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<FishLoc>, With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
     //mut fish_direction: ResMut<FishBoundsDir>
@@ -1113,10 +1119,7 @@ fn move_fish(
                         }
                     }
                 }
-                //for each collision object add a 
 
-                
-            
             }
             
 
@@ -1124,7 +1127,7 @@ fn move_fish(
 
             
 
-            //println!("numer is {} {:?}", dir, fish_details.name);
+            println!("numer is {} {:?} {:?}", dir, fish_details.id, fish_details.name);
             if move_type >= 4{
                 if dir == 0 {
                     fish_details.change_x = Vec3::new(0., 0., 0.);
@@ -1163,14 +1166,32 @@ fn move_fish(
 
         //println!("fish pos x {}, fish pos y {}", change_x, change_y);
         //CHANGE THESE TO CONSTANTS LATER!!!!!
+        /*
         
+//pub const FISHINGROOMX: f32 = 8960.;
+//pub const FISHINGROOMY: f32 = 3600.;
+        
+         */
+
+
         let holdx: Vec3 = fish_pos.translation + fish_details.change_x;
-        if (holdx.x) >= (8320. + 160.) && (holdx.x) <= (9391. - 160.) {
+        if (holdx.x) >= (-640. + 160.) && (holdx.x) <= (431. - 160.) {
+            println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_x;
         }
+        else{
+            println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            println!("holdx = {:?}", holdx);
+        }
         let holdy: Vec3 = fish_pos.translation + fish_details.change_y;
-        if (holdy.y) >= (3376. + 90.) && (holdy.y) <= (3960. - 90.) {
+        if (holdy.y) >= (-719.5-224. + 90.) && (holdy.y) <= (-719.5 + 360. - 90.) {
+            println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_y;
+        }
+        else{
+            
+            println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            println!("holdx = {:?}", holdy);
         }
         
     }
@@ -1187,7 +1208,6 @@ fn add_fish(
     mut backgroundDeetsBeach: Query<(&mut Transform), (With<BeachScreen>, Without<Collision>, Without<PhysicsObject>, Without<Bobber>, Without<PondScreen>, Without<MysteryFish>, Without<InPond>)>,
     mut fishes_phys: Query<(Entity, &mut Transform, &FishLoc), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Bobber>, Without<MysteryFish>, Without<PondScreen>, Without<BeachScreen>)>,
     mut obst_details: Query<(&mut Transform, &mut ObstType, &FishLoc), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>, Without<MysteryFish>, Without<PhysicsObject>, Without<Bobber>, Without<PondScreen>, Without<BeachScreen>)>,
-    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
     state: Res<State<FishingLocal>>,  
 ){
     let mut beachScr = backgroundDeetsBeach.single_mut(); 
@@ -1310,11 +1330,116 @@ fn add_fish(
 
 
 
-fn fishPopulation(
 
+
+fn fishPopulation(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ){
+    let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
     
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            transform: Transform {
+                translation: Vec3::new(-8000., -8000., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Fish{
+            name: "bass",
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        InPond,
+        BASS,
+        Collision,
+        MysteryFish,
+        FishLoc::Ocean,
+    ));
+
+
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            transform: Transform {
+                translation: Vec3::new(-8000., -8000., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        BASS,
+        Fish{
+            name: "Bass2",
+            id: 2,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        PhysicsObject{
+            mass: 2.0,
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+            rotation: Vec3::ZERO,
+            velocity: Vec3::ZERO,
+            forces: Forces::default()
+        },
+        InPond,
+        Collision,
+        PhysicsFish,
+        FishLoc::Ocean,
+    ));
+    //this is working lets start adding stuff/ look at psuedo code.
+
+    //pond section and river section. 
+    println!("ITS 23!!! adding new fish now!!!");
+    
+
 }
+
 
 
 

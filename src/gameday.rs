@@ -47,10 +47,12 @@ pub fn run_game_timer(
         game_timer.hour = (game_timer.hour + 1) % 24;
         println!("Hour {}.", game_timer.hour);
         if game_timer.hour == 23{
+            println!("entering midnight state");
             next_state.set(MidnightState::Midnight);
 
         }
         else{
+            println!("exiting midnight state");
             next_state.set(MidnightState::NotMidnight);
         }
     }
