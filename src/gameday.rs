@@ -14,6 +14,14 @@ pub struct GameDayTimer {
     pub hour: i32,
 }
 
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MidnightState {
+    #[default]
+    NotMidnight,
+    Midnight
+}
+
+
 impl GameDayTimer {
     pub fn new(duration: f32) -> Self {
         Self {
@@ -31,12 +39,22 @@ pub const TIME_PER_PERIOD: f32 = 10.;
 pub fn run_game_timer(
     time: Res<Time>, 
     mut game_timer: ResMut<GameDayTimer>,
+    mut next_state: ResMut<NextState<MidnightState>>,
 )
 {
     game_timer.timer.tick(time.delta());
     if game_timer.timer.just_finished() {
         game_timer.hour = (game_timer.hour + 1) % 24;
         println!("Hour {}.", game_timer.hour);
+        if game_timer.hour == 23{
+            println!("entering midnight state");
+            next_state.set(MidnightState::Midnight);
+
+        }
+        else{
+            println!("exiting midnight state");
+            next_state.set(MidnightState::NotMidnight);
+        }
     }
     
 }
