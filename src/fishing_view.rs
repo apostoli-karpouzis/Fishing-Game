@@ -446,7 +446,7 @@ fn setup (
             },
             visibility: Visibility::Visible,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
             },
             ..default()
@@ -468,7 +468,7 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
@@ -489,7 +489,7 @@ fn setup (
             },
             visibility: Visibility::Hidden,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 901.),
                 ..default()
             },
             ..default()
@@ -512,13 +512,13 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
         PhysicsObject{
             mass: 2.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
@@ -704,7 +704,7 @@ fn setup (
                         ..default()
                     },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 900.),
                 ..default()
             },
             ..default()
@@ -970,7 +970,7 @@ fn setup (
         Tile::BOBBER,        
         PhysicsObject {
             mass: 2.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
@@ -1010,7 +1010,7 @@ fn setup (
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X+160., FISHING_ROOM_Y+100., 901.),
                 ..default()
             },
             ..default()
@@ -1196,7 +1196,7 @@ fn add_fish(
     if state.eq(&FishingLocal::Pond1){
         for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
             if *loc == FishLoc::Pond1{
-                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                transform.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 transform.translation = Vec3::new(-8000., -8000., 901.);
@@ -1205,10 +1205,10 @@ fn add_fish(
         for(mut obstPos, obstType, obstLoc) in &mut obst_details{
             if *obstLoc == FishLoc::Pond1{
                 if *obstType == ObstType::Pad{
-                    obstPos.translation = Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X+160., FISHING_ROOM_Y+100., 901.);
                 }
                 else if *obstType == ObstType::Fissure{
-                    obstPos.translation = Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-360., FISHING_ROOM_Y-100., 901.);
                 }
             }
             else{
@@ -1217,21 +1217,21 @@ fn add_fish(
         }
         for(mut ent, mut pos, location) in &mut fishes_phys{
             if *location == FishLoc::Pond1{
-                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                pos.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 pos.translation = Vec3::new(-8000., -8000., 901.);
             }
         }
         //POND BEACH
-        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
-        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
+        pondScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 900.);
+        beachScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 100.);
 
     }
     if state.eq(&FishingLocal::Pond2){
         for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
             if *loc == FishLoc::Pond2{
-                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                transform.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 transform.translation = Vec3::new(-8000., -8000., 901.);
@@ -1240,10 +1240,10 @@ fn add_fish(
         for(mut obstPos, obstType, obstLoc) in &mut obst_details{
             if *obstLoc == FishLoc::Pond2{
                 if *obstType == ObstType::Pad{
-                    obstPos.translation = Vec3::new(FISHINGROOMX-160., FISHINGROOMY+300., 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-160., FISHING_ROOM_Y+300., 901.);
                 }
                 else if *obstType == ObstType::Fissure{
-                    obstPos.translation = Vec3::new(FISHINGROOMX+260., FISHINGROOMY, 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X+260., FISHING_ROOM_Y, 901.);
                 }
             }
             else{
@@ -1252,7 +1252,7 @@ fn add_fish(
         }
         for(mut ent, mut pos, location) in &mut fishes_phys{
             if *location == FishLoc::Pond2{
-                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                pos.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 pos.translation = Vec3::new(-8000., -8000., 901.);
@@ -1260,14 +1260,14 @@ fn add_fish(
         }
 
         //POND BEACH
-        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
-        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
+        pondScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 900.);
+        beachScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 100.);
         
     }
     if state.eq(&FishingLocal::Beach){
         for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
             if *loc == FishLoc::Ocean{
-                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                transform.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 transform.translation = Vec3::new(-8000., -8000., 901.);
@@ -1276,10 +1276,10 @@ fn add_fish(
         for(mut obstPos, obstType, obstLoc) in &mut obst_details{
             if *obstLoc == FishLoc::Ocean{
                 if *obstType == ObstType::Pad{
-                    obstPos.translation = Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X+160., FISHING_ROOM_Y+100., 901.);
                 }
                 else if *obstType == ObstType::Fissure{
-                    obstPos.translation = Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.);
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-360., FISHING_ROOM_Y-100., 901.);
                 }
             }
             else{
@@ -1288,7 +1288,7 @@ fn add_fish(
         }
         for(mut ent, mut pos, location) in &mut fishes_phys{
             if *location == FishLoc::Ocean{
-                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+                pos.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.);
             }
             else{
                 pos.translation = Vec3::new(-8000., -8000., 901.);
@@ -1296,8 +1296,8 @@ fn add_fish(
         }
         
         //POND BEACH
-        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
-        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
+        pondScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 100.);
+        beachScr.translation = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 900.);
     }
     
     //check what fishing state youre going into, check if pond one move pond 1 fish in, move pond 2 fish out
@@ -1434,7 +1434,7 @@ fn fishing_transition (
 
     camera_transform.translation.x = FISHING_ROOM_X;
     camera_transform.translation.y = FISHING_ROOM_Y;
-    //FISHINGROOMY-308
+    //FISHING_ROOM_Y-308
     //spawn in powerbar
     //commands.spawn
     // power_bar_transform.translation.y = POWER_BAR_Y_OFFSET;
