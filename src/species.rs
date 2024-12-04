@@ -22,6 +22,7 @@ pub struct Species{
     //length, width, depth
     pub bounds: (i32, i32),
     pub catch_prob: f32,
+    pub obj_pref: (ObstType, i32)
 }
 
 impl Species {
@@ -37,7 +38,8 @@ impl Species {
         in_depth: (i32, i32),
         in_position: (i32, i32),
         in_bounds: (i32, i32),
-        in_catch_prob: f32) -> Self{
+        in_catch_prob: f32,
+        in_obj_pref: (ObstType, i32)) -> Self{
             
 
             Self{
@@ -53,6 +55,7 @@ impl Species {
                 position: in_position,
                 bounds: in_bounds,
                 catch_prob: in_catch_prob,
+                obj_pref: in_obj_pref
             }
     }
 }
@@ -108,6 +111,7 @@ pub const BASS: Species = Species::new(
     (FISHING_ROOM_X as i32 + 90, FISHING_ROOM_Y as i32 + 50),
     (10,10),
     0.3,
+    (ObstType::Pad, 2),
 );
 
 //Catfish
@@ -124,6 +128,7 @@ pub const CATFISH: Species = Species::new(
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5, 4),
     0.2,
+    (ObstType::Fissure, 1),
 );
 
 //Tuna
@@ -140,6 +145,7 @@ pub const TUNA: Species = Species::new(
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.5,
+    (ObstType::Pad, 2),
 );
 
 //Mahi-mahi
@@ -156,6 +162,7 @@ pub const MAHIMAHI: Species = Species::new(
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.4,
+    (ObstType::Fissure, 1),
 );
 
 //Swordfish
@@ -173,6 +180,7 @@ pub const SWORDFISH: Species = Species::new(
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.4,
+    (ObstType::Fissure, 3),
 );
 
 //Red Handfsih
@@ -191,4 +199,5 @@ pub const REDHANDFISH: Species = Species::new(
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.1,
+    (ObstType::Fissure, 0),
 );
