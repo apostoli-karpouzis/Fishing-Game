@@ -45,6 +45,7 @@ fn main() {
         .init_state::<MapState>()
         .init_state::<Weather>()
         .init_state::<FishingLocal>()
+        .init_state::<MidnightState>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay, spawn_day_tint_overlay))
 
@@ -387,7 +388,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
 
     //Time of day timer
     commands.insert_resource(
-        GameDayTimer::new(10.),
+        GameDayTimer::new(3.),
     );
 
     
