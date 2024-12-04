@@ -33,7 +33,7 @@ pub const PARTICLECOUNT: usize = 10;
 
 const CATCH_MARGIN: f32 = 30.;
 
-pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -1);
+pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -2);
 pub const FISHING_ROOM_X: f32 = FISHING_ROOM_CENTER.x;
 pub const FISHING_ROOM_Y: f32 = FISHING_ROOM_CENTER.y;
 
@@ -383,6 +383,25 @@ impl Plugin for FishingViewPlugin {
     }
 }
 
+fn spawn_waves(commands: &mut Commands, texture: &Handle<Image>, layout: &Handle<TextureAtlasLayout>) -> Entity {
+    commands.spawn((
+        SpriteBundle {
+            texture: texture.clone(),
+            transform: Transform{
+                translation: Vec3::new(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: layout.clone(),
+            index: 0,
+        },
+        Wave
+    )).id()
+}
+
 fn setup (
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -391,6 +410,12 @@ fn setup (
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let mut rng = rand::thread_rng();
+
+    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_len = wave_layout.textures.len();
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    let mut wave: Entity;
 
     //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
 
@@ -538,6 +563,7 @@ fn setup (
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
 
     commands.spawn((
         SpriteBundle {
@@ -580,7 +606,8 @@ fn setup (
             position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
-            forces: Forces::default()
+            forces: Forces::default(),
+            waves: wave
         },
         InPond,
         Collision,
@@ -588,6 +615,7 @@ fn setup (
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
 
     commands.spawn((
         SpriteBundle {
@@ -630,7 +658,8 @@ fn setup (
             position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
-            forces: Forces::default()
+            forces: Forces::default(),
+            waves: wave
         },
         InPond,
         Collision,
@@ -753,7 +782,7 @@ fn setup (
         exclam_point,
     ));
     
-
+    // Fishing rod
     let default_rod_type = &FishingRodType::NORMAL;
     let segment_count: usize = (FishingRodType::NORMAL.length / BENDING_RESOLUTION) as usize;
 
@@ -765,6 +794,7 @@ fn setup (
         tip_pos: Vec3::new(PLAYER_POSITION.x, PLAYER_POSITION.y + default_rod_type.length * PIXELS_PER_METER, 0.)
     };
 
+    // Fishling line
     for i in (0..segment_count).rev() {
         let l = i as f32 * BENDING_RESOLUTION;
         let radius = default_rod_type.thickness * l / default_rod_type.length;
@@ -839,29 +869,6 @@ fn setup (
         Splash::default()
     ));
 
-    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
-    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
-    let wave_layout_len = wave_layout.textures.len();
-    let wave_layout_handle = texture_atlases.add(wave_layout);
-    commands.spawn((
-        SpriteBundle {
-            texture: waves_sheet_handle.clone(),
-            transform: Transform{
-                translation: Vec3::new(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
-                ..default()
-            },
-            visibility: Visibility::Hidden,
-            ..default()
-        },
-        TextureAtlas {
-            layout: wave_layout_handle.clone(),
-            index: 0,
-        },
-        //AnimationTimer::new(0.2), 
-        AnimationFrameCount(wave_layout_len), //number of different frames that we have
-        Wave
-    ));
-
 
 
     let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
@@ -894,6 +901,7 @@ fn setup (
     let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
     let baits_layout_len = baits_layout.textures.len();
     let baits_layout_handle = texture_atlases.add(baits_layout);
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
     
     commands.spawn((
         SpriteBundle {
@@ -912,7 +920,8 @@ fn setup (
             position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
-            forces: Forces::default()
+            forces: Forces::default(),
+            waves: wave
         },Collision,
         AnimationFrameCount(baits_layout_len), //number of different frames that we have
         Lure::default(),
@@ -1396,7 +1405,11 @@ fn switch_bait (
     let current_bait = inventory.lures[inventory.lure_index].name;
     let new_bait = LURES.get(current_bait).unwrap();
     
-    *bait_physics = PhysicsObject::new(new_bait.mass, Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
+    bait_physics.mass = new_bait.mass;
+    bait_physics.rotation = Vec3::ZERO;
+    bait_physics.velocity = Vec3::ZERO;
+    bait_physics.forces = Forces::default();
+    
     screen_texture.index = new_bait.texture_index;
     bait_texture.index = new_bait.texture_index;
 }
@@ -1441,7 +1454,7 @@ fn is_fish_caught (
     mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
 ) {
     let rod_info = rod.single();
-    let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
+    let (entity_id, mut fish_details, fish_physics) = hooked_object.single_mut();
     let mut inventory_info = player_inventory.single_mut();
 
     let distance = (fish_physics.position - rod_info.tip_pos).length();
@@ -1450,12 +1463,9 @@ fn is_fish_caught (
         fish_details.is_caught = true;
         inventory_info.coins += fish_details.weight as u32 * 2;
 
-        // Reset fish for testing
-        fish_physics.position = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.);
-        fish_physics.velocity = Vec3::new(0., 0., 0.);
-        fish_physics.forces = Forces::default();
-        fish_details.is_caught = false;
-        commands.entity(entity_id).remove::<Hooked>();
+        // Despawn fish
+        commands.entity(entity_id).despawn();
+        commands.entity(fish_physics.waves).despawn();
 
         next_state.set(FishingState::Idle);
     }
@@ -1620,18 +1630,22 @@ fn animate_splash(
 }
 
 fn animate_waves (
-    objects: Query<(&PhysicsObject, &Fish), (With<PhysicsObject>, With<Fish>)>, 
-    mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>
-) {
-    let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
-    
-    // Currently only supports one object and only supports fish
-    for (physics_object, fish) in objects.iter() {
+    objects: Query<(&Visibility, &PhysicsObject), With<PhysicsObject>>, 
+    mut waves: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), (With<Wave>, Without<PhysicsObject>)>
+) { 
+    for (object_visibility, physics_object) in objects.iter() {
+        let (mut wave_texture, mut wave_transform, mut wave_visibility) = waves.get_mut(physics_object.waves).unwrap();
+        
+        if object_visibility == Visibility::Hidden  {
+            *wave_visibility = Visibility::Hidden;
+            continue;
+        }
+
         let magnitude = physics_object.forces.water.length();
     
         if magnitude == 0. {
             *wave_visibility = Visibility::Hidden;
-            return
+            continue;
         }
         
         if magnitude < 200. {
@@ -1643,12 +1657,11 @@ fn animate_waves (
         } else {
             wave_texture.index = 3;
         }
-        if fish.is_caught{
-            *wave_visibility = Visibility::Visible;
-        
-            wave_transform.translation = physics_object.position.with_z(902.);
-            wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
-        }
+
+        *wave_visibility = Visibility::Visible;
+    
+        wave_transform.translation = physics_object.position.with_z(902.);
+        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
         return;
     }
 }

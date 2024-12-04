@@ -6,7 +6,7 @@ use crate::map::*;
 use crate::player::*;
 use crate::resources::PlayerReturnPos;
 
-pub const SHOP_CENTER: Vec2 = Map::get_area_center(1, -1);
+pub const SHOP_CENTER: Vec2 = Map::get_area_center(1, -2);
 pub const SHOP_X: f32 = SHOP_CENTER.x;
 pub const SHOP_Y: f32 = SHOP_CENTER.y;
 

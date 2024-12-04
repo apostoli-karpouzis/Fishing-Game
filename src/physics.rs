@@ -24,11 +24,12 @@ pub struct PhysicsObject {
     pub rotation: Vec3,
     pub velocity: Vec3,
     pub forces: Forces,
+    pub waves: Entity
 }
 
 impl PhysicsObject {
-    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
-        Self { mass, position, rotation, velocity, forces }
+    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces, waves: Entity) -> Self {
+        Self { mass, position, rotation, velocity, forces, waves }
     }
 }
 
