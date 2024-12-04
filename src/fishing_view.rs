@@ -1,5 +1,7 @@
 extern crate rand;
 
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::f32;
 use std::f32::consts::PI;
@@ -25,8 +27,7 @@ const ROTATE_ROD_COUNTERLCOCKWISE: KeyCode = KeyCode::KeyA;
 const ROTATE_ROD_CLOCKWISE: KeyCode = KeyCode::KeyD;
 const SWITCH_ROD: KeyCode = KeyCode::KeyN;
 const SWITCH_LINE: KeyCode = KeyCode::KeyM;
-const SWITCH_BAIT_NEXT: KeyCode = KeyCode::KeyX;
-const SWITCH_BAIT_PREV: KeyCode = KeyCode::KeyZ;
+const SWITCH_BAIT: KeyCode = KeyCode::KeyX;
 
 pub const PARTICLECOUNT: usize = 10;
 
@@ -49,6 +50,35 @@ const ROD_ROTATION_SPEED: f32 = PI / 2.;
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
+
+lazy_static! {
+    static ref RODS: HashMap<&'static str, &'static FishingRodType> = {
+        let mut map = HashMap::new();
+        map.insert("Default Rod", &FishingRodType::NORMAL);
+        map.insert("Surf Rod", &FishingRodType::SURF);
+        map
+    };
+}
+
+lazy_static! {
+    static ref LINES: HashMap<&'static str, &'static FishingLineType> = {
+        let mut map = HashMap::new();
+        map.insert("FluoroCarbon Fishing Line", &FishingLineType::FLUOROCARBON);
+        map.insert("Braided Fishing Line", &FishingLineType::BRAIDED);
+        map.insert("Monofilament Fishing Line", &FishingLineType::MONOFILILMENT);
+        map
+    };
+}
+
+lazy_static! {
+    static ref LURES: HashMap<&'static str, &'static Lure> = {
+        let mut map = HashMap::new();
+        map.insert("Bobber", &Lure::BALL);
+        map.insert("Frog Bait", &Lure::FROG);
+        map.insert("Swim Bait", &Lure::FISH);
+        map
+    };
+}
 
 #[derive(Resource)]
 pub struct StartFishingAnimation {
@@ -606,8 +636,35 @@ fn setup (
         Collision,
         PhysicsFish,
     ));
+    
+    // HUD background
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle::new(208., 720.))),
+            material: materials.add(Color::BLACK),
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X + 536., FISHING_ROOM_Y, 999.25),
+                ..default()
+            },
+            ..default()
+        },
+    ));
 
-    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
+    // HUD
+    let hud_handle = asset_server.load("fishing_view/hud.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: hud_handle.clone(),
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 999.75),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/pond_view.png");
 
     commands.spawn((
         SpriteBundle {
@@ -621,7 +678,6 @@ fn setup (
             },
             ..default()
         },
-        
     ));
     
     //powerbar view
@@ -633,7 +689,7 @@ fn setup (
                         ..default() 
                         },
             transform: Transform {
-                translation: Vec3::new(FISHING_ROOM_X+575., FISHING_ROOM_Y-308., 899.),
+                translation: Vec3::new(FISHING_ROOM_X+575., FISHING_ROOM_Y-308., 999.5),
                 ..default()
             },
             ..default()
@@ -1262,12 +1318,7 @@ fn switch_rod (
 
     inventory.rod_index = if inventory.rod_index == inventory.rods.len() - 1 { 0 } else { inventory.rod_index + 1 };
     let current_rod = inventory.rods[inventory.rod_index].name;
-
-    let new_type = match current_rod {
-        "Default Rod" => &FishingRodType::NORMAL,
-        "Surf Rod" => &FishingRodType::SURF,
-        _ => &FishingRodType::NORMAL,
-    };
+    let new_type = RODS.get(current_rod).unwrap();
 
     rod_info.rod_type = new_type;
     materials.remove(&rod_info.material);
@@ -1321,13 +1372,7 @@ fn switch_line (
     
     inventory.line_index = if inventory.line_index == inventory.lines.len() - 1 { 0 } else { inventory.line_index + 1 };
     let current_line = inventory.lines[inventory.line_index].name;
-
-    line_properties.line_type = match current_line {
-        "FluoroCarbon Fishing Line" => &FishingLineType::FLUOROCARBON,
-        "Braided Fishing Line" => &FishingLineType::BRAIDED,
-        "Monofilament Fishing Line" => &FishingLineType::MONOFILILMENT,
-        _ => &FishingLineType::MONOFILILMENT
-    };
+    line_properties.line_type = LINES.get(current_line).unwrap();
 
     let material = materials.get_mut(line_material.id()).unwrap();
     material.color = line_properties.line_type.color;
@@ -1339,24 +1384,17 @@ fn switch_bait (
     mut bait_lure: Query<(&mut PhysicsObject, &mut TextureAtlas), (With<Lure>, Without<OnScreenLure>)>,
     mut player_inventory: Query<&mut PlayerInventory>,
 ) {
+    if !input.just_pressed(SWITCH_BAIT) {
+        return;
+    }
+
     let mut inventory = player_inventory.single_mut();
     let mut screen_texture  = screen_lure.single_mut();
     let (mut bait_physics, mut bait_texture) = bait_lure.single_mut();
 
-    if input.just_pressed(SWITCH_BAIT_NEXT) {
-        inventory.lure_index = if inventory.lure_index == inventory.lures.len() - 1 { 0 } else { inventory.lure_index + 1 };
-    } else if input.just_pressed(SWITCH_BAIT_PREV) {
-        inventory.lure_index = if inventory.lure_index == 0 { inventory.lures.len() - 1 } else { inventory.lure_index - 1 };
-    } else {
-        return;
-    }
-
-    let new_bait = match inventory.lures[inventory.lure_index].name {
-        "Ball Bait" => &Lure::BALL,
-        "Frog Bait" => &Lure::FROG,
-        "Swim Bait" => &Lure::FISH,
-        _ => &Lure::BALL
-    };
+    inventory.lure_index = if inventory.lure_index == inventory.lures.len() - 1 { 0 } else { inventory.lure_index + 1 };
+    let current_bait = inventory.lures[inventory.lure_index].name;
+    let new_bait = LURES.get(current_bait).unwrap();
     
     *bait_physics = PhysicsObject::new(new_bait.mass, Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
     screen_texture.index = new_bait.texture_index;
@@ -1487,21 +1525,19 @@ fn animate_fishing_line (
 
     line_info.start = rod_info.tip_pos;
 
-    match state.get() {
-        FishingState::Idle => {
-            line_info.end = line_info.start;
-        },
-        FishingState::ReelingHooked => {
-            let (fish_species, fish_physics) = hooked_fish.single();
-            let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
-            let fish_pos = fish_physics.position + fish_offset.extend(0.);
-            line_info.end = fish_pos;
-        },
-        FishingState::ReelingUnhooked => {
-            let bobber_physics = bobber.single_mut();
-            line_info.end = bobber_physics.position;
-        },
-        _ => {}
+    if !hooked_fish.is_empty() {
+        // Reeling hooked
+        let (fish_species, fish_physics) = hooked_fish.single();
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+        let fish_pos = fish_physics.position + fish_offset.extend(0.);
+        line_info.end = fish_pos;
+    } else if state.eq(&FishingState::ReelingUnhooked) {
+        // Reeling unhooked
+        let bobber_physics = bobber.single_mut();
+        line_info.end = bobber_physics.position;
+    } else {
+        // Idle
+        line_info.end = line_info.start;
     }
 }
 

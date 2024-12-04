@@ -23,7 +23,7 @@ pub struct PhysicsObject {
     pub position: Vec3,
     pub rotation: Vec3,
     pub velocity: Vec3,
-    pub forces: Forces
+    pub forces: Forces,
 }
 
 impl PhysicsObject {
