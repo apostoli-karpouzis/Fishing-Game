@@ -44,6 +44,7 @@ fn main() {
         .init_state::<CurrentInterface>()
         .init_state::<MapState>()
         .init_state::<Weather>()
+        .init_state::<FishingLocal>()
         .init_resource::<WeatherState>()
         .add_systems(Startup, (setup, spawn_weather_tint_overlay, spawn_day_tint_overlay))
 
@@ -126,7 +127,7 @@ fn setup(
     //println!("window w {}", (-WIN_H));
 
     let mut j = 0.;
-    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
+    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 4.5 {
         //println!("rinning j");
         let mut i = 0;
         let mut t = Vec3::new(-x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
@@ -231,7 +232,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
                     layout: shore_layout_handle.clone(),
                 },
                 Collision,
-                Tile::WATER,
+                Tile::WATEROCEAN,
             ));
         } else if i >= 3. {  // This will be the rightmost column of the beach
             commands.spawn((
@@ -248,7 +249,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
                     layout: shore_layout_handle.clone(),
                 },
                 Collision,
-                Tile::WATER,
+                Tile::WATEROCEAN,
             ));
         }
 
@@ -281,6 +282,27 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
             ));
         }
     }
+    //second pond
+    for y in -10..0 {
+        for x in -10..0{
+            commands.spawn((
+                SpriteBundle {
+                    texture: water_sheet_handle.clone(),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(x as f32 * 16. + 400.,  y as f32 * 16. + 100., 900.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Tile::WATER2,
+                Collision,
+            ));
+        }
+    }
 
     //PLAYER
 
@@ -306,7 +328,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
     commands.spawn((
         SpriteBundle {
             texture: player_sheet_handle,
-            transform: Transform::from_xyz(0., -(WIN_H / 2.) + (OLD_TILE_SIZE * 1.5), 900.),
+            transform: Transform::from_xyz(0., -(WIN_H / 2.) + (OLD_TILE_SIZE * 1.5), 901.),
             ..default()
         },
         TextureAtlas {

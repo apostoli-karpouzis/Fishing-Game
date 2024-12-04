@@ -59,6 +59,7 @@ pub fn fishing_button_system(
                 
                 next_state.set(CurrentInterface::Fishing);
                 println!("Switching to fishing mode");
+                println!("CURRENTLY SWITCHING TO DIFFERENT MODE!!!")
 
             
             } else if input.just_pressed(KeyCode::Escape) && state.eq(&CurrentInterface::Fishing) {
