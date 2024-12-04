@@ -81,6 +81,9 @@ impl Fish {
         else {
             self.hunger += 0.2;
         }
+        if self.age >= 100.0 {
+            self.die();
+        }
     }
     //calc fish anger
     pub fn fish_anger(&mut self) -> f32 {
