@@ -5,10 +5,7 @@ use std::f32;
 use std::f32::consts::PI;
 use std::time::Duration;
 use bevy::prelude::*;
-use bevy::scene::ron::de::Position;
 use bevy::sprite::*;
-use bevy::utils::hashbrown::HashMap;
-use bevy::utils::HashSet;
 use rand::Rng;
 use crate::fish::*;
 use crate::gameday::*;
@@ -35,12 +32,13 @@ pub const PARTICLECOUNT: usize = 10;
 
 const CATCH_MARGIN: f32 = 30.;
 
-pub const FISHINGROOMX: f32 = 8960.;
-pub const FISHINGROOMY: f32 = 3600.;
+pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -1);
+pub const FISHING_ROOM_X: f32 = FISHING_ROOM_CENTER.x;
+pub const FISHING_ROOM_Y: f32 = FISHING_ROOM_CENTER.y;
 
-pub const PLAYER_POSITION: Vec3 = Vec3::new(FISHINGROOMX-100., FISHINGROOMY-(WIN_H/2.)+50., 902.);
+pub const PLAYER_POSITION: Vec3 = Vec3::new(FISHING_ROOM_X-100., FISHING_ROOM_Y-(WIN_H/2.)+50., 902.);
 
-const POWER_BAR_Y_OFFSET: f32 = FISHINGROOMY - 308.;
+const POWER_BAR_Y_OFFSET: f32 = FISHING_ROOM_Y - 308.;
 const MAX_POWER: f32 = 250.;
 const POWER_FILL_SPEED: f32 = 250.;
 
@@ -332,16 +330,14 @@ impl Plugin for FishingViewPlugin {
                 ).after(rod_rotate),
                 calculate_fish_force.after(calculate_water_force).after(calculate_player_force),
                 simulate_physics.after(calculate_fish_force),
-                cast_line.run_if(in_state(FishingState::Casting)),
                 (
                     is_done_reeling.run_if(in_state(FishingState::ReelingUnhooked)),
                     is_fish_caught.run_if(in_state(FishingState::ReelingHooked)),
+                    is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
+                    cast_line.run_if(in_state(FishingState::Casting)),
+                    animate_fishing_line.run_if(not(in_state(FishingState::Casting)))
                 ).after(simulate_physics),
                 move_physics_objects.after(is_fish_caught),
-                (
-                    animate_fishing_line.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
-                    is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
-                ).after(simulate_physics),
                 bend_fishing_rod.after(is_line_broken),
                 draw_fishing_line.after(animate_fishing_line),
                 animate_waves.after(simulate_physics),
@@ -392,7 +388,7 @@ fn setup (
             },
             visibility: Visibility::Hidden,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
             },
             ..default()
@@ -414,7 +410,7 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
@@ -478,7 +474,7 @@ fn setup (
             },
             visibility: Visibility::Hidden,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
+                translation: Vec3::new(FISHING_ROOM_X-40., FISHING_ROOM_Y+40., 901.),
                 ..default()
             },
             
@@ -501,7 +497,7 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
@@ -522,7 +518,7 @@ fn setup (
             },
             visibility: Visibility::Hidden,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 901.),
                 ..default()
             },
             ..default()
@@ -545,13 +541,13 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
         PhysicsObject{
             mass: 2.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
@@ -572,7 +568,7 @@ fn setup (
             },
             visibility: Visibility::Hidden,
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
                 ..default()
             },
             ..default()
@@ -595,13 +591,13 @@ fn setup (
             change_x: Vec3::new(0.,0.,0.),
             change_y: Vec3::new(0.,0.,0.),
             //length, width, depth
-            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
             hunger: 10.0
         },
         PhysicsObject{
             mass: 3.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
@@ -620,7 +616,7 @@ fn setup (
                         ..default()
                     },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 900.),
                 ..default()
             },
             ..default()
@@ -637,7 +633,7 @@ fn setup (
                         ..default() 
                         },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX+575., FISHINGROOMY-308., 899.),
+                translation: Vec3::new(FISHING_ROOM_X+575., FISHING_ROOM_Y-308., 899.),
                 ..default()
             },
             ..default()
@@ -672,7 +668,7 @@ fn setup (
                         },
 
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
             },
             visibility: Visibility::Hidden,
@@ -692,7 +688,7 @@ fn setup (
                         },
 
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
             },
             visibility: Visibility::Hidden,
@@ -761,7 +757,7 @@ fn setup (
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, 0.0))),
             material: materials.add(Color::hsl(100.,1., 1.)),
-            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   950.),
+            transform: Transform::from_xyz(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   950.),
             ..default()
         },
         FishingLine::new(&FishingLineType::MONOFILILMENT)
@@ -774,7 +770,7 @@ fn setup (
     commands.spawn((
         SpriteBundle {
             texture: splashes_sheet_handle.clone(),
-            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            transform: Transform::from_xyz(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
             visibility: Visibility::Hidden,
             ..default()
         },
@@ -795,7 +791,7 @@ fn setup (
         SpriteBundle {
             texture: waves_sheet_handle.clone(),
             transform: Transform{
-                translation: Vec3::new(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+                translation: Vec3::new(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
                 ..default()
             },
             visibility: Visibility::Hidden,
@@ -821,7 +817,7 @@ fn setup (
         SpriteBundle {
             texture: baits_sheet_handle.clone(),
             transform: Transform{
-                translation: Vec3::new(FISHINGROOMX+545., FISHINGROOMY+255.,   930.),
+                translation: Vec3::new(FISHING_ROOM_X+545., FISHING_ROOM_Y+255.,   930.),
                 scale: (Vec3::splat(3.0)),
                 ..default()
             },
@@ -846,7 +842,7 @@ fn setup (
     commands.spawn((
         SpriteBundle {
             texture: baits_sheet_handle.clone(),
-            transform: Transform::from_xyz(FISHINGROOMX-90., FISHINGROOMY-(WIN_H/2.)+100.,   930.),
+            transform: Transform::from_xyz(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
             visibility: Visibility::Hidden,
             ..default()
         },
@@ -857,7 +853,7 @@ fn setup (
         Tile::BOBBER,
         PhysicsObject {
             mass: 2.0,
-            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default()
@@ -906,7 +902,7 @@ fn setup (
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X+160., FISHING_ROOM_Y+100., 901.),
                 ..default()
             },
             ..default()
@@ -924,7 +920,7 @@ fn setup (
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X-360., FISHING_ROOM_Y-100., 901.),
                 ..default()
             },
             ..default()
@@ -1178,7 +1174,7 @@ fn spawn_mark(
 }
 
 fn fishing_transition (
-    mut return_val: ResMut<PlayerReturnPos>,
+    mut return_pos: ResMut<PlayerReturnPos>,
     mut camera: Query<&mut Transform, With<Camera>>,
     mut power_bar: Query<(&mut Transform, &mut PowerBar), (With<PowerBar>, Without<Camera>)>,
     mut rod: Query<&mut Transform, (With<FishingRod>, Without<Camera>, Without<PowerBar>)>,
@@ -1187,11 +1183,10 @@ fn fishing_transition (
     let (mut power_bar_transform, mut power) = power_bar.single_mut();
     let mut rod_transform = rod.single_mut();
 
-    return_val.player_save_x = camera_transform.translation.x;
-    return_val.player_save_y = camera_transform.translation.y;
+    return_pos.position = camera_transform.translation;
 
-    camera_transform.translation.x = FISHINGROOMX;
-    camera_transform.translation.y = FISHINGROOMY;
+    camera_transform.translation.x = FISHING_ROOM_X;
+    camera_transform.translation.y = FISHING_ROOM_Y;
     //FISHINGROOMY-308
     //spawn in powerbar
     //commands.spawn
@@ -1209,12 +1204,11 @@ fn fishing_transition (
 fn overworld_transition(
     mut camera: Query<&mut Transform, With<Camera>>,
     //mut power_bar: Query<(&mut Transform, &mut Power), With<Bar>>,
-    return_val: ResMut<PlayerReturnPos>,
+    return_pos: ResMut<PlayerReturnPos>,
 ) {
     let mut ct = camera.single_mut();
     //let (mut pb, mut power) = power_bar.single_mut();
-    ct.translation.x = return_val.player_save_x;
-    ct.translation.y = return_val.player_save_y;
+    ct.translation = return_pos.position;
 
     //pb.translation.y = (POWER_BAR_Y_OFFSET);
     //power.meter = 0;
@@ -1364,7 +1358,7 @@ fn switch_bait (
         _ => &Lure::BALL
     };
     
-    *bait_physics = PhysicsObject::new(new_bait.mass, Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
+    *bait_physics = PhysicsObject::new(new_bait.mass, Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.), Vec3::ZERO, Vec3::ZERO, Forces::default());
     screen_texture.index = new_bait.texture_index;
     bait_texture.index = new_bait.texture_index;
 }
@@ -1419,7 +1413,7 @@ fn is_fish_caught (
         inventory_info.coins += fish_details.weight as u32 * 2;
 
         // Reset fish for testing
-        fish_physics.position = Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.);
+        fish_physics.position = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.);
         fish_physics.velocity = Vec3::new(0., 0., 0.);
         fish_physics.forces = Forces::default();
         fish_details.is_caught = false;
@@ -1470,7 +1464,7 @@ fn cast_line (
     if line_info.length == line_info.cast_distance {
         // Cast finished
         line_info.length = line_info.cast_distance;
-        splash_info.position = line_info.end;
+        splash_info.position = line_info.end.with_z(902.);
         *splash_visibility = Visibility::Visible;
         next_state.set(FishingState::ReelingUnhooked);
     }
@@ -1483,31 +1477,31 @@ fn cast_line (
 
 fn animate_fishing_line (
     rod: Query<&FishingRod, With<FishingRod>>,
-    mut fish: Query<(&Species, &PhysicsObject), (With<Fish>, With<PhysicsFish>, Without<MysteryFish>)>,
+    hooked_fish: Query<(&Species, &PhysicsObject), (With<Fish>, With<Hooked>)>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut bobber: Query<&PhysicsObject, With<Lure>>,
     state: Res<State<FishingState>>
 ) {
     let rod_info = rod.single();
-    //let (fish_species, fish_physics) = fish.single_mut();
     let mut line_info = line.single_mut();
-    let bobber_physics = bobber.single_mut();
 
-    for(fish_species, fish_physics) in fish.iter_mut(){
-        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
-        let fish_pos = fish_physics.position + fish_offset.extend(0.);
+    line_info.start = rod_info.tip_pos;
 
-        line_info.start = rod_info.tip_pos;
-
-        match state.get() {
-            FishingState::ReelingHooked => {
-                line_info.end = fish_pos;
-            },
-            FishingState::ReelingUnhooked => {
-                line_info.end = bobber_physics.position;
-            },
-            _ => {}
-        }
+    match state.get() {
+        FishingState::Idle => {
+            line_info.end = line_info.start;
+        },
+        FishingState::ReelingHooked => {
+            let (fish_species, fish_physics) = hooked_fish.single();
+            let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+            let fish_pos = fish_physics.position + fish_offset.extend(0.);
+            line_info.end = fish_pos;
+        },
+        FishingState::ReelingUnhooked => {
+            let bobber_physics = bobber.single_mut();
+            line_info.end = bobber_physics.position;
+        },
+        _ => {}
     }
 }
 
@@ -1549,6 +1543,7 @@ fn draw_fishing_line (
 
     let pos_delta = line_info.end - line_info.start;
     let line_length = pos_delta.with_z(0.).length();
+
     let line_pos = (line_info.start + line_info.end) / 2.;
     let line_rotation =  f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
 
@@ -1556,8 +1551,10 @@ fn draw_fishing_line (
     line_transform.translation = Vec3::new(line_pos.x, line_pos.y, line_transform.translation.z);
     line_transform.rotation = Quat::from_rotation_z(line_rotation);
 
+    let width = if line_length == 0. { 0. } else { FishingLine::WIDTH };
+
     meshes.remove(line_mesh.id());
-    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, line_length)));
+    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(width, line_length)));
 }
 
 fn animate_splash(
