@@ -58,7 +58,8 @@ pub fn move_player(
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
-    mut fish_button: Query<&mut Visibility, With<FishingButton>>
+    mut fish_button: Query<&mut Visibility, With<FishingButton>>,
+    mut next_state: ResMut<NextState<FishingLocal>>,
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
@@ -169,8 +170,18 @@ pub fn move_player(
         if tile.interactable {
             match tile {
                 &Tile::WATER => {
+                    next_state.set(FishingLocal::Pond1);
                     *fish_button_visibility = Visibility::Visible;
                 }
+                &Tile::WATER2 => {
+                    next_state.set(FishingLocal::Pond2);
+                    *fish_button_visibility = Visibility::Visible;
+                }
+                &Tile::WATEROCEAN => {
+                    next_state.set(FishingLocal::Beach);
+                    *fish_button_visibility = Visibility::Visible;
+                }
+                
                 &Tile::SHOP => {
                     *fish_button_visibility = Visibility::Hidden;
                 }

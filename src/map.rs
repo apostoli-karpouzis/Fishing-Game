@@ -86,6 +86,8 @@ impl Tile {
 
     pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
     pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
+    pub const WATER2: Tile = Tile::new("water2", true, HITBOX_FULL_TILE);
+    pub const WATEROCEAN: Tile = Tile::new("waterocean", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
     pub const SHOP: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
 }

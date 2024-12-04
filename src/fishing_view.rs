@@ -73,6 +73,13 @@ pub enum FishingState {
 #[derive(Component)]
 struct OnScreenLure;
 
+
+#[derive(Component)]
+struct PondScreen;
+
+#[derive(Component)]
+struct BeachScreen;
+
 #[derive(Component)]
 struct PowerBar {
     power: f32
@@ -248,6 +255,14 @@ pub enum ObstType{
     Fissure,
     Pad,
 }
+
+#[derive(Component, PartialEq)]
+pub enum FishLoc{
+    Pond1,
+    Pond2,
+    Ocean,
+}
+
 //FISH THING
 #[derive(Component)]
 struct FishDetails {
@@ -348,7 +363,7 @@ impl Plugin for FishingViewPlugin {
                 animate_splash.after(cast_line)
             ).run_if(in_state(CurrentInterface::Fishing))
         )
-        .add_systems(OnEnter(CurrentInterface::Fishing), fishing_transition)
+        .add_systems(OnEnter(CurrentInterface::Fishing), (fishing_transition.after(add_fish), add_fish))
         .add_systems(OnExit(CurrentInterface::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
@@ -389,7 +404,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Hidden,
+            visibility: Visibility::Visible,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
@@ -421,10 +436,10 @@ fn setup (
         BASS,
         Collision,
         MysteryFish,
+        FishLoc::Pond1,
     ));
 
 
-    /*let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
     commands.spawn((
         SpriteBundle {
             texture: cool_fish_handle.clone(),
@@ -432,7 +447,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Hidden,
+            visibility: Visibility::Visible,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.),
                 ..default()
@@ -440,8 +455,8 @@ fn setup (
             ..default()
         },
         Fish{
-            name: "Salmon",
-            id: 0,
+            name: "bass",
+            id: 2,
             is_caught: false,
             is_alive: true,
             touching_lure: false,
@@ -461,11 +476,63 @@ fn setup (
             hunger: 10.0
         },
         InPond,
-        SALMON,
+        BASS,
         Collision,
         MysteryFish,
+        FishLoc::Pond2,
     ));
-    */
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        BASS,
+        Fish{
+            name: "Bass2",
+            id: 2,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHINGROOMX as i32+100, FISHINGROOMY as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        PhysicsObject{
+            mass: 2.0,
+            position: Vec3::new(FISHINGROOMX, FISHINGROOMY + 100., 0.),
+            rotation: Vec3::ZERO,
+            velocity: Vec3::ZERO,
+            forces: Forces::default()
+        },
+        InPond,
+        Collision,
+        PhysicsFish,
+        FishLoc::Pond2,
+    ));
+
+
 
     //FISH BOX
     commands.spawn((
@@ -475,7 +542,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Hidden,
+            visibility: Visibility::Visible,
             transform: Transform {
                 translation: Vec3::new(FISHINGROOMX-40., FISHINGROOMY+40., 901.),
                 ..default()
@@ -508,9 +575,9 @@ fn setup (
         CATFISH,
         Collision,
         MysteryFish,
+        FishLoc::Pond1,
     ));
 
-    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
 
     commands.spawn((
         SpriteBundle {
@@ -558,6 +625,7 @@ fn setup (
         InPond,
         Collision,
         PhysicsFish,
+        FishLoc::Pond1,
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
@@ -608,6 +676,7 @@ fn setup (
         InPond,
         Collision,
         PhysicsFish,
+        FishLoc::Pond1,
     ));
 
     let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
@@ -624,7 +693,26 @@ fn setup (
             },
             ..default()
         },
+        PondScreen
         
+    ));
+
+    let beach_sheet_handle: Handle<Image> = asset_server.load("fishing_view/beach_view.png");
+
+
+    commands.spawn((
+        SpriteBundle {
+            texture: beach_sheet_handle.clone(),
+                        sprite: Sprite {
+                        ..default()
+                    },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.),
+                ..default()
+            },
+            ..default()
+        },
+        BeachScreen
     ));
     
     //powerbar view
@@ -914,7 +1002,29 @@ fn setup (
         PondObstruction,
         ObstType::Pad,
         InPond,
+        FishLoc::Pond1,
     ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: lily_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(128.,128.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Pad,
+        InPond,
+        FishLoc::Pond2,
+    ));
+
     commands.spawn((
         SpriteBundle {
             texture: deep_sheet_handle.clone(),
@@ -932,6 +1042,7 @@ fn setup (
         PondObstruction,
         ObstType::Fissure,
         InPond,
+        FishLoc::Pond1,
     ));
 
 }
@@ -1069,6 +1180,142 @@ fn move_fish(
     //fish_pos.translation += change_y;
     //return (self.position.0 + x, self.position.1+y)
 }
+
+//function to poplulate 
+
+fn add_fish(
+    mut commands: Commands,
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility, &FishLoc), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Bobber>)>,
+    mut backgroundDeetsPond: Query<(&mut Transform), (Without<BeachScreen>, Without<Collision>, Without<PhysicsObject>, Without<Bobber>, With<PondScreen>, Without<MysteryFish>, Without<InPond>)>,
+    mut backgroundDeetsBeach: Query<(&mut Transform), (With<BeachScreen>, Without<Collision>, Without<PhysicsObject>, Without<Bobber>, Without<PondScreen>, Without<MysteryFish>, Without<InPond>)>,
+    mut fishes_phys: Query<(Entity, &mut Transform, &FishLoc), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Bobber>, Without<MysteryFish>, Without<PondScreen>, Without<BeachScreen>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType, &FishLoc), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>, Without<MysteryFish>, Without<PhysicsObject>, Without<Bobber>, Without<PondScreen>, Without<BeachScreen>)>,
+    mut bobber: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Bobber>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    state: Res<State<FishingLocal>>,  
+){
+    let mut beachScr = backgroundDeetsBeach.single_mut(); 
+    let mut pondScr = backgroundDeetsPond.single_mut(); 
+
+    if state.eq(&FishingLocal::Pond1){
+        for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
+            if *loc == FishLoc::Pond1{
+                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                transform.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+        for(mut obstPos, obstType, obstLoc) in &mut obst_details{
+            if *obstLoc == FishLoc::Pond1{
+                if *obstType == ObstType::Pad{
+                    obstPos.translation = Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.);
+                }
+                else if *obstType == ObstType::Fissure{
+                    obstPos.translation = Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.);
+                }
+            }
+            else{
+                obstPos.translation = Vec3::new(8000., 8000., 901.);
+            }
+        }
+        for(mut ent, mut pos, location) in &mut fishes_phys{
+            if *location == FishLoc::Pond1{
+                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                pos.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+        //POND BEACH
+        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
+        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
+
+    }
+    if state.eq(&FishingLocal::Pond2){
+        for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
+            if *loc == FishLoc::Pond2{
+                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                transform.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+        for(mut obstPos, obstType, obstLoc) in &mut obst_details{
+            if *obstLoc == FishLoc::Pond2{
+                if *obstType == ObstType::Pad{
+                    obstPos.translation = Vec3::new(FISHINGROOMX-160., FISHINGROOMY+300., 901.);
+                }
+                else if *obstType == ObstType::Fissure{
+                    obstPos.translation = Vec3::new(FISHINGROOMX+260., FISHINGROOMY, 901.);
+                }
+            }
+            else{
+                obstPos.translation = Vec3::new(8000., 8000., 901.);
+            }
+        }
+        for(mut ent, mut pos, location) in &mut fishes_phys{
+            if *location == FishLoc::Pond2{
+                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                pos.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+
+        //POND BEACH
+        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
+        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
+        
+    }
+    if state.eq(&FishingLocal::Beach){
+        for(mut fish, species, mut transform , mut visibility, loc) in &mut fish_details{
+            if *loc == FishLoc::Ocean{
+                transform.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                transform.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+        for(mut obstPos, obstType, obstLoc) in &mut obst_details{
+            if *obstLoc == FishLoc::Ocean{
+                if *obstType == ObstType::Pad{
+                    obstPos.translation = Vec3::new(FISHINGROOMX+160., FISHINGROOMY+100., 901.);
+                }
+                else if *obstType == ObstType::Fissure{
+                    obstPos.translation = Vec3::new(FISHINGROOMX-360., FISHINGROOMY-100., 901.);
+                }
+            }
+            else{
+                obstPos.translation = Vec3::new(8000., 8000., 901.);
+            }
+        }
+        for(mut ent, mut pos, location) in &mut fishes_phys{
+            if *location == FishLoc::Ocean{
+                pos.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 901.);
+            }
+            else{
+                pos.translation = Vec3::new(-8000., -8000., 901.);
+            }
+        }
+        
+        //POND BEACH
+        pondScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 100.);
+        beachScr.translation = Vec3::new(FISHINGROOMX, FISHINGROOMY, 900.);
+    }
+    
+    //check what fishing state youre going into, check if pond one move pond 1 fish in, move pond 2 fish out
+
+
+
+
+
+}
+
+
+
+
+
+
 
 fn fish_area_bobber(
     mut commands: Commands,
