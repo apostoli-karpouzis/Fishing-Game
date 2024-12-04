@@ -1,5 +1,9 @@
 use bevy::{prelude::*, utils::HashMap};
 use crate::weather::*;
+use crate::gameday::*;
+use crate::fishing_view::*;
+use crate::species::Species;
+
 
 #[derive(Component)]
 pub struct Fish {
@@ -48,7 +52,8 @@ impl Fish {
     }
     
     //call when fish die
-    pub fn die(&self) {
+    pub fn die(&mut self) {
+        self.is_alive = false;
         println!("fish {} is swimming to fish heaven", self.id);
     }
     //increase age and decrease hunger when caught
@@ -62,9 +67,23 @@ impl Fish {
         }
     }
     //call every in game hour/day whatever
-    pub fn update_fish_traits(&mut self) {
+    pub fn update_fish_traits(&mut self, weather: bool, time: bool) {
         self.age += 1.0;           //age increase hourly
-        self.hunger -= 1.0;        //hunger increases hourly
+        if weather == true && time == true {
+            self.hunger += 1.0;        //hunger increases hourly
+        }
+        else if weather == true {
+            self.hunger += 0.4;
+        }
+        else if time == true {
+            self.hunger += 0.5;
+        }
+        else {
+            self.hunger += 0.2;
+        }
+        if self.age >= 100.0 {
+            self.die();
+        }
     }
     //calc fish anger
     pub fn fish_anger(&mut self) -> f32 {
@@ -89,8 +108,35 @@ impl Pond {
     //age fish consistently
     pub fn age_all_fish(&mut self) {
         for fish in self.fish_population.values_mut() {
-            fish.update_fish_traits();
+            //fish.update_fish_traits();
         }
     }
 }
 
+pub fn fish_update(
+        mut commands: Commands,
+        mut aging_fish: Query<(&mut Fish, Entity, &Species), (With<Fish>, With<InPond>)>,
+        time: Res<GameDayTimer>,
+        weather: Res<WeatherState>
+    )
+    {
+        if time.timer.just_finished() {
+            for (mut fish, entity_id, species) in aging_fish.iter_mut(){
+                let mut w: bool = false;
+                let mut t: bool = false;
+
+                if species.weather == weather.current_weather {
+                    w = true;
+                }
+                if species.time_of_day.0 <= time.hour as usize && species.time_of_day.1 >= time.hour as usize {
+                    t = true;
+                }
+                    
+                fish.update_fish_traits(w, t);
+                println!("Age: {}", fish.age);
+                if fish.is_alive == false {
+                    commands.entity(entity_id).despawn();
+                }
+            }
+        }
+    }
