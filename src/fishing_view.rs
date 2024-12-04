@@ -1052,8 +1052,8 @@ fn setup (
 
 
 fn move_fish(
-    mut fish_details: Query<(&mut Fish, &mut Transform), (With<FishLoc>, With<InPond>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<PondObstruction>)>,
-    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<FishLoc>, With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
+    mut fish_details: Query<(&mut Fish, &mut Transform, &Species), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<PondObstruction>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
     //mut fish_direction: ResMut<FishBoundsDir>
@@ -1063,7 +1063,7 @@ fn move_fish(
     config.timer.tick(time.delta());
     //let mut obst_details = obst_details.single_mut();
 
-    for (mut fish_details, mut fish_pos) in fish_details.iter_mut() {
+    for (mut fish_details, mut fish_pos, fish_species) in fish_details.iter_mut() {
         //let mut rng = rand::thread_rng();             
         
         //move towards the obsticle on the x bounds
@@ -1074,52 +1074,53 @@ fn move_fish(
 
             let move_type: i32 = rng.gen_range(0..9); 
             let dir: i32 = obst_rng.gen_range(0..9);
+            let mut move_skew: i32 = 0;
             //finding where to go in relation to the 
             //position in relation to x row
             for (obst_details, obstical_type) in obst_details.iter_mut(){
                 //go back and account for margin of error done
-                
-                if *obstical_type == ObstType::Fissure{
-                    if fish_details.name == "catfish"{
-                        if obst_details.translation.x >= fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                
-                        }
-                        else if obst_details.translation.x < fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                        }
-                
-                        //move towards the obsticle on the right bounds
-                        if obst_details.translation.y >= fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
-                
-                        }
-                        else if obst_details.translation.y < fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
-                        }
+                if *obstical_type == fish_species.obj_pref.0 {
+                    //if fish_details.name == "catfish"{
+                    move_skew = fish_species.obj_pref.1;
+                    if obst_details.translation.x >= fish_pos.translation.x{
+                        fish_details.change_x = Vec3::new(0.5, 0., 0.);
+            
                     }
-                }
-                else if *obstical_type == ObstType::Pad{
-                    if fish_details.name == "bass"{
-                        if obst_details.translation.x >= fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                
-                        }
-                        else if obst_details.translation.x < fish_pos.translation.x{
-                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                        }
-                
-                        //move towards the obsticle on the right bounds
-                        if obst_details.translation.y >= fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
-                
-                        }
-                        else if obst_details.translation.y < fish_pos.translation.y{
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
-                        }
+                    else if obst_details.translation.x < fish_pos.translation.x{
+                        fish_details.change_x = Vec3::new(-0.5, 0., 0.);
                     }
+            
+                    //move towards the obsticle on the right bounds
+                    if obst_details.translation.y >= fish_pos.translation.y{
+                        fish_details.change_y = Vec3::new(0., 0.5, 0.);
+            
+                    }
+                    else if obst_details.translation.y < fish_pos.translation.y{
+                        fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                    }
+                    //}
                 }
-
+                // else if *obstical_type == ObstType::Pad{
+                //     if fish_details.name == "bass"{
+                //         if obst_details.translation.x >= fish_pos.translation.x{
+                //             fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                
+                //         }
+                //         else if obst_details.translation.x < fish_pos.translation.x{
+                //             fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                //         }
+                
+                //         //move towards the obsticle on the right bounds
+                //         if obst_details.translation.y >= fish_pos.translation.y{
+                //             fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                
+                //         }
+                //         else if obst_details.translation.y < fish_pos.translation.y{
+                //             fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                //         }
+                //     }
+                // }
+                //for each collision object add a            
             }
             
 
@@ -1127,8 +1128,8 @@ fn move_fish(
 
             
 
-            println!("numer is {} {:?} {:?}", dir, fish_details.id, fish_details.name);
-            if move_type >= 4{
+            //println!("numer is {} {:?}", dir, fish_details.name);
+            if move_type >= 4+move_skew{
                 if dir == 0 {
                     fish_details.change_x = Vec3::new(0., 0., 0.);
                     fish_details.change_y = Vec3::new(0., 0.5, 0.);
