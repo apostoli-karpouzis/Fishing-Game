@@ -108,7 +108,7 @@ fn setup(
         Animation::new()
     ));
 
-    commands.insert_resource(PlayerReturnPos {player_save_x: 0., player_save_y: 0.});
+    commands.insert_resource(PlayerReturnPos::default());
 
     
     //GRASS CODE V

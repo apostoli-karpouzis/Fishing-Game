@@ -105,7 +105,7 @@ pub const BASS: Species = Species::new(
     (0,22),
     Weather::Sunny, 
     (0,20),
-    (FISHINGROOMX as i32 + 90, FISHINGROOMY as i32 + 50),
+    (FISHING_ROOM_X as i32 + 90, FISHING_ROOM_Y as i32 + 50),
     (10,10),
     0.3,
 );
@@ -121,7 +121,7 @@ pub const CATFISH: Species = Species::new(
     (0,18),
     Weather::Rainy, 
     (20,40),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5, 4),
     0.2,
 );
@@ -137,7 +137,7 @@ pub const TUNA: Species = Species::new(
     (1, 7),
     Weather::Thunderstorm,
     (5, 20),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.5,
 );
@@ -153,7 +153,7 @@ pub const MAHIMAHI: Species = Species::new(
     (9, 18),
     Weather::Thunderstorm,
     (25, 200),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.4,
 );
@@ -170,7 +170,7 @@ pub const SWORDFISH: Species = Species::new(
     //is sunny just clear at night?
     Weather::Sunny,
     (100, 500),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.4,
 );
@@ -188,7 +188,7 @@ pub const REDHANDFISH: Species = Species::new(
     //is sunny just clear at night?
     Weather::Sunny,
     (499, 500),
-    (FISHINGROOMX as i32, FISHINGROOMY as i32 + 120),
+    (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.1,
 );
