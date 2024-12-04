@@ -1177,22 +1177,22 @@ fn move_fish(
 
         let holdx: Vec3 = fish_pos.translation + fish_details.change_x;
         if (holdx.x) >= (-640. + 160.) && (holdx.x) <= (431. - 160.) {
-            println!("{:?}", fish_pos.translation);
+            //println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_x;
         }
         else{
-            println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
-            println!("holdx = {:?}", holdx);
+            // println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            // println!("holdx = {:?}", holdx);
         }
         let holdy: Vec3 = fish_pos.translation + fish_details.change_y;
         if (holdy.y) >= (-719.5-224. + 90.) && (holdy.y) <= (-719.5 + 360. - 90.) {
-            println!("{:?}", fish_pos.translation);
+            //println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_y;
         }
         else{
             
-            println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
-            println!("holdx = {:?}", holdy);
+            // println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            // println!("holdx = {:?}", holdy);
         }
         
     }
@@ -1798,6 +1798,7 @@ fn is_fish_caught (
         fish_physics.velocity = Vec3::new(0., 0., 0.);
         fish_physics.forces = Forces::default();
         fish_details.is_caught = false;
+        fish_details.hooked_fish();
         commands.entity(entity_id).remove::<Hooked>();
 
         next_state.set(FishingState::Idle);
