@@ -2,7 +2,6 @@ use crate::fishing_zone::*;
 use crate::player::*;
 use crate::window::*;
 use bevy::prelude::*;
-use bevy::sprite::*;
 
 pub const TILE_SIZE: f32 = 16.;
 
@@ -41,6 +40,10 @@ impl Map {
             width,
             height,
         }
+    }
+
+    pub const fn get_area_center(x: i32, y: i32) -> Vec2 {
+        Vec2::new((x * WIN_W as i32) as f32, (y * WIN_H as i32) as f32)
     }
 }
 

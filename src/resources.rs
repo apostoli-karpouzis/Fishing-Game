@@ -16,8 +16,7 @@ impl AnimationTimer {
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationFrameCount(pub usize);
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct PlayerReturnPos {
-    pub player_save_x: f32,
-    pub player_save_y: f32, 
+    pub position: Vec3
 }

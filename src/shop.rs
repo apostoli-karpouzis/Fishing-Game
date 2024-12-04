@@ -4,9 +4,11 @@ use crate::interface::CurrentInterface;
 use crate::inventory::*;
 use crate::map::*;
 use crate::player::*;
+use crate::resources::PlayerReturnPos;
 
-
-const OFFSET: f32 = 1000.;
+pub const SHOP_CENTER: Vec2 = Map::get_area_center(1, -1);
+pub const SHOP_X: f32 = SHOP_CENTER.x;
+pub const SHOP_Y: f32 = SHOP_CENTER.y;
 
 #[derive(Component)]
 struct ShopEntrance;
@@ -45,15 +47,11 @@ struct SelectedShopItem {
 #[derive(Component)]
 struct SoldSprite;
 
-#[derive(Resource)]
-struct OriginalCameraPosition(Vec3);
-
 pub struct ShopPlugin;
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_shop, setup_player_inventory))
         .insert_resource(SelectedShopItem {index: 0})
-        .insert_resource(OriginalCameraPosition(Vec3::ZERO))
         .add_systems(Update, check_shop_entrance.run_if(in_state(CurrentInterface::Overworld)))
         .add_systems(Update,
             (
@@ -119,7 +117,7 @@ fn spawn_shop(
     ));
     commands.spawn(SpriteBundle{
         texture: asset_server.load("shop/inventory.png"),
-        transform: Transform::from_xyz(3000., 3000. + OFFSET, 1.),
+        transform: Transform::from_xyz(SHOP_X, SHOP_Y, 1.),
        ..default()
     });
     commands.spawn((
@@ -181,7 +179,7 @@ fn spawn_shop(
     let hover_entity = commands.spawn(SpriteBundle {
         texture: hover_texture,
         transform: Transform {
-            translation: Vec3::new(2620., 2860. + OFFSET, 3.0), 
+            translation: Vec3::new(SHOP_X - 380., SHOP_Y - 140., 3.0), 
             ..Default::default()
         },
         ..Default::default()
@@ -207,12 +205,12 @@ fn display_shop_items(
 
     //slot positions
     let slot_positions = [
-        Vec3::new(2620., 2820. + OFFSET, 2.),
-        Vec3::new(3000., 2820. + OFFSET, 2.),
-        Vec3::new(3400., 2820. + OFFSET, 2.),
-        Vec3::new(2620., 3100. + OFFSET, 2.),
-        Vec3::new(3000., 3100. + OFFSET, 2.),
-        Vec3::new(3400., 3100. + OFFSET, 2.),
+        Vec3::new(SHOP_X - 380., SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X, SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X + 400., SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X - 380., SHOP_Y + 100., 2.),
+        Vec3::new(SHOP_X, SHOP_Y + 100., 2.),
+        Vec3::new(SHOP_X + 400., SHOP_Y + 100., 2.),
     ];
 
 
@@ -302,7 +300,7 @@ fn check_shop_entrance(
     entrance_query: Query<(&Transform, &Tile), (With<ShopEntrance>, Without<Player>, Without<Camera>)>,
     time_of_day: Res<GameDayTimer>,
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>, Without<ShopEntrance>)> ,
-    mut original_camera_pos: ResMut<OriginalCameraPosition>,
+    mut original_camera_pos: ResMut<PlayerReturnPos>,
     mut next_interface: ResMut<NextState<CurrentInterface>>
 ){
     let (mut pt, mut pd, mut pl, _pa, mut pi ) = player_query.single_mut();
@@ -317,9 +315,8 @@ fn check_shop_entrance(
         if *pd == PlayerDirection::Back 
         && time_of_day.hour < 21 {
             let mut camera = camera_query.single_mut();
-            original_camera_pos.0 = camera.translation;
-            println!("{}", original_camera_pos.0);
-            let new_position = Vec3::new(3000.0, 3000.0 + OFFSET, camera.translation.z);
+            original_camera_pos.position = camera.translation;
+            let new_position = Vec3::new(SHOP_X, SHOP_Y, camera.translation.z);
             camera.translation = new_position;
             next_interface.set(CurrentInterface::Shop);
             println!("Shop open");
@@ -409,17 +406,17 @@ fn update_selected_item(
 
     // Define slot positions
     let slot_positions = [
-        Vec3::new(2620., 2820. + OFFSET, 2.),
-        Vec3::new(3000., 2820. + OFFSET, 2.),
-        Vec3::new(3400., 2820. + OFFSET, 2.),
-        Vec3::new(2620., 3100. + OFFSET, 2.),
-        Vec3::new(3000., 3100. + OFFSET, 2.),
-        Vec3::new(3400., 3100. + OFFSET, 2.),
+        Vec3::new(SHOP_X - 380., SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X, SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X + 400., SHOP_Y - 180., 2.),
+        Vec3::new(SHOP_X - 380., SHOP_Y + 100., 2.),
+        Vec3::new(SHOP_X, SHOP_Y + 100., 2.),
+        Vec3::new(SHOP_X + 400., SHOP_Y + 100., 2.),
     ];
 
     if let Some(&position) = slot_positions.get(selected_item.index) {
         if let Ok(mut hover_transform) = hover_query.get_mut(hover_entity.0) {
-            let adjusted_x = if position == Vec3::new(3000., 2820.+ OFFSET, 2.) || position == Vec3::new(3000., 3100. + OFFSET, 2.) {
+            let adjusted_x = if position == Vec3::new(SHOP_X, SHOP_Y - 180., 2.) || position == Vec3::new(SHOP_X, SHOP_Y + 100., 2.) {
                 position.x + 2.0
             } else {
                 position.x - 10.0
@@ -434,7 +431,7 @@ fn exit_shop (
     input: Res<ButtonInput<KeyCode>>,
     mut next_interface: ResMut<NextState<CurrentInterface>>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
-    original_camera_pos: Res<OriginalCameraPosition>,
+    original_camera_pos: Res<PlayerReturnPos>,
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Location, &Animation, &mut InputStack), (With<Player>, Without<Camera>)>
 ){
     if input.just_pressed(KeyCode::Escape) {
@@ -442,7 +439,7 @@ fn exit_shop (
         let (mut pt,mut pd, _pl, _pa, _pi) = player_query.single_mut();
         pt.translation = Vec3::new(1024., -180., 1.);
         *pd = PlayerDirection::Front;
-        camera.translation = original_camera_pos.0;
+        camera.translation = original_camera_pos.position;
         next_interface.set(CurrentInterface::Overworld);
         println!("Shop closed");
     }
