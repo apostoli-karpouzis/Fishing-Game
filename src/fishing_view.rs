@@ -231,7 +231,7 @@ struct Splash {
 }
 
 #[derive(Component)]
-struct InPond;
+pub struct InPond;
 
 #[derive(Component)]
 pub struct IsBass;
@@ -352,7 +352,8 @@ impl Plugin for FishingViewPlugin {
         .add_systems(OnExit(CurrentInterface::Fishing), overworld_transition)
         .add_systems(OnEnter(FishingState::Casting), begin_cast)
         .add_systems(OnTransition { exited: FishingState::ReelingUnhooked, entered: FishingState::Idle }, reset_interface)
-        .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface);
+        .add_systems(OnTransition { exited: FishingState::ReelingHooked, entered: FishingState::Idle }, reset_interface)
+        .add_systems(Update, fish_update.run_if(in_state(CurrentInterface::Fishing)));
     }
 }
 
