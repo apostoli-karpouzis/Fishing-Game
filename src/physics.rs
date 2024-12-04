@@ -24,12 +24,14 @@ pub struct PhysicsObject {
     pub rotation: Vec3,
     pub velocity: Vec3,
     pub forces: Forces,
+    pub cd: (f32, f32),
+    pub sa: (f32, f32),
     pub waves: Entity
 }
 
 impl PhysicsObject {
-    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces, waves: Entity) -> Self {
-        Self { mass, position, rotation, velocity, forces, waves }
+    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces, cd: (f32, f32), sa: (f32, f32), waves: Entity) -> Self {
+        Self { mass, position, rotation, velocity, forces, cd, sa, waves }
     }
 }
 
@@ -151,29 +153,26 @@ pub fn is_line_broken (
 }
 
 pub fn calculate_water_force (
-    mut fishes: Query<(&Species, &Fish, &mut PhysicsObject), With<Fish>>,
+    mut physics_objects: Query<&mut PhysicsObject>,
     player: Query<&Location, With<Player>>
 ) {
     let player_location = player.single();
     let water_current = player_location.get_current_area().zone.current;
 
-    // Currently only works with fish
-    for (fish_species, fish_details, mut fish_physics) in fishes.iter_mut() {
-        let relative_velocity = fish_physics.velocity - water_current;
+    for mut physics_object in physics_objects.iter_mut() {
+        let relative_velocity = physics_object.velocity - water_current;
 
-        if relative_velocity == Vec3::ZERO {
-            fish_physics.forces.water = Vec3::ZERO;
+        if physics_object.position.z > 0. || relative_velocity == Vec3::ZERO {
+            physics_object.forces.water = Vec3::ZERO;
             continue;
         }
 
-        let angle = Vec2::from_angle(fish_physics.rotation.z).extend(0.).angle_between(water_current);
+        let angle = Vec2::from_angle(physics_object.rotation.z).extend(0.).angle_between(water_current);
         let proportion = (PI / 2. - f32::abs(angle - PI / 2.)) / (PI / 2.);
-        let sa_min = fish_details.width * fish_details.width;
-        let sa_max = fish_details.width * fish_details.length;
-        let sa = sa_min + (sa_max - sa_min) * proportion;
-        let cd = fish_species.cd.0 + (fish_species.cd.1 - fish_species.cd.0) * proportion;
+        let sa = physics_object.sa.0 + (physics_object.sa.1 - physics_object.sa.0) * proportion;
+        let cd = physics_object.cd.0 + (physics_object.cd.1 - physics_object.cd.0) * proportion;
     
-        fish_physics.forces.water = P * cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize();
+        physics_object.forces.water = P * cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize();
     }
 }
 
@@ -182,6 +181,10 @@ pub fn calculate_player_force (
     fishing_rod: Query<&FishingRod, With<FishingRod>>,
     mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>,
 ) {
+    if hooked_object.is_empty() {
+        return;
+    }
+
     let rod_info = fishing_rod.single();
     let mut object_physics = hooked_object.single_mut();
 

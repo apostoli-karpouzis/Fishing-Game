@@ -71,13 +71,11 @@ fn setup_player_inventory(mut commands: Commands) {
             coins: 1000,
             items: Vec::from([
                 ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
-                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD),
                 ShopItem::new("Bobber", 0, true, 0, ItemType::LURE),
                 ShopItem::new("Monofilament Fishing Line", 0, true, 0, ItemType::LINE)
                 ]),
             rods: Vec::from([
                 ShopItem::new("Default Rod", 0, true, 0, ItemType::ROD),
-                ShopItem::new("Surf Rod", 0, true, 0, ItemType::ROD)
                 ]),
             lures: Vec::from(
                 [ShopItem::new("Bobber", 0, true, 0, ItemType::LURE)
@@ -140,7 +138,7 @@ fn spawn_shop(
     );
     commands.spawn(
         ShopItem{
-            name: "Surf Fishing Rod",
+            name: "Surf Rod",
             is_bought: false,
             price: 150,
             index: 3,
@@ -225,7 +223,7 @@ fn display_shop_items(
             let texture = match item.name {
                 "Swim Bait" => swim_bait_texture.clone(),
                 "Frog Bait" => frog_bait_texture.clone(),
-                "Surf Fishing Rod" => surf_rod_texture.clone(),
+                "Surf Rod" => surf_rod_texture.clone(),
                 "FluoroCarbon Fishing Line" => monofil_texture.clone(),
                 "Braided Fishing Line" => braided_line_texture.clone(),
                 "Polarized Sun Glasses" => glasses_texture.clone(),
