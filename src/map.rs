@@ -93,6 +93,7 @@ impl Tile {
     pub const WATEROCEAN: Tile = Tile::new("waterocean", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
     pub const SHOP: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
+    pub const GOLDLINE: Tile = Tile::new("goldline", true, Vec2::new(75.,75.));
 }
 
 #[derive(Clone)]
