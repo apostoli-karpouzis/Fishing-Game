@@ -401,4 +401,5 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
     spawn_money_display(&mut commands, &asset_server);
     spawn_clock_display(&mut commands, &asset_server);
     spawn_weather_display(&mut commands, &asset_server);
+    spawn_hint(&mut commands, &asset_server);
 }
