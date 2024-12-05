@@ -1020,7 +1020,8 @@ fn setup (
         },
         Collision,
         AnimationFrameCount(lure_layout_len), //number of different frames that we have
-        Lure::default()
+        Lure::default(),
+        AnimationTimer::new(0.2),
         
     ));
 
@@ -1491,7 +1492,7 @@ fn fishPopulation(
 fn fish_area_lure(
     mut commands: Commands,
     mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
-    mut lure: Query<(&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    mut lure: Query<(&Transform, &mut Sprite, Entity, &PhysicsObject, &mut Visibility, &mut AnimationTimer, &TextureAtlas), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
     mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Lure>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
     mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Lure>, Without<PhysicsFish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Lure>)>,
@@ -1506,7 +1507,17 @@ fn fish_area_lure(
     //let (bob, tile) = lure.single_mut();
     //let (bob, tile, mut lure_vis) = lure.single_mut();
     //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
-    let (bob, tile,  lure_entity_id, lure_physics, mut lure_vis) = lure.single_mut();
+    let (bob, mut sprite_color,  lure_entity_id, lure_physics, mut lure_vis, mut lure_timer, texture) = lure.single_mut();
+
+    if sprite_color.color.alpha() > 0.1 && texture.index == 2 {
+        println!("next new alpha");
+        lure_timer.tick(time.delta());
+        if lure_timer.just_finished() {
+            let a = sprite_color.color.alpha();
+            sprite_color.color.set_alpha(a - 0.1);
+        }
+    }
+
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
         let lure_position = bob.translation;
@@ -1894,12 +1905,14 @@ fn animate_fishing_line (
     hooked_fish: Query<(&Species, &PhysicsObject), (With<Fish>, With<Hooked>)>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut lure: Query<&PhysicsObject, With<Lure>>,
-    state: Res<State<FishingState>>
+    state: Res<State<FishingState>>,
+    time: Res<Time>,
 ) {
     let rod_info = rod.single();
     let mut line_info = line.single_mut();
 
     line_info.start = rod_info.tip_pos;
+
 
     if !hooked_fish.is_empty() {
         // Reeling hooked
@@ -1921,13 +1934,15 @@ fn reset_interface (
     mut power_bar: Query<&mut PowerBar>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut splash: Query<&mut TextureAtlas, With<Splash>>,
-    mut lure: Query<(&mut PhysicsObject, &mut Visibility), With<Lure>>
+    mut lure: Query<(&mut PhysicsObject, &mut Visibility, &mut Sprite), With<Lure>>
 ) {
     let mut power_bar_info = power_bar.single_mut();
     let mut line_info = line.single_mut();
     let mut splash_texture = splash.single_mut();
-    let (mut lure_physics, mut lure_visibility) = lure.single_mut();
-    
+    let (mut lure_physics, mut lure_visibility, mut lure_sprite) = lure.single_mut();
+
+
+    lure_sprite.color.set_alpha(1.);
     line_info.length = 0.;
     line_info.start = Vec3::ZERO;
     line_info.end = Vec3::ZERO;
