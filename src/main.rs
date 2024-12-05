@@ -347,7 +347,28 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
             x: 0,
             y: 0
         },
+        CanPickUp{
+            isitem: false,
+        },
         Animation::new()
+    ));
+
+    let gold_line_sheet_handle: Handle<Image> = asset_server.load("lines/goldenline.png");
+    commands.spawn((
+        SpriteBundle{
+            texture: gold_line_sheet_handle.clone(),
+            sprite: Sprite{
+                custom_size: Some(Vec2::new(100., 100.)),
+                ..default()
+            }, transform: Transform{
+                translation: Vec3::new(200., 200., 902.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::GOLDLINE,
+        Collision,
+        Forageable,
     ));
     
     commands.spawn((

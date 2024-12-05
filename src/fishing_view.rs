@@ -72,6 +72,7 @@ lazy_static! {
         map.insert("FluoroCarbon Fishing Line", &FishingLineType::FLUOROCARBON);
         map.insert("Braided Fishing Line", &FishingLineType::BRAIDED);
         map.insert("Monofilament Fishing Line", &FishingLineType::MONOFILILMENT);
+        map.insert("Golden Fishing Line", &FishingLineType::GOLDEN);
         map
     };
 }
@@ -241,6 +242,7 @@ impl FishingLineType {
     pub const FLUOROCARBON: FishingLineType = FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
     pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
     pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
+    pub const GOLDEN: FishingLineType = FishingLineType::new(10000., Color::srgb(0.88, 0.77, 0.25));
 }
 
 #[derive(Component, Default)]

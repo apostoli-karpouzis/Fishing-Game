@@ -33,6 +33,14 @@ pub enum PlayerDirection {
     Right,
 }
 
+#[derive(Component)]
+pub struct Forageable;
+
+#[derive(Default, Component)]
+pub struct CanPickUp {
+    pub isitem: bool,
+}
+
 #[derive(Default, Component)]
 pub struct InputStack {
     stack: Vec<KeyCode>,
@@ -58,14 +66,14 @@ pub fn move_player(
     state: Res<State<MapState>>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
+    mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack, &mut CanPickUp), With<Player>>,
     inventory: Query<&PlayerInventory>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
     mut fish_button: Query<&mut Visibility, With<FishingButton>>,
     mut hint_display: Query<&mut Visibility, (With<HintDisplay>, Without<FishingButton>)>,
     mut next_fishing_area: ResMut<NextState<FishingLocal>>
 ) {
-    let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
+    let (mut pt, mut direction, location, animation, mut input_stack, mut CanPickUp) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
     let mut hint_visibility = hint_display.single_mut();
 
@@ -168,24 +176,32 @@ pub fn move_player(
             || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
             || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
         {
+            CanPickUp.isitem = false;
             continue;
         }
         
         // Collision detected
         if tile.interactable {
             match tile {
+                &Tile::GOLDLINE => {
+                    CanPickUp.isitem = true;
+                    *fish_button_visibility = Visibility::Visible;
+                }
                 &Tile::WATER => {
+                    CanPickUp.isitem = false;
                     next_fishing_area.set(FishingLocal::Pond1);
                     *fish_button_visibility = Visibility::Visible;
                     *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATER2 => {
+                    CanPickUp.isitem = false;
                     next_fishing_area.set(FishingLocal::Pond2);
                     *fish_button_visibility = Visibility::Visible;
                     *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATEROCEAN => {
                     // Requires surf rod
+                    CanPickUp.isitem = false;
                     let inv = inventory.single();
 
                     for rod in inv.rods.iter() {
@@ -200,6 +216,7 @@ pub fn move_player(
                     *hint_visibility = Visibility::Visible;
                 }
                 &Tile::SHOP => {
+                    CanPickUp.isitem = false;
                     *fish_button_visibility = Visibility::Hidden;
                     *hint_visibility = Visibility::Hidden;
                 }
