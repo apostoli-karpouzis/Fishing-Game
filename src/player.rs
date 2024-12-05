@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crate::hud::HintDisplay;
+use crate::inventory::PlayerInventory;
 use crate::map::*;
 use crate::button::*;
 use crate::resources::*;
@@ -57,12 +59,15 @@ pub fn move_player(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
     mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
+    inventory: Query<&PlayerInventory>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
     mut fish_button: Query<&mut Visibility, With<FishingButton>>,
-    mut next_state: ResMut<NextState<FishingLocal>>,
+    mut hint_display: Query<&mut Visibility, (With<HintDisplay>, Without<FishingButton>)>,
+    mut next_fishing_area: ResMut<NextState<FishingLocal>>
 ) {
     let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
+    let mut hint_visibility = hint_display.single_mut();
 
     // Map transition
     if state.eq(&MapState::MapTransition) {
@@ -170,24 +175,37 @@ pub fn move_player(
         if tile.interactable {
             match tile {
                 &Tile::WATER => {
-                    next_state.set(FishingLocal::Pond1);
+                    next_fishing_area.set(FishingLocal::Pond1);
                     *fish_button_visibility = Visibility::Visible;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATER2 => {
-                    next_state.set(FishingLocal::Pond2);
+                    next_fishing_area.set(FishingLocal::Pond2);
                     *fish_button_visibility = Visibility::Visible;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATEROCEAN => {
-                    next_state.set(FishingLocal::Beach);
-                    *fish_button_visibility = Visibility::Visible;
+                    // Requires surf rod
+                    let inv = inventory.single();
+
+                    for rod in inv.rods.iter() {
+                        if rod.name.eq("Surf Rod") {
+                            next_fishing_area.set(FishingLocal::Beach);
+                            *fish_button_visibility = Visibility::Visible;
+                            *hint_visibility = Visibility::Hidden;
+                            return;
+                        }
+                    }
+
+                    *hint_visibility = Visibility::Visible;
                 }
-                
                 &Tile::SHOP => {
                     *fish_button_visibility = Visibility::Hidden;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 _ => {
-
                     *fish_button_visibility = Visibility::Hidden;
+                    *hint_visibility = Visibility::Hidden;
                 }
             }
         }
@@ -197,6 +215,7 @@ pub fn move_player(
 
     // No collision
     *fish_button_visibility = Visibility::Hidden;
+    *hint_visibility = Visibility::Hidden;
     pt.translation = new_pos;
 }
 
@@ -210,7 +229,7 @@ pub fn animate_player(
         &AnimationFrameCount,
         &PlayerDirection,
         &InputStack
-    )>,
+    )>
 ) {
     let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction, input_stack) = player.single_mut();
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));

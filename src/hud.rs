@@ -13,6 +13,9 @@ pub struct ClockDisplay;
 #[derive(Component)]
 pub struct WeatherDisplay;
 
+#[derive(Component)]
+pub struct HintDisplay;
+
 pub fn spawn_money_display(commands: &mut Commands, asset_server: &Res<AssetServer>) {
     commands.spawn((
         TextBundle::from_section(
@@ -70,6 +73,30 @@ pub fn spawn_weather_display(commands: &mut Commands, asset_server: &Res<AssetSe
             ..default()
         }),
         WeatherDisplay,
+    ));
+}
+
+pub fn spawn_hint(commands: &mut Commands, asset_server: &Res<AssetServer>) {
+    let mut text =         TextBundle::from_section(
+        "Ocean fishing requires the surf rod",
+        TextStyle {
+            font: asset_server.load("fonts/pixel.ttf"),
+            font_size: 40.0,
+            color: Color::srgb(0.0, 0.0, 0.0),
+        },
+    )
+    .with_style(Style {
+        position_type: PositionType::Absolute,
+        bottom: Val::Px(20.0),
+        left: Val::Px(30.0),
+        ..default()
+    });
+
+    text.visibility = Visibility::Hidden;
+
+    commands.spawn((
+        text,
+        HintDisplay,
     ));
 }
 
