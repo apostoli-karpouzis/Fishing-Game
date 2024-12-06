@@ -33,7 +33,7 @@ pub const PARTICLECOUNT: usize = 10;
 
 const CATCH_MARGIN: f32 = 30.;
 
-const DEPTH_DECAY: f32 = 50.;
+const DEPTH_DECAY: f32 = 40.;
 
 pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -2);
 pub const FISHING_ROOM_X: f32 = FISHING_ROOM_CENTER.x;
@@ -1502,11 +1502,11 @@ fn fish_area_lure(
     //let (bob, tile) = lure.single_mut();
     //let (bob, tile, mut lure_vis) = lure.single_mut();
     //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
-    let (bob,  lure_entity_id, lure_physics, mut lure_vis) = lure.single_mut();
+    let (lure_transform,  lure_entity_id, lure_physics, mut lure_vis) = lure.single_mut();
 
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
-        let lure_position = bob.translation;
+        let lure_position = lure_transform.translation;
         
         //println!("fish {:?} {} x {} y \n lure:  {} x {} y ", fishes_details.name, fish_pos.translation.x, fish_pos.translation.y, lure_position.x, lure_position.y);
         
@@ -1552,7 +1552,7 @@ fn fish_area_lure(
                     }*/
                     
                     //println!("SECOND: {:?}", exclam_transform.translation);
-                    fish_physics.position = lure_position;
+                    fish_physics.position = lure_physics.position;
                     //fishy_transform.translation = fish_physics.position.with_z(901.);
                     *lure_vis = Visibility::Hidden; //yes
                     *fish_vis = Visibility::Hidden; //yes
@@ -2068,12 +2068,10 @@ fn animate_waves (
         let decay_factor = (1. - physics_object.position.z / DEPTH_DECAY).powi(3);
         let magnitude = physics_object.forces.water.length() / decay_factor;
 
-        if magnitude == 0. {
+        if magnitude < 50. {
             *wave_visibility = Visibility::Hidden;
             continue;
-        }
-        
-        if magnitude < 200. {
+        } else if magnitude < 200. {
             wave_texture.index = 0;
         } else if magnitude < 400. {
             wave_texture.index = 1;
