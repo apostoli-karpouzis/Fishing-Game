@@ -178,11 +178,12 @@ pub fn calculate_buoyancy_force (
 }
 
 pub fn calculate_water_force (
+    map: Res<Map>,
     mut physics_objects: Query<&mut PhysicsObject>,
     player: Query<&Location, With<Player>>
 ) {
     let player_location = player.single();
-    let water_current = player_location.get_current_area().zone.current;
+    let water_current = map.areas[player_location.x][player_location.y].zone.current;
 
     for mut physics_object in physics_objects.iter_mut() {
         let relative_velocity = physics_object.velocity - water_current;
