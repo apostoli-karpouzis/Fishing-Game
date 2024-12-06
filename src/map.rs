@@ -1,9 +1,16 @@
+use std::fs::File;
+use std::io::*;
+use std::path::Path;
+use std::collections::HashMap;
+use lazy_static::lazy_static;
+use rand::Rng;
 use crate::fishing_zone::*;
 use crate::player::*;
 use crate::window::*;
 use bevy::prelude::*;
 
 pub const TILE_SIZE: f32 = 16.;
+const OLD_TILE_SIZE: f32 = 64.;
 
 pub const MAP_WIDTH: usize = 5;
 pub const MAP_HEIGHT: usize = 5;
@@ -15,15 +22,8 @@ const MAP_TRANSITION_TIME: f32 = 1.5;
 
 #[derive(Component)]
 pub struct Location {
-    pub map: Map,
     pub x: usize,
     pub y: usize,
-}
-
-impl Location {
-    pub fn get_current_area(&self) -> &Area {
-        return &self.map.areas[self.x][self.y];
-    }
 }
 
 #[derive(Resource)]
@@ -71,29 +71,40 @@ impl Area {
 const HITBOX_NO_COLLIDE: Vec2 = Vec2::new(0., 0.);
 const HITBOX_FULL_TILE: Vec2 = Vec2::new(TILE_SIZE, TILE_SIZE);
 
-#[derive(Component, PartialEq)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct Tile {
     pub id: &'static str,
+    pub texture: &'static str,
     pub interactable: bool,
     pub hitbox: Vec2,
 }
 
 impl Tile {
-    pub const fn new(id: &'static str, interactable: bool, hitbox: Vec2) -> Self {
-        Self {
-            id,
-            interactable,
-            hitbox,
-        }
+    pub const fn new(id: &'static str, texture: &'static str, interactable: bool, hitbox: Vec2) -> Self {
+        Self { id, texture, interactable, hitbox }
     }
+    
+    pub const EMPTY: Tile = Tile::new("", "", false, HITBOX_NO_COLLIDE);
+    pub const WATER: Tile = Tile::new("water", "tiles/water.png", true, HITBOX_FULL_TILE);
+    pub const WATER2: Tile = Tile::new("water2", "tiles/water.png", true, HITBOX_FULL_TILE);
+    pub const WATEROCEAN: Tile = Tile::new("water_ocean", "tiles/water.png", true, HITBOX_FULL_TILE);
+    pub const TREE: Tile = Tile::new("tree", "tiles/tree.png", false, Vec2::new(50., 80.));
+    pub const SHOP: Tile = Tile::new("shop", "tiles/shop.png", true, Vec2::new(64., 64.));
+    pub const GOLDLINE: Tile = Tile::new("gold_line", "lines/goldenline.png", true, Vec2::new(75.,75.));
+}
 
-    pub const BOBBER: Tile = Tile::new("bobber", false, Vec2::new(100., 100.));
-    pub const WATER: Tile = Tile::new("water", true, HITBOX_FULL_TILE);
-    pub const WATER2: Tile = Tile::new("water2", true, HITBOX_FULL_TILE);
-    pub const WATEROCEAN: Tile = Tile::new("waterocean", true, HITBOX_FULL_TILE);
-    pub const TREE: Tile = Tile::new("tree", false, Vec2::new(50., 80.));
-    pub const SHOP: Tile = Tile::new("shopEntrance", true, Vec2::new(256., 180.));
-    pub const GOLDLINE: Tile = Tile::new("goldline", true, Vec2::new(75.,75.));
+lazy_static! {
+    static ref TILES: HashMap<&'static str, &'static Tile> = {
+        let mut map = HashMap::new();
+        map.insert("", &Tile::EMPTY);
+        map.insert("water", &Tile::WATER);
+        map.insert("water2", &Tile::WATER2);
+        map.insert("water_ocean", &Tile::WATEROCEAN);
+        map.insert("tree", &Tile::TREE);
+        map.insert("shop", &Tile::SHOP);
+        map.insert("gold_line", &Tile::GOLDLINE);
+        map
+    };
 }
 
 #[derive(Clone)]
@@ -148,15 +159,366 @@ impl Plugin for MapPlugin {
     }
 }
 
+fn read_lines<P>(filename: P) -> Result<Lines<BufReader<File>>> where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(BufReader::new(file).lines())
+}
+
+fn spawn_tile(commands: &mut Commands, asset_server: &AssetServer, tile: &Tile, x: f32, y: f32, z: f32) {
+    let texture_handle = asset_server.load(tile.texture);
+
+    let entity = commands.spawn((
+        SpriteBundle {
+            texture: texture_handle,
+            transform: Transform {
+                translation: Vec3::new(x, y, z),
+                ..default()
+            },
+            ..default()
+        },
+        *tile,
+    )).id();
+
+    if tile.hitbox != HITBOX_NO_COLLIDE {
+        commands.entity(entity).insert(Collision);
+    }
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>
 ) {
+    // MAP
+    let mut map: Map = Map {
+        areas: vec![vec![Area {
+            zone: FishingZone {
+                current: Vec3::new(-10.0, 0., 0.)
+            },
+            layout: [[&Tile::EMPTY; GRID_ROWS]; GRID_COLUMNS],
+            objects: Vec::new()
+        }; MAP_HEIGHT]; MAP_WIDTH],
+        width: MAP_WIDTH,
+        height: MAP_HEIGHT
+    };
+
+    for area_x in 0..map.width {
+        let start_x = area_x as f32 * WIN_W + TILE_SIZE / 2. - WIN_W / 2.;
+        let center_x = area_x as f32 * WIN_W;
+
+        for area_y in 0..map.height {
+            let area = &mut map.areas[area_x][area_y];
+
+            // Load area data
+            let filename = "assets/map/".to_owned() + &area_x.to_string() + "_" + &area_y.to_string();
+
+            if let Ok(mut lines) = read_lines(&filename) {
+                // Load tiles
+                for x in 0..GRID_COLUMNS {
+                    for y in 0..GRID_ROWS {
+                        let tile_id = lines.next().unwrap().unwrap();
+                        let tile = *TILES.get(tile_id.as_str()).unwrap();
+                        area.layout[x][y] = tile;
+                    }
+                }
+                
+                // Load objects
+                let mut object = lines.next();
+
+                while object.is_some() {
+                    let object_string = object.unwrap().unwrap();
+                    let mut object_data = object_string.split(",");
+                    let tile_id = object_data.next().unwrap();
+                    let tile = *TILES.get(tile_id).unwrap();
+                    let x_pos: f32 = object_data.next().unwrap().parse().unwrap();
+                    let y_pos: f32 = object_data.next().unwrap().parse().unwrap();
+
+                    area.objects.push(Object {
+                        tile: tile,
+                        position: Vec2::new(x_pos, y_pos)
+                    });
+
+                    object = lines.next();
+                }
+            } else {
+                println!("Map for region {}_{} not found", area_x, area_y);
+                continue;
+            }
+
+            // Generate area
+            let start_y = area_y as f32 * WIN_H + TILE_SIZE / 2. - WIN_H / 2.;
+            let center_y = area_y as f32 * WIN_H;
+            
+            // Spawn tiles
+            for tile_x in 0..GRID_COLUMNS {
+                let x = start_x + tile_x as f32 * TILE_SIZE;
+
+                for tile_y in 0..GRID_ROWS {
+                    let y = start_y + tile_y as f32 * TILE_SIZE;
+
+                    let tile = area.layout[tile_x][tile_y];
+                    spawn_tile(&mut commands, &asset_server, tile, x, y, 900.);
+                }
+            }
+
+            // Spawn objects
+            for object in area.objects.iter() {
+                let x = center_x + object.position.x;
+                let y = center_y + object.position.y;
+
+                spawn_tile(&mut commands, &asset_server, object.tile, x, y, 901.);
+            }
+        }
+    }
+
+    commands.insert_resource(map);
+
+    //GRASS CODE V
+    
+    //let bg_texture_handle = asset_server.load("map/test_bg.png");
+    let grass_sheet_handle = asset_server.load("map/ground_sheet.png");
+    let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
+
+    let grass_layout_len = grass_layout.textures.len();
+    //println!("grasslayout.len {}", grass_layout_len);
+    let grass_layout_handle = texture_atlases.add(grass_layout);
+
+    let mut rng = rand::thread_rng();
+    let x_bound = WIN_W / 2. - OLD_TILE_SIZE / 2.;
+    let y_bound = WIN_H / 2. - OLD_TILE_SIZE / 2.;
+    //println!("window w {}", (-WIN_H));
+
+    let mut j = 0.;
+    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 4.5 {
+        //println!("rinning j");
+        let mut i = 0;
+        let mut t = Vec3::new(-x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 0.);
+        //println!("spawning at {}", (OLD_TILE_SIZE * j) + y_bound);
+        while (i as f32) * OLD_TILE_SIZE < WIN_W * 8.75 {
+            //println!("rinning i");
+            //IF THE SPRITE SHEET FOR BACKGROUND IS MADE LARGER, THIS NEEDS TO GROW
+            let mut random_index = rng.gen_range(0..29);
+            if random_index % 2 != 0 {
+                random_index -= 1;
+            }
+            commands.spawn((
+                SpriteBundle {
+                    texture: grass_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    //rng.gen_range
+                    //implement random function.
+                    index: random_index,
+                    layout: grass_layout_handle.clone(),
+                }
+            ));
+            //second time
+            t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+            commands.spawn((
+                SpriteBundle {
+                    texture: grass_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    //rng.gen_range
+                    //implement random function.
+                    index: (random_index + 1),
+                    layout: grass_layout_handle.clone(),
+                }
+            ));
+            //
+            //do this twice uhhhhhh....
+
+            i += 1;
+            t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+            //println!("{}", t);
+        }
+        j += 1.0;
+    }
+    // ^ END OF GRASS CODE
+
+    // After the grass spawning loop
+
+let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
+let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore.png");
+let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
+let shore_layout_handle = texture_atlases.add(shore_layout);
+
+let beach_width = WIN_W * 0.5;
+let grass_end = WIN_W * 4.5;
+let beach_start = grass_end;
+
+let mut j = 0.;
+while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
+    let mut i = 0.;
+    let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 1.);
+    
+    while (i as f32) * OLD_TILE_SIZE < beach_width {
+        if i <= 1.{
+            // Spawn sand
+            commands.spawn((
+            SpriteBundle {
+                texture: sand_sheet_handle.clone(),
+                transform: Transform {
+                    translation: t,
+                    ..default()
+                },
+                ..default()
+            },
+            TextureAtlas {
+                index: 0,
+                layout: shore_layout_handle.clone(),
+            },
+            ));
+        }else if i == 2. {  // This will be the middle column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 3,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATEROCEAN,
+            ));
+        } else if i >= 3. {  // This will be the rightmost column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
+                        ..default()
+                    },
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 4,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATEROCEAN,
+            ));
+        }
+
+        i += 1.;
+        t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+    }
+    j += 1.;
+}
+    
+    
+    //start of water code
+    let water_sheet_handle = asset_server.load("tiles/water.png");
+    for y in -10..0 {
+        for x in -10..0{
+            commands.spawn((
+                SpriteBundle {
+                    texture: water_sheet_handle.clone(),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(x as f32 * 16.,  y as f32 * 16., 900.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Tile::WATER,
+                Collision,
+            ));
+        }
+    }
+    //second pond
+    for y in -10..0 {
+        for x in -10..0{
+            commands.spawn((
+                SpriteBundle {
+                    texture: water_sheet_handle.clone(),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(x as f32 * 16. + 400.,  y as f32 * 16. + 100., 900.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Tile::WATER2,
+                Collision,
+            ));
+        }
+    }
+
+    let gold_line_sheet_handle: Handle<Image> = asset_server.load("lines/goldenline.png");
+    commands.spawn((
+        SpriteBundle{
+            texture: gold_line_sheet_handle.clone(),
+            sprite: Sprite{
+                custom_size: Some(Vec2::new(100., 100.)),
+                ..default()
+            }, transform: Transform{
+                translation: Vec3::new(200., 200., 902.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::GOLDLINE,
+        Collision,
+        Forageable,
+    ));
+
     let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
-    println!("map");
+    
+    commands.spawn((
+        SpriteBundle {
+            texture: tree_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(100., 100., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::TREE,
+        Collision,
+    ));
+    commands.spawn((
+        SpriteBundle {
+            texture: tree_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(300., 300., 900.),
+                ..default()
+            },
+            ..default()
+        },
+        Tile::TREE,
+        Collision,
+    ));
+
     let mut i: f32 = 0.;
     while i <= 35.{
         commands.spawn((
@@ -185,6 +547,7 @@ pub fn screen_edge_collision(
     mut camera: Query<(&mut Transform, &mut Animation), (With<Camera>, Without<Player>)>,
     time: Res<Time>,
     state: Res<State<MapState>>,
+    map: Res<Map>,
     mut next_state: ResMut<NextState<MapState>>,
 ) {
     let (mut map_location, pt, direction, mut player_animation) = player.single_mut();
@@ -206,7 +569,7 @@ pub fn screen_edge_collision(
 
     if *direction == PlayerDirection::Right {
         if pt.translation.x + PLAYER_WIDTH / 2. >= WIN_W * map_location.x as f32 + WIN_W / 2.
-            && map_location.x + 1 < map_location.map.width
+            && map_location.x + 1 < map.width
         {
             map_location.x += 1;
             player_offset = Vec3::new(PLAYER_WIDTH, 0., 0.);
@@ -230,7 +593,7 @@ pub fn screen_edge_collision(
 
     if *direction == PlayerDirection::Back {
         if pt.translation.y + PLAYER_HEIGHT / 2. >= WIN_H * map_location.y as f32 + WIN_H / 2.
-            && map_location.y + 1 < map_location.map.height
+            && map_location.y + 1 < map.height
         {
             map_location.y += 1;
             player_offset = Vec3::new(0., PLAYER_HEIGHT, 0.);

@@ -1005,7 +1005,6 @@ fn setup (
             layout: lure_layout_handle.clone(),
             index: 0,
         },
-        Tile::BOBBER,
         PhysicsObject {
             mass: 2.0,
             position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
