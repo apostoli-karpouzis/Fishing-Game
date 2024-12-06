@@ -154,33 +154,52 @@ pub fn move_player(
     }
 
     // Calculate new position
+    // Snap to edge of screen
     let min_pos = Vec3::new(
         location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2.,
         location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2.,
         pt.translation.z,
     );
+
     let max_pos = Vec3::new(
         location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2.,
         location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2.,
         pt.translation.z,
     );
 
-    let new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
+    let mut new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
 
-    // Check for collisions
+    // Check for tile collisions
     for object in collision_query.iter() {
         let (transform, tile) = object;
 
-        if new_pos.y - PLAYER_HEIGHT / 2. > transform.translation.y + tile.hitbox.y / 2.
-            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2. 
-            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
-            || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
+        if new_pos.y - PLAYER_HEIGHT / 2. >= transform.translation.y + tile.hitbox.y / 2.
+            || new_pos.y + PLAYER_HEIGHT / 2. <= transform.translation.y - tile.hitbox.y / 2. 
+            || new_pos.x + PLAYER_WIDTH / 2. <= transform.translation.x - tile.hitbox.x / 2. 
+            || new_pos.x - PLAYER_WIDTH / 2. >= transform.translation.x + tile.hitbox.x / 2.
         {
             CanPickUp.isitem = false;
             continue;
         }
         
         // Collision detected
+        // Snap player to edge of tile
+        match *direction {
+            PlayerDirection::Back => {
+                // Snap to bottom of tile
+                pt.translation.y = transform.translation.y - (tile.hitbox.y + PLAYER_HEIGHT) / 2.;
+            },
+            PlayerDirection::Front => {
+                pt.translation.y = transform.translation.y + (tile.hitbox.y + PLAYER_HEIGHT) / 2.;
+            },
+            PlayerDirection::Left => {
+                pt.translation.x = transform.translation.x + (tile.hitbox.x + PLAYER_WIDTH) / 2.;
+            },
+            PlayerDirection::Right => {
+                pt.translation.x = transform.translation.x - (tile.hitbox.x + PLAYER_WIDTH) / 2.;
+            }
+        }
+
         if tile.interactable {
             match tile {
                 &Tile::GOLDLINE => {
