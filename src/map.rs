@@ -89,7 +89,7 @@ impl Tile {
     pub const WATER2: Tile = Tile::new("water2", "tiles/water.png", true, HITBOX_FULL_TILE);
     pub const WATEROCEAN: Tile = Tile::new("water_ocean", "tiles/water.png", true, HITBOX_FULL_TILE);
     pub const TREE: Tile = Tile::new("tree", "tiles/tree.png", false, Vec2::new(50., 80.));
-    pub const SHOP: Tile = Tile::new("shop", "tiles/shop.png", true, Vec2::new(64., 64.));
+    pub const SHOP: Tile = Tile::new("shop", "tiles/shop.png", true, Vec2::new(256., 180.));
     pub const GOLDLINE: Tile = Tile::new("gold_line", "lines/goldenline.png", true, Vec2::new(75.,75.));
 }
 

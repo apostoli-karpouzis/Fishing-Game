@@ -13,7 +13,7 @@ const REEL: KeyCode = KeyCode::KeyO;
 pub const PIXELS_PER_METER: f32 = 150.;
 pub const BENDING_RESOLUTION: f32 = 1. / PIXELS_PER_METER;
 
-pub const GRAVITY: f32 = 30.;
+pub const GRAVITY: f32 = 40.;
 
 const MAX_PLAYER_FORCE: f32 = 600.;
 const MAX_PLAYER_POWER: f32 = MAX_PLAYER_FORCE * 60.;
