@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::*;
+use std::path::Path;
+use std::collections::HashMap;
+use lazy_static::lazy_static;
 use rand::Rng;
 use crate::fishing_zone::*;
 use crate::player::*;
@@ -88,6 +93,20 @@ impl Tile {
     pub const GOLDLINE: Tile = Tile::new("gold_line", "lines/goldenline.png", true, Vec2::new(75.,75.));
 }
 
+lazy_static! {
+    static ref TILES: HashMap<&'static str, &'static Tile> = {
+        let mut map = HashMap::new();
+        map.insert("", &Tile::EMPTY);
+        map.insert("water", &Tile::WATER);
+        map.insert("water2", &Tile::WATER2);
+        map.insert("water_ocean", &Tile::WATEROCEAN);
+        map.insert("tree", &Tile::TREE);
+        map.insert("shop", &Tile::SHOP);
+        map.insert("gold_line", &Tile::GOLDLINE);
+        map
+    };
+}
+
 #[derive(Clone)]
 pub struct Object {
     pub tile: &'static Tile,
@@ -140,6 +159,11 @@ impl Plugin for MapPlugin {
     }
 }
 
+fn read_lines<P>(filename: P) -> Result<Lines<BufReader<File>>> where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(BufReader::new(file).lines())
+}
+
 fn spawn_tile(commands: &mut Commands, asset_server: &AssetServer, tile: &Tile, x: f32, y: f32, z: f32) {
     let texture_handle = asset_server.load(tile.texture);
 
@@ -166,7 +190,7 @@ fn setup(
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>
 ) {
     // MAP
-    let map: Map = Map {
+    let mut map: Map = Map {
         areas: vec![vec![Area {
             zone: FishingZone {
                 current: Vec3::new(-10.0, 0., 0.)
@@ -183,7 +207,45 @@ fn setup(
         let center_x = area_x as f32 * WIN_W;
 
         for area_y in 0..map.height {
-            let area = &map.areas[area_x][area_y];
+            let area = &mut map.areas[area_x][area_y];
+
+            // Load area data
+            let filename = "assets/map/".to_owned() + &area_x.to_string() + "_" + &area_y.to_string();
+
+            if let Ok(mut lines) = read_lines(&filename) {
+                // Load tiles
+                for x in 0..GRID_COLUMNS {
+                    for y in 0..GRID_ROWS {
+                        let tile_id = lines.next().unwrap().unwrap();
+                        let tile = *TILES.get(tile_id.as_str()).unwrap();
+                        area.layout[x][y] = tile;
+                    }
+                }
+                
+                // Load objects
+                let mut object = lines.next();
+
+                while object.is_some() {
+                    let object_string = object.unwrap().unwrap();
+                    let mut object_data = object_string.split(",");
+                    let tile_id = object_data.next().unwrap();
+                    let tile = *TILES.get(tile_id).unwrap();
+                    let x_pos: f32 = object_data.next().unwrap().parse().unwrap();
+                    let y_pos: f32 = object_data.next().unwrap().parse().unwrap();
+
+                    area.objects.push(Object {
+                        tile: tile,
+                        position: Vec2::new(x_pos, y_pos)
+                    });
+
+                    object = lines.next();
+                }
+            } else {
+                println!("Map for region {}_{} not found", area_x, area_y);
+                continue;
+            }
+
+            // Generate area
             let start_y = area_y as f32 * WIN_H + TILE_SIZE / 2. - WIN_H / 2.;
             let center_y = area_y as f32 * WIN_H;
             
