@@ -692,6 +692,7 @@ fn setup (
         Collision,
         PhysicsFish,
         FishLoc::Pond1,
+        HungerCpt::new(BASS.time_of_day)
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
@@ -747,6 +748,7 @@ fn setup (
         Collision,
         PhysicsFish,
         FishLoc::Pond1,
+        HungerCpt::new(CATFISH.time_of_day)
     ));
     
     // HUD background
