@@ -388,7 +388,7 @@ while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
 
     //Time of day timer
     commands.insert_resource(
-        GameDayTimer::new(3.),
+        GameDayTimer::new(1.),
     );
 
     
