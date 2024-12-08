@@ -247,17 +247,18 @@ pub struct Lure {
     pub mass: f32,
     pub depth: f32,
     pub cd: (f32, f32),
-    pub sa: (f32, f32)
+    pub sa: (f32, f32),
+    pub name: &'static str,
 }
 
 impl Lure {
-    pub const fn new(texture_index: usize, mass: f32, depth: f32, cd: (f32, f32), sa: (f32, f32)) -> Self {
-        Self { texture_index, mass, depth, cd, sa }
+    pub const fn new(texture_index: usize, mass: f32, depth: f32, cd: (f32, f32), sa: (f32, f32), name: &'static str) -> Self {
+        Self { texture_index, mass, depth, cd, sa, name }
     }
     
-    pub const BOBBER: Lure = Lure::new(0, 2.0, 1., (0.47, 0.47), (50., 50.));
-    pub const FROG: Lure = Lure::new(1, 2.0, 20., (0.14, 1.14), (40., 90.));
-    pub const FISH: Lure = Lure::new(2, 2.0, 150., (0.09, 0.86), (35., 70.));
+    pub const BOBBER: Lure = Lure::new(0, 2.0, 1., (0.47, 0.47), (50., 50.), "Bobber");
+    pub const FROG: Lure = Lure::new(1, 2.0, 20., (0.14, 1.14), (40., 90.), "Frog Bait");
+    pub const FISH: Lure = Lure::new(2, 2.0, 150., (0.09, 0.86), (35., 70.), "Swim Bait");
 }
 
 #[derive(Component)]
@@ -514,13 +515,15 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         InPond,
         BASS,
         Collision,
         MysteryFish,
         FishingLocal::Pond1,
+        HungerCpt::new(BASS.time_of_day),
+        HookProbCpt::new(BASS.time_of_day, BASS.depth, BASS.catch_prob),
     ));
 
 
@@ -557,13 +560,15 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         InPond,
         BASS,
         Collision,
         MysteryFish,
         FishingLocal::Pond2,
+        HungerCpt::new(BASS.time_of_day),
+        HookProbCpt::new(BASS.time_of_day, BASS.depth, BASS.catch_prob),
     ));
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
     wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
@@ -602,7 +607,7 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         PhysicsObject{
             mass: 2.0,
@@ -618,6 +623,8 @@ fn setup (
         Collision,
         PhysicsFish,
         FishingLocal::Pond2,
+        HungerCpt::new(BASS.time_of_day),
+        HookProbCpt::new(BASS.time_of_day, BASS.depth, BASS.catch_prob),
     ));
 
 
@@ -657,13 +664,15 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         InPond,
         CATFISH,
         Collision,
         MysteryFish,
         FishingLocal::Pond1,
+        HungerCpt::new(CATFISH.time_of_day),
+        HookProbCpt::new(CATFISH.time_of_day, CATFISH.depth, CATFISH.catch_prob),
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
@@ -703,7 +712,7 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         PhysicsObject{
             mass: 2.0,
@@ -719,7 +728,8 @@ fn setup (
         Collision,
         PhysicsFish,
         FishingLocal::Pond1,
-        HungerCpt::new(BASS.time_of_day)
+        HungerCpt::new(BASS.time_of_day),
+        HookProbCpt::new(BASS.time_of_day, BASS.depth, BASS.catch_prob)
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
@@ -759,7 +769,7 @@ fn setup (
             //length, width, depth
             bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
             age: 6.0,
-            hunger: 10.0
+            hunger: 1.0
         },
         PhysicsObject{
             mass: 3.0,
@@ -775,7 +785,8 @@ fn setup (
         Collision,
         PhysicsFish,
         FishingLocal::Pond1,
-        HungerCpt::new(CATFISH.time_of_day)
+        HungerCpt::new(CATFISH.time_of_day),
+        HookProbCpt::new(CATFISH.time_of_day, CATFISH.depth, CATFISH.catch_prob),
     ));
     
     // HUD background
@@ -1600,8 +1611,8 @@ fn fishPopulation(
 
 fn fish_area_lure(
     mut commands: Commands,
-    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
-    mut lure: Query<(&Transform, Entity, &mut PhysicsObject, &mut Visibility), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility, &HookProbCpt), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
+    mut lure: Query<(&Transform, Entity, &mut PhysicsObject, &mut Visibility, &Lure), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
     mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Lure>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
     mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Lure>, Without<PhysicsFish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Lure>)>,
@@ -1614,13 +1625,13 @@ fn fish_area_lure(
     mut config: ResMut<ExclamationTimer>,
     debris_details: Query<(&DebrisType, &DebrisHooked)>
 ) {
-    let (lure_transform,  lure_entity_id,mut lure_physics, mut lure_vis) = lure.single_mut();
+    let (lure_transform,  lure_entity_id,mut lure_physics, mut lure_vis, lure_details) = lure.single_mut();
     let lure_position = lure_transform.translation;
     //let (bob, tile) = lure.single_mut();
     //let (bob, tile, mut lure_vis) = lure.single_mut();
     //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
 
-    for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
+    for (mut fish_details, fish_species, fish_pos, mut fish_vis, hook_cpt) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
         let lure_position = lure_transform.translation;
         
@@ -1648,7 +1659,7 @@ fn fish_area_lure(
         
 
         //ERROR HERE
-        if hook_fish((&mut fish_details, fish_species), &weather, &region, &timer, &mut prob_timer, &time){
+        if hook_fish((&mut fish_details, fish_species, hook_cpt), &weather, &region, &timer, &mut prob_timer, &time, lure_details){
             for(entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) in fishes.iter_mut(){
                 if fishy_details.id == fish_details.id{ //fish number matches the other number of the caught fish
                     println!("FIRST: {:?}", fishy_transform.translation);
