@@ -136,7 +136,7 @@ struct PowerBar {
 }
 
 #[derive(Component)]
-struct MysteryFish;
+pub struct MysteryFish;
 
 #[derive(Component)]
 struct PhysicsFish;
@@ -455,13 +455,16 @@ pub struct FishingViewPlugin;
 
 impl Plugin for FishingViewPlugin {
     fn build(&self, app: &mut App) {
+
         app.init_state::<FishingState>()
             .insert_resource(ProbTimer::new(2.))
+            .insert_resource(FishVisibiltyUpdated(false))
             .add_systems(Startup, setup)
             .add_systems(
                 Update,
                 (
                     move_fish,
+                    update_fish_visibility.run_if(|visibilty_updated: Res<FishVisibiltyUpdated>| !visibilty_updated.0),
                     fish_area_lure
                         .run_if(in_state(FishingState::ReelingUnhooked))
                         .after(move_fish),
@@ -1983,10 +1986,21 @@ fn fishPopulation(
                         age: 1.0,
                         hunger: 10.0,
                     },
+                    PhysicsObject {
+                        mass: 2.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: BASS.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
+                    },
                     InPond,
                     BASS,
                     Collision,
                     MysteryFish,
+                    PhysicsFish,
                     FishingLocal::Pond2,
                     HungerCpt::new(BASS.time_of_day),
                     HookProbCpt::new(BASS.time_of_day, BASS.depth, BASS.catch_prob),
@@ -2025,7 +2039,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 2.0,
@@ -2082,11 +2096,22 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
+                    },
+                    PhysicsObject {
+                        mass: 5.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: CATFISH.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
                     },
                     InPond,
                     CATFISH,
                     Collision,
+                    PhysicsFish,
                     MysteryFish,
                     FishingLocal::Pond2,
                     HungerCpt::new(CATFISH.time_of_day),
@@ -2204,10 +2229,21 @@ fn fishPopulation(
                         age: 1.0,
                         hunger: 10.0,
                     },
+                    PhysicsObject {
+                        mass: 2.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: MAHIMAHI.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
+                    },
                     InPond,
                     MAHIMAHI,
                     Collision,
                     MysteryFish,
+                    PhysicsFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(MAHIMAHI.time_of_day),
                     HookProbCpt::new(MAHIMAHI.time_of_day, MAHIMAHI.depth, MAHIMAHI.catch_prob),
@@ -2299,7 +2335,7 @@ fn fishPopulation(
                         ..default()
                     },
                     Fish {
-                        name: "catfish",
+                        name: "Tuna",
                         id: total_fish as u32,
                         is_caught: false,
                         is_alive: true,
@@ -2317,12 +2353,23 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
+                    },
+                    PhysicsObject {
+                        mass: 10.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: TUNA.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
                     },
                     InPond,
                     TUNA,
                     Collision,
                     MysteryFish,
+                    PhysicsFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(TUNA.time_of_day),
                     HookProbCpt::new(TUNA.time_of_day, TUNA.depth, TUNA.catch_prob),
@@ -2362,7 +2409,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 10.0,
@@ -2422,10 +2469,21 @@ fn fishPopulation(
                         age: 1.0,
                         hunger: 10.0,
                     },
+                    PhysicsObject {
+                        mass: 10.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: SWORDFISH.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
+                    },
                     InPond,
                     SWORDFISH,
                     Collision,
                     MysteryFish,
+                    PhysicsFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(SWORDFISH.time_of_day),
                     HookProbCpt::new(SWORDFISH.time_of_day, SWORDFISH.depth, SWORDFISH.catch_prob),
@@ -2525,10 +2583,21 @@ fn fishPopulation(
                         age: 1.0,
                         hunger: 10.0,
                     },
+                    PhysicsObject {
+                        mass: 10.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: REDHANDFISH.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
+                    },
                     InPond,
                     REDHANDFISH,
                     Collision,
                     MysteryFish,
+                    PhysicsFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(REDHANDFISH.time_of_day),
                     HookProbCpt::new(
