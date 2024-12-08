@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use rand::seq::SliceRandom;
 use rand::prelude::*;
 
@@ -7,10 +7,22 @@ use crate::{interface::CurrentInterface, window::{WIN_W, WIN_H}};
 const WEATHER_UPDATE_PERIOD: f32 = 30.;
 
 #[derive(Resource)]
+pub struct CurrentRegion(pub Region);
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, States, Default)]
+pub enum Region{
+    #[default]
+    West,
+    Central,
+    Shore,
+}
+
+#[derive(Resource)]
 pub struct WeatherState {
-    pub current_weather: Weather,
+    pub weather_by_region: HashMap<Region, Weather>,
     pub change_timer: Timer,
 }
+
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Copy, Default)]
 pub enum Weather {
@@ -36,8 +48,12 @@ pub struct LightningFlash {
 
 impl Default for WeatherState {
     fn default() -> Self {
-        Self {
-            current_weather: Weather::Sunny,
+        let mut weather_by_region = HashMap::new();
+        for region in [Region::West, Region::Central, Region::Shore].iter() {
+            weather_by_region.insert(region.clone(), Weather::Sunny);
+        }
+        Self{
+            weather_by_region,
             change_timer: Timer::from_seconds(WEATHER_UPDATE_PERIOD, TimerMode::Repeating),
         }
     }
@@ -59,7 +75,8 @@ impl Weather{
 pub fn update_weather(
     time: Res<Time>, 
     mut weather_state: ResMut<WeatherState>,
-    mut next_weather: ResMut<NextState<Weather>>
+    mut next_weather: ResMut<NextState<Weather>>,
+    current_region: Res<State<Region>>,
 ) {
     // Update weather based on time and weather state.
 
@@ -67,25 +84,34 @@ pub fn update_weather(
     if weather_state.change_timer.tick(time.delta()).just_finished() {
         // Choose a random weather state from the next possible states.
         let mut rng = rand::thread_rng();
-        let next_states = weather_state.current_weather.get_next_states();
-
-        weather_state.current_weather = *next_states.choose(&mut rng).unwrap();
-        next_weather.set(weather_state.current_weather);
+        for (region, current_weather) in weather_state.weather_by_region.iter_mut(){
+            let next_states = current_weather.get_next_states();
+            *current_weather = *next_states.choose(&mut rng).unwrap();
+        }
+        
+        if let Some(current_weather) = weather_state.weather_by_region.get(current_region.get()){
+            next_weather.set(*current_weather);
+        }
     }
 }
 
-pub fn run_if_raining( weather_state: Res<WeatherState>) -> bool{
-    if (weather_state.current_weather == Weather::Rainy) || (weather_state.current_weather == Weather::Thunderstorm){
-        return true;
-    }
-    return false;
+pub fn run_if_raining( weather_state: Res<WeatherState>, current_region: Res<State<Region>>) -> bool{
+    let current_weather = weather_state.weather_by_region.get(current_region.get()).unwrap_or(&Weather::Sunny);
+    return *current_weather == Weather::Rainy || *current_weather == Weather::Thunderstorm;
 }
 pub fn rain_particle_system(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
     time: Res<Time>,
+    weather_state: Res<WeatherState>,
+    current_region: Res<State<Region>>
 ) {
+    let current_weather = weather_state.weather_by_region.get(current_region.get()).unwrap();
+    if *current_weather == Weather::Rainy || *current_weather == Weather::Thunderstorm {
+        return;
+    }
+
     let (window_width, window_height) = (7.0*WIN_W, 7.0*WIN_H);
 
     for (_entity, particle, mut transform, mut _sprite) in query.iter_mut() {
@@ -139,15 +165,18 @@ fn spawn_rain_particle(
     ));
 }
 
-pub fn update_weather_tint(weather_state: Res<WeatherState>, 
+pub fn update_weather_tint(
+    weather_state: Res<WeatherState>, 
     current_interface: Res<State<CurrentInterface>>,
+    current_region: Res<State<Region>>,
     mut query: Query<&mut Sprite, (With<WeatherTintOverlay>, Without<LightningFlash>)>,
 ) {
     if let Ok(mut sprite) = query.get_single_mut() {
         if current_interface.eq(&CurrentInterface::Shop) {
             sprite.color = Color::srgba(0.5, 0.5, 0.5, 0.0);
         } else {
-            match weather_state.current_weather {
+            let current_weather = weather_state.weather_by_region.get(current_region.get()).unwrap_or(&Weather::Sunny);
+            match current_weather {
                 Weather::Cloudy => { 
                     sprite.color = Color::srgba(0.4, 0.4, 0.4, 0.25);
                 },
