@@ -596,7 +596,7 @@ fn setup(
                 custom_size: Some(Vec2::new(320., 180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(-8000., -8000., 901.),
                 ..default()
@@ -640,7 +640,7 @@ fn setup(
                 custom_size: Some(Vec2::new(320., 180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
@@ -741,7 +741,7 @@ fn setup(
                 custom_size: Some(Vec2::new(320., 180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHING_ROOM_X - 40., FISHING_ROOM_Y + 40., 901.),
                 ..default()
@@ -1731,7 +1731,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -1833,7 +1833,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -1921,7 +1921,6 @@ fn fishPopulation(
                     FishingLocal::Pond1,
                     HungerCpt::new(CATFISH.time_of_day),
                     HookProbCpt::new(CATFISH.time_of_day, CATFISH.depth, CATFISH.catch_prob),
-                    
                 ));
                 //spawning catfish
             }
@@ -1956,7 +1955,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2057,7 +2056,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2092,7 +2091,6 @@ fn fishPopulation(
                     FishingLocal::Pond2,
                     HungerCpt::new(CATFISH.time_of_day),
                     HookProbCpt::new(CATFISH.time_of_day, CATFISH.depth, CATFISH.catch_prob),
-                    
                 ));
                 commands.spawn((
                     SpriteBundle {
@@ -2178,7 +2176,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2280,7 +2278,6 @@ fn fishPopulation(
                     FishingLocal::Ocean,
                     HungerCpt::new(MAHIMAHI.time_of_day),
                     HookProbCpt::new(MAHIMAHI.time_of_day, MAHIMAHI.depth, MAHIMAHI.catch_prob),
-                    
                 ));
             } else if fish_num > 30 && fish_num <= 60 {
                 let fish_length = rng.gen_range(TUNA.length.0..TUNA.length.1);
@@ -2294,7 +2291,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2397,7 +2394,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2500,7 +2497,7 @@ fn fishPopulation(
                             custom_size: Some(Vec2::new(320., 180.)),
                             ..default()
                         },
-                        visibility: Visibility::Visible,
+                        visibility: Visibility::Hidden,
                         transform: Transform {
                             translation: Vec3::new(-8000., -8000., 901.),
                             ..default()
@@ -2534,7 +2531,11 @@ fn fishPopulation(
                     MysteryFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(REDHANDFISH.time_of_day),
-                    HookProbCpt::new(REDHANDFISH.time_of_day, REDHANDFISH.depth, REDHANDFISH.catch_prob),
+                    HookProbCpt::new(
+                        REDHANDFISH.time_of_day,
+                        REDHANDFISH.depth,
+                        REDHANDFISH.catch_prob,
+                    ),
                 ));
                 commands.spawn((
                     SpriteBundle {
@@ -2588,7 +2589,11 @@ fn fishPopulation(
                     PhysicsFish,
                     FishingLocal::Ocean,
                     HungerCpt::new(REDHANDFISH.time_of_day),
-                    HookProbCpt::new(REDHANDFISH.time_of_day, REDHANDFISH.depth, REDHANDFISH.catch_prob),
+                    HookProbCpt::new(
+                        REDHANDFISH.time_of_day,
+                        REDHANDFISH.depth,
+                        REDHANDFISH.catch_prob,
+                    ),
                 ));
             }
         } else {
@@ -2789,15 +2794,32 @@ fn fishing_transition(
     mut camera: Query<&mut Transform, With<Camera>>,
     mut power_bar: Query<(&mut Transform, &mut PowerBar), (With<PowerBar>, Without<Camera>)>,
     mut rod: Query<&mut Transform, (With<FishingRod>, Without<Camera>, Without<PowerBar>)>,
+    player_inventory: Query<&mut PlayerInventory>,
+    mut fishes: Query<(&mut Visibility), (With<MysteryFish>, With<InPond>)>,
 ) {
     let mut camera_transform = camera.single_mut();
     let (mut power_bar_transform, mut power) = power_bar.single_mut();
     let mut rod_transform = rod.single_mut();
-
+    let inventory = player_inventory.single();
     return_pos.position = camera_transform.translation;
 
     camera_transform.translation.x = FISHING_ROOM_X;
     camera_transform.translation.y = FISHING_ROOM_Y;
+
+    for cosmetic in inventory.cosmetics.iter() {
+        println!("cosmetics: {}", cosmetic.name);
+        if cosmetic.name == "Polarized Sun Glasses" {
+            for mut vizi in fishes.iter_mut() {
+                *vizi = Visibility::Visible;
+                println!("Showing ZE FISH");
+            }
+        } else {
+            for mut vizi in fishes.iter_mut() {
+                *vizi = Visibility::Visible;
+                println!("Showing ZE FISH");
+            }
+        }
+    }
     //FISHING_ROOM_Y-308
     //spawn in powerbar
     //commands.spawn
