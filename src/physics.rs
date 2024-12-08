@@ -249,10 +249,10 @@ pub fn calculate_fish_force(
 
         // defining force multipliers based on fish behavior
         let behavior_multiplier = match species.behavior {
-            Behavior::Aggressive => 0.3, // aggressive fish have larger multiplier
-            Behavior::Evasive => 0.2,    // evasive fish have moderate multiplier
-            Behavior::Passive => 0.1,    // passive fish have smaller multiplier
-            Behavior::Elusive => 0.8,    // elusive fish are just hard
+            Behavior::Aggressive => 1.7, // aggressive fish have larger multiplier
+            Behavior::Evasive => 2.3,    // evasive fish have moderate multiplier
+            Behavior::Passive => 0.5,    // passive fish have smaller multiplier
+            Behavior::Elusive => 4.5,    // elusive fish are just hard
         };
 
         // print fish behavior and anger
@@ -263,10 +263,14 @@ pub fn calculate_fish_force(
 
         let direction = match species.behavior {
             Behavior::Aggressive => {
-                // aggro fish circle around the rod
-                let delta = fish_position.xy() - rod_info.tip_pos.xy();
-                let direction = Vec3::new(-delta.y, delta.x, 0.0).normalize_or_zero();
-                println!("AGGRO fish is circling around the rod. direction: {:?}", direction);
+                let pause = 0.05; // how quickly the direction changes (lower = slower)
+                let mut rng = rand::thread_rng();
+                let direction_away_from_rod = (fish_position - rod_info.tip_pos).normalize_or_zero();
+                let rand_speed = rng.gen_range(0.5..1.2); 
+                let target_direction = direction_away_from_rod * rand_speed;
+                let direction = fish_physics.rotation.lerp(target_direction, pause);
+                fish_physics.rotation = direction;
+                println!("AGGRESSIVE fish is moving unpredictably! direction: {:?}, Speed: {}", direction, rand_speed);
                 direction
             }
             Behavior::Evasive => {
@@ -282,12 +286,16 @@ pub fn calculate_fish_force(
             }
             Behavior::Elusive => {
                 // elusive fish get wild
+                let pause = 0.05; // how quickly the direction changes (lower = slower)
                 let mut rng = rand::thread_rng();
-                let rand_direction = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0).normalize_or_zero();
-                let rand_speed = rng.gen_range(0.8..1.5); // Random burst of speed
-                let direction = rand_direction * rand_speed;
-                println!("ELUSIVE fish is moving randomly. direction: {:?}", direction);
+                let direction_away_from_rod = (fish_position - rod_info.tip_pos).normalize_or_zero();
+                let rand_speed = rng.gen_range(0.5..1.2); 
+                let target_direction = direction_away_from_rod * rand_speed;
+                let direction = fish_physics.rotation.lerp(target_direction, pause);
+                fish_physics.rotation = direction;
+                println!("ELUSIVE fish is moving away from the rod. direction: {:?}, Speed: {}", direction, rand_speed);
                 direction
+                //theyre basically just aggro behavior rn but much more x
             }
         };
 
