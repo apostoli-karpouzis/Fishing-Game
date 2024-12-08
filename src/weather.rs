@@ -4,7 +4,7 @@ use rand::prelude::*;
 
 use crate::{interface::CurrentInterface, window::{WIN_W, WIN_H}};
 
-const WEATHER_UPDATE_PERIOD: f32 = 30.;
+const WEATHER_UPDATE_PERIOD: f32 = 20.;
 
 #[derive(Resource)]
 pub struct WeatherState {
@@ -86,7 +86,7 @@ pub fn rain_particle_system(
     mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
     time: Res<Time>,
 ) {
-    let (window_width, window_height) = (7.0*WIN_W, 7.0*WIN_H);
+    let (window_width, window_height) = (12.0*WIN_W, 12.0*WIN_H);
 
     for (_entity, particle, mut transform, mut _sprite) in query.iter_mut() {
         let mut rng = rand::thread_rng();
@@ -169,7 +169,7 @@ pub fn spawn_weather_tint_overlay(mut commands: Commands){
     commands.spawn((SpriteBundle {
         sprite: Sprite {
             color: Color::srgba(0.5, 0.5, 0.5, 0.0),
-            custom_size: Some(Vec2::new(10000.,10000.)),
+            custom_size: Some(Vec2::new(15000.,15000.)),
             ..default()
         },
         transform: Transform::from_xyz(0.0, 0.0, 999.),
