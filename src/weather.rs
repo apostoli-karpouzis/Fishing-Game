@@ -158,6 +158,14 @@ fn spawn_rain_particle(
     ));
 }
 
+pub fn despawn_rain_particles(
+    mut commands: Commands,
+    query: Query<Entity, With<RainParticle>>,
+){
+    for entity in query.iter(){
+        commands.entity(entity).despawn();
+    }
+}
 pub fn update_weather_tint(
     weather_state: Res<WeatherState>, 
     current_interface: Res<State<CurrentInterface>>,
