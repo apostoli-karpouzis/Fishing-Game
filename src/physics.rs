@@ -154,7 +154,7 @@ pub fn is_line_broken (
     let line_info = line.single();
     
     let line_dir = (line_info.end - line_info.start).normalize();
-    let tension = physics_object.forces.player.dot(line_dir) + physics_object.forces.water.dot(line_dir) + physics_object.forces.own.dot(line_dir);
+    let tension = -physics_object.forces.player.dot(line_dir) + physics_object.forces.water.dot(line_dir) + physics_object.forces.own.dot(line_dir);
 
     if tension > line_info.line_type.ultimate_tensile_strength {
         commands.entity(entity_id).remove::<Hooked>();

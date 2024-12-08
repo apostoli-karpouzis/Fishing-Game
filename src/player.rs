@@ -5,6 +5,7 @@ use crate::map::*;
 use crate::button::*;
 use crate::resources::*;
 use crate::window::*;
+use crate::fishing_view::*;
 use std::time::Duration;
 
 pub const PLAYER_WIDTH: f32 = 64.;
@@ -225,7 +226,7 @@ pub fn move_player(
 
                     for rod in inv.rods.iter() {
                         if rod.name.eq("Surf Rod") {
-                            next_fishing_area.set(FishingLocal::Beach);
+                            next_fishing_area.set(FishingLocal::Ocean);
                             *fish_button_visibility = Visibility::Visible;
                             *hint_visibility = Visibility::Hidden;
                             return;
