@@ -1,5 +1,12 @@
 use crate::fishing_view::*;
 use crate::interface::*;
+use crate::inventory;
+use crate::inventory::PlayerInventory;
+use crate::player::CanPickUp;
+use crate::player::Forageable;
+use crate::player::Player;
+use crate::shop::ItemType;
+use crate::shop::ShopItem;
 use bevy::prelude::*;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
@@ -16,6 +23,7 @@ pub struct Button;
 pub struct FishingButton;
 
 pub fn fishing_button_system(
+    mut commands: Commands,
     input: Res<ButtonInput<KeyCode>>,   
     mut button_query: Query<(&mut BackgroundColor, &mut BorderColor, &Children), (With<FishingButton>,)>,
     mut visibility_query: Query<&mut Visibility, With<FishingButton>>, 
@@ -23,55 +31,60 @@ pub fn fishing_button_system(
     mut start_fishing_animation: ResMut<StartFishingAnimation>,
     mut fishing_timer: ResMut<FishingAnimationDuration>,
     mut next_state: ResMut<NextState<CurrentInterface>>,  
-    state: Res<State<CurrentInterface>>,  
+    state: Res<State<CurrentInterface>>,
+    mut player: Query<&mut CanPickUp, With<Player>>,
+    ground_item: Query <Entity, With<Forageable>>,
+    mut player_inventory: Query<&mut PlayerInventory>,  
 ) {
-   
+    let can_pick_up = player.single_mut(); 
+
     for (mut color, mut border_color, children) in &mut button_query {
         let mut visibility = visibility_query.single_mut();
         let mut text = text_query.get_mut(children[0]).unwrap();
-
+        let mut inventory = player_inventory.single_mut();
         
         if *visibility == Visibility::Visible || state.eq(&CurrentInterface::Fishing) {
-
-            
             if state.eq(&CurrentInterface::Overworld) {
-                text.sections[0].value = "Throw Rod(X)".to_string(); 
+                if can_pick_up.isitem {
+                    text.sections[0].value = "Pick up Item(E)".to_string();
+
+                    if input.just_pressed( KeyCode::KeyE) && can_pick_up.isitem && !ground_item.is_empty() {
+                        let entity_id = ground_item.single();
+                        // *color = PRESSED_BUTTON.into();  
+                        commands.entity(entity_id).despawn();
+                        inventory.items.push(ShopItem::new("Golden Fishing Line", 0, true, 3, ItemType::LINE));
+                        inventory.lines.push(ShopItem::new("Golden Fishing Line", 0, true, 3, ItemType::LINE));
+                        *visibility = Visibility::Hidden;
+                    }
+                }else{
+                    text.sections[0].value = "Throw Rod(X)".to_string();
+
+                    if input.just_pressed(KeyCode::KeyX) && state.eq(&CurrentInterface::Overworld) {
+                        // *color = PRESSED_BUTTON.into();  
+                        start_fishing_animation.active = true;
+                        start_fishing_animation.button_control_active = false;
+                        fishing_timer.0.reset();
+        
+                        
+                        next_state.set(CurrentInterface::Fishing);
+                        println!("Switching to fishing mode");
+                        println!("CURRENTLY SWITCHING TO DIFFERENT MODE!!!")            
+                    }
+                } 
             } else if state.eq(&CurrentInterface::Fishing) {
-                text.sections[0].value = "Exit(ESC)".to_string(); 
-            }
-
-            
-            if input.pressed(KeyCode::KeyX) && state.eq(&CurrentInterface::Overworld) {
-                *color = HOVERED_BUTTON.into();  
-                border_color.0 = Color::WHITE;
-            } else {
-                *color = NORMAL_BUTTON.into();  
-                border_color.0 = Color::BLACK;
-            }
-
-            
-            if input.just_pressed(KeyCode::KeyX) && state.eq(&CurrentInterface::Overworld) {
-                *color = PRESSED_BUTTON.into();  
-                start_fishing_animation.active = true;
-                start_fishing_animation.button_control_active = false;
-                fishing_timer.0.reset();
-
+                text.sections[0].value = "Exit(ESC)".to_string();
                 
-                next_state.set(CurrentInterface::Fishing);
-                println!("Switching to fishing mode");
-                println!("CURRENTLY SWITCHING TO DIFFERENT MODE!!!")
-
-            
-            } else if input.just_pressed(KeyCode::Escape) && state.eq(&CurrentInterface::Fishing) {
-                println!("Exiting fishing mode");
-                *color = NORMAL_BUTTON.into();  
-                start_fishing_animation.active = false;
-                start_fishing_animation.button_control_active = true;
-                *visibility = Visibility::Visible;  
-
-                
-                next_state.set(CurrentInterface::Overworld);
-                println!("Switching to overworld mode");
+                if input.just_pressed(KeyCode::Escape) && state.eq(&CurrentInterface::Fishing) {
+                    println!("Exiting fishing mode");
+                    // *color = NORMAL_BUTTON.into();  
+                    start_fishing_animation.active = false;
+                    start_fishing_animation.button_control_active = true;
+                    *visibility = Visibility::Visible;  
+    
+                    
+                    next_state.set(CurrentInterface::Overworld);
+                    println!("Switching to overworld mode");
+                } 
             }
         }
     }

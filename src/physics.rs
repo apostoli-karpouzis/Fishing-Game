@@ -13,6 +13,8 @@ const REEL: KeyCode = KeyCode::KeyO;
 pub const PIXELS_PER_METER: f32 = 150.;
 pub const BENDING_RESOLUTION: f32 = 1. / PIXELS_PER_METER;
 
+pub const GRAVITY: f32 = 40.;
+
 const MAX_PLAYER_FORCE: f32 = 600.;
 const MAX_PLAYER_POWER: f32 = MAX_PLAYER_FORCE * 60.;
 const P: f32 = 1. / 250.;
@@ -23,25 +25,30 @@ pub struct PhysicsObject {
     pub position: Vec3,
     pub rotation: Vec3,
     pub velocity: Vec3,
-    pub forces: Forces
+    pub forces: Forces,
+    pub cd: (f32, f32),
+    pub sa: (f32, f32),
+    pub waves: Entity
 }
 
 impl PhysicsObject {
-    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces) -> Self {
-        Self { mass, position, rotation, velocity, forces }
+    pub fn new(mass: f32, position: Vec3, rotation: Vec3, velocity: Vec3, forces: Forces, cd: (f32, f32), sa: (f32, f32), waves: Entity) -> Self {
+        Self { mass, position, rotation, velocity, forces, cd, sa, waves }
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct Forces {
     pub own: Vec3,
     pub player: Vec3,
-    pub water: Vec3
+    pub water: Vec3,
+    pub gravity: Vec3,
+    pub buoyancy: Vec3
 }
 
 impl Forces {
     pub fn net_force(&self) -> Vec3 {
-        return self.own + self.player + self.water;
+        return self.own + self.player + self.water + self.gravity + self.buoyancy;
     }
 }
 
@@ -136,43 +143,62 @@ pub fn get_particle_positions(
 pub fn is_line_broken (
     mut commands: Commands,
     mut next_state: ResMut<NextState<FishingState>>,
-    hooked_object: Query<(Entity, &PhysicsObject), With<Hooked>>,
-    line: Query<&FishingLine, With<FishingLine>>,
+    mut hooked_object: Query<(Entity, &mut PhysicsObject), With<Hooked>>,
+    line: Query<&FishingLine, With<FishingLine>>
 ){
-    let (entity_id, fish_physics) = hooked_object.single();
-    let fishingline = line.single(); 
-    let tension_force = fish_physics.forces.player.length() + fish_physics.forces.water.length() + fish_physics.forces.own.length();
+    if hooked_object.is_empty() {
+        return;
+    }
 
-    if tension_force > fishingline.line_type.ultimate_tensile_strength {
+    let (entity_id, mut physics_object) = hooked_object.single_mut();
+    let line_info = line.single();
+    
+    let line_dir = (line_info.end - line_info.start).normalize();
+    let tension = physics_object.forces.player.dot(line_dir) + physics_object.forces.water.dot(line_dir) + physics_object.forces.own.dot(line_dir);
+
+    if tension > line_info.line_type.ultimate_tensile_strength {
         commands.entity(entity_id).remove::<Hooked>();
+        physics_object.forces.player = Vec3::ZERO;
         next_state.set(FishingState::Idle);
     }
 }
 
+pub fn calculate_buoyancy_force (
+    mut lure: Query<(&Lure, &mut PhysicsObject), With<Lure>>
+) {
+    let (lure_info, mut lure_physics) = lure.single_mut();
+
+    let buoyancy = if lure_physics.position.z > 0. {
+        0.
+    } else {
+        (lure_physics.position.z / lure_info.depth).powi(2) * GRAVITY * lure_physics.mass
+    };
+
+    lure_physics.forces.buoyancy = Vec3::new(0., 0., buoyancy);
+}
+
 pub fn calculate_water_force (
-    mut fishes: Query<(&Species, &Fish, &mut PhysicsObject), With<Fish>>,
+    map: Res<Map>,
+    mut physics_objects: Query<&mut PhysicsObject>,
     player: Query<&Location, With<Player>>
 ) {
     let player_location = player.single();
-    let water_current = player_location.get_current_area().zone.current;
+    let water_current = map.areas[player_location.x][player_location.y].zone.current;
 
-    // Currently only works with fish
-    for (fish_species, fish_details, mut fish_physics) in fishes.iter_mut() {
-        let relative_velocity = fish_physics.velocity - water_current;
+    for mut physics_object in physics_objects.iter_mut() {
+        let relative_velocity = physics_object.velocity - water_current;
 
-        if relative_velocity == Vec3::ZERO {
-            fish_physics.forces.water = Vec3::ZERO;
+        if physics_object.position.z > 0. || relative_velocity == Vec3::ZERO {
+            physics_object.forces.water = Vec3::ZERO;
             continue;
         }
 
-        let angle = Vec2::from_angle(fish_physics.rotation.z).extend(0.).angle_between(water_current);
+        let angle = Vec2::from_angle(physics_object.rotation.z).extend(0.).angle_between(water_current);
         let proportion = (PI / 2. - f32::abs(angle - PI / 2.)) / (PI / 2.);
-        let sa_min = fish_details.width * fish_details.width;
-        let sa_max = fish_details.width * fish_details.length;
-        let sa = sa_min + (sa_max - sa_min) * proportion;
-        let cd = fish_species.cd.0 + (fish_species.cd.1 - fish_species.cd.0) * proportion;
+        let sa = physics_object.sa.0 + (physics_object.sa.1 - physics_object.sa.0) * proportion;
+        let cd = physics_object.cd.0 + (physics_object.cd.1 - physics_object.cd.0) * proportion;
     
-        fish_physics.forces.water = P * cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize();
+        physics_object.forces.water = P * cd * sa * relative_velocity.length() * relative_velocity.length() * -relative_velocity.normalize();
     }
 }
 
@@ -181,6 +207,10 @@ pub fn calculate_player_force (
     fishing_rod: Query<&FishingRod, With<FishingRod>>,
     mut hooked_object: Query<&mut PhysicsObject, With<Hooked>>,
 ) {
+    if hooked_object.is_empty() {
+        return;
+    }
+
     let rod_info = fishing_rod.single();
     let mut object_physics = hooked_object.single_mut();
 

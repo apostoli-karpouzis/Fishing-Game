@@ -3,6 +3,8 @@ use crate::weather::*;
 use crate::gameday::*;
 use crate::fishing_view::*;
 use crate::species::Species;
+use crate::prob_calc::*;
+use rand::Rng;
 
 
 #[derive(Component)]
@@ -67,22 +69,15 @@ impl Fish {
         }
     }
     //call every in game hour/day whatever
-    pub fn update_fish_traits(&mut self, weather: bool, time: bool) {
+    pub fn update_fish_traits(&mut self, hunger_inc_prob: f32) {
         self.age += 1.0;           //age increase hourly
-        if weather == true && time == true {
-            self.hunger += 1.0;        //hunger increases hourly
-        }
-        else if weather == true {
-            self.hunger += 0.4;
-        }
-        else if time == true {
-            self.hunger += 0.5;
-        }
-        else {
-            self.hunger += 0.2;
-        }
         if self.age >= 100.0 {
             self.die();
+        }
+        let mut prob_rng = rand::thread_rng();
+        let roll = prob_rng.gen_range(0..100);
+        if (roll as f32) < (hunger_inc_prob * 100.) {
+            self.hunger += 1.0;
         }
     }
     //calc fish anger
@@ -115,13 +110,13 @@ impl Pond {
 
 pub fn fish_update(
         mut commands: Commands,
-        mut aging_fish: Query<(&mut Fish, Entity, &Species), (With<Fish>, With<InPond>)>,
+        mut aging_fish: Query<(&mut Fish, Entity, &Species, &HungerCpt), (With<Fish>, With<InPond>)>,
         time: Res<GameDayTimer>,
         weather: Res<WeatherState>
     )
     {
         if time.timer.just_finished() {
-            for (mut fish, entity_id, species) in aging_fish.iter_mut(){
+            for (mut fish, entity_id, species, hunger_cpt) in aging_fish.iter_mut(){
                 let mut w: bool = false;
                 let mut t: bool = false;
 
@@ -131,12 +126,10 @@ pub fn fish_update(
                 if species.time_of_day.0 <= time.hour as usize && species.time_of_day.1 >= time.hour as usize {
                     t = true;
                 }
-                    
-                fish.update_fish_traits(w, t);
-                println!("Age: {}", fish.age);
-                /*if fish.age >= 100.{
-                    fish.is_alive == false;
-                }*/
+                
+                let mut fish_age = fish.age;
+                fish.update_fish_traits(hunger_cpt.index_cpt(true, 0, t, w, fish_age));
+                println!("Age: {}\nHunger: {}", fish.age, fish.hunger);
                 if fish.is_alive == false {
                     commands.entity(entity_id).despawn();
                 }

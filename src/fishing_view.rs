@@ -1,5 +1,15 @@
 extern crate rand;
 
+use bevy::render::view::visibility;
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::f32;
+use std::f32::consts::PI;
+use std::time::Duration;
+use bevy::prelude::*;
+use bevy::sprite::*;
+use rand::Rng;
 use crate::fish::*;
 use crate::gameday::*;
 use crate::interface::*;
@@ -25,25 +35,19 @@ const ROTATE_ROD_COUNTERLCOCKWISE: KeyCode = KeyCode::KeyA;
 const ROTATE_ROD_CLOCKWISE: KeyCode = KeyCode::KeyD;
 const SWITCH_ROD: KeyCode = KeyCode::KeyN;
 const SWITCH_LINE: KeyCode = KeyCode::KeyM;
-const SWITCH_BAIT_NEXT: KeyCode = KeyCode::KeyX;
-const SWITCH_BAIT_PREV: KeyCode = KeyCode::KeyZ;
+const SWITCH_LURE: KeyCode = KeyCode::KeyX;
 
 pub const PARTICLECOUNT: usize = 10;
 
 const CATCH_MARGIN: f32 = 30.;
 
-pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -1);
+const DEPTH_DECAY: f32 = 40.;
+
+pub const FISHING_ROOM_CENTER: Vec2 = Map::get_area_center(0, -2);
 pub const FISHING_ROOM_X: f32 = FISHING_ROOM_CENTER.x;
 pub const FISHING_ROOM_Y: f32 = FISHING_ROOM_CENTER.y;
 
-pub const PLAYER_POSITION: Vec3 = Vec3::new(
-    FISHING_ROOM_X - 100.,
-    FISHING_ROOM_Y - (WIN_H / 2.) + 50.,
-    902.,
-);
-
-//pub const FISHINGROOMX: f32 = 8960.;
-//pub const FISHINGROOMY: f32 = 3600.;
+pub const PLAYER_POSITION: Vec3 = Vec3::new(FISHING_ROOM_X-100., FISHING_ROOM_Y-(WIN_H/2.)+50., 902.);
 
 const POWER_BAR_Y_OFFSET: f32 = FISHING_ROOM_Y - 308.;
 const MAX_POWER: f32 = 250.;
@@ -56,6 +60,32 @@ const ROD_ROTATION_SPEED: f32 = PI / 2.;
 const MAX_CAST_DISTANCE: f32 = 400.;
 const CASTING_SPEED: f32 = 250.;
 const REEL_IN_SPEED: f32 = 150.;
+
+lazy_static! {
+    static ref RODS: HashMap<&'static str, &'static FishingRodType> = {
+        let mut map = HashMap::new();
+        map.insert("Default Rod", &FishingRodType::NORMAL);
+        map.insert("Surf Rod", &FishingRodType::SURF);
+        map
+    };
+
+    static ref LINES: HashMap<&'static str, &'static FishingLineType> = {
+        let mut map = HashMap::new();
+        map.insert("FluoroCarbon Fishing Line", &FishingLineType::FLUOROCARBON);
+        map.insert("Braided Fishing Line", &FishingLineType::BRAIDED);
+        map.insert("Monofilament Fishing Line", &FishingLineType::MONOFILILMENT);
+        map.insert("Golden Fishing Line", &FishingLineType::GOLDEN);
+        map
+    };
+
+    static ref LURES: HashMap<&'static str, &'static Lure> = {
+        let mut map = HashMap::new();
+        map.insert("Bobber", &Lure::BOBBER);
+        map.insert("Frog Bait", &Lure::FROG);
+        map.insert("Swim Bait", &Lure::FISH);
+        map
+    };
+}
 
 #[derive(Resource)]
 pub struct StartFishingAnimation {
@@ -76,7 +106,19 @@ pub enum FishingState {
 }
 
 #[derive(Component)]
-struct OnScreenLure;
+pub struct HookedDebris {
+    pub drag_increase: f32,
+}
+
+#[derive(Component)]
+pub struct DebrisHooked {
+    pub hooked: bool,
+}
+
+
+#[derive(Component)]
+struct LureHUD;
+
 
 #[derive(Component)]
 struct PondScreen;
@@ -162,44 +204,12 @@ pub struct FishingRodType {
 }
 
 impl FishingRodType {
-    pub const fn new(
-        texture: &'static str,
-        length: f32,
-        radius: f32,
-        thickness: f32,
-        shear_strength: f32,
-        shear_modulus: f32,
-        blank_color: Color,
-    ) -> Self {
-        Self {
-            texture,
-            length,
-            radius,
-            thickness,
-            flexural_strength: shear_strength,
-            shear_modulus,
-            blank_color,
-        }
+    pub const fn new(texture: &'static str, length: f32, radius: f32, thickness: f32, shear_strength: f32, shear_modulus: f32, blank_color: Color) -> Self {
+        Self { texture, length, radius, thickness, flexural_strength: shear_strength, shear_modulus, blank_color }
     }
-
-    pub const NORMAL: FishingRodType = FishingRodType::new(
-        "rods/default.png",
-        1.5,
-        0.015,
-        0.004,
-        3450E6,
-        72E9,
-        Color::BLACK,
-    );
-    pub const SURF: FishingRodType = FishingRodType::new(
-        "rods/surf.png",
-        2.,
-        0.015,
-        0.004,
-        3450E6,
-        72E9,
-        Color::BLACK,
-    );
+    
+    pub const NORMAL: FishingRodType = FishingRodType::new("rods/default.png", 1.5, 0.015, 0.004, 3450E6, 72E9, Color::BLACK);
+    pub const SURF: FishingRodType = FishingRodType::new("rods/surf.png", 2., 0.015, 0.004, 3450E6, 72E9, Color::BLACK);
 }
 
 #[derive(Resource)]
@@ -218,7 +228,8 @@ pub struct FishingLine {
     pub length: f32,
     pub start: Vec3,
     pub end: Vec3,
-    pub line_type: &'static FishingLineType,
+    pub segments: Vec<Entity>,
+    pub line_type: &'static FishingLineType
 }
 
 impl FishingLine {
@@ -228,11 +239,12 @@ impl FishingLine {
             length: 0.0,
             start: Vec3::ZERO,
             end: Vec3::ZERO,
-            line_type,
+            segments: Vec::new(),
+            line_type
         }
     }
 
-    pub const WIDTH: f32 = 3.;
+    pub const WIDTH: f32 = 1.;
 }
 
 #[derive(PartialEq)]
@@ -252,27 +264,31 @@ impl FishingLineType {
     pub const FLUOROCARBON: FishingLineType =
         FishingLineType::new(3000., Color::srgb(0.1, 0.1, 0.8));
     pub const BRAIDED: FishingLineType = FishingLineType::new(4000., Color::srgb(0.0, 0.7, 0.2));
-    pub const MONOFILILMENT: FishingLineType =
-        FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
+    pub const MONOFILILMENT: FishingLineType = FishingLineType::new(2000., Color::srgb(0.9, 0.9, 0.9));
+    pub const GOLDEN: FishingLineType = FishingLineType::new(10000., Color::srgb(0.88, 0.77, 0.25));
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
+struct FishingLineSegment;
+
+
+#[derive(Component, Default, Clone, Copy)]
 pub struct Lure {
-    texture_index: usize,
-    mass: f32,
+    pub texture_index: usize,
+    pub mass: f32,
+    pub depth: f32,
+    pub cd: (f32, f32),
+    pub sa: (f32, f32)
 }
 
 impl Lure {
-    pub const fn new(texture_index: usize, mass: f32) -> Self {
-        Self {
-            texture_index,
-            mass,
-        }
+    pub const fn new(texture_index: usize, mass: f32, depth: f32, cd: (f32, f32), sa: (f32, f32)) -> Self {
+        Self { texture_index, mass, depth, cd, sa }
     }
-
-    pub const BALL: Lure = Lure::new(0, 2.0);
-    pub const FROG: Lure = Lure::new(1, 5.0);
-    pub const FISH: Lure = Lure::new(2, 20.0);
+    
+    pub const BOBBER: Lure = Lure::new(0, 2.0, 1., (0.47, 0.47), (50., 50.));
+    pub const FROG: Lure = Lure::new(1, 2.0, 20., (0.14, 1.14), (40., 90.));
+    pub const FISH: Lure = Lure::new(2, 2.0, 150., (0.09, 0.86), (35., 70.));
 }
 
 #[derive(Component)]
@@ -289,6 +305,16 @@ pub struct InPond;
 #[derive(Component)]
 pub struct IsBass;
 
+#[derive(Resource)]
+struct DirectionTimer {
+    pub timer: Timer,
+}
+
+#[derive(Resource)]
+struct ExclamationTimer {
+    pub timer: Timer,
+}
+
 #[derive(Component)]
 pub struct exclam_point;
 
@@ -300,6 +326,7 @@ pub enum ObstType {
     Tree,
     Fissure,
     Pad,
+    Debris,
 }
 
 #[derive(Component, PartialEq)]
@@ -379,36 +406,42 @@ impl Plugin for FishingViewPlugin {
                 Update,
                 (
                     move_fish,
-                    fish_area_bobber
+                catch_debris.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
+                is_debris_caught.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
+                    fish_area_lure
                         .run_if(in_state(FishingState::ReelingUnhooked))
                         .after(move_fish),
-                    (power_bar_cast, switch_rod, switch_line, switch_bait)
+                    (power_bar_cast, switch_rod, switch_line, switch_lure)
                         .run_if(in_state(FishingState::Idle)),
                     rod_rotate,
                     (
                         calculate_water_force,
-                        calculate_player_force.run_if(
+                    (
+                        calculate_buoyancy_force,
+                            calculate_player_force
+                    ).run_if(
                             in_state(FishingState::ReelingUnhooked)
                                 .or_else(in_state(FishingState::ReelingHooked)),
                         ),
                     )
                         .after(rod_rotate),
                     calculate_fish_force
-                        .after(calculate_water_force)
+                        .after(calculate_water_force).after(calculate_buoyancy_force)
                         .after(calculate_player_force),
                     simulate_physics.after(calculate_fish_force),
+                bend_fishing_rod.after(simulate_physics),
                     (
                         is_done_reeling.run_if(in_state(FishingState::ReelingUnhooked)),
                         is_fish_caught.run_if(in_state(FishingState::ReelingHooked)),
-                        is_line_broken.run_if(in_state(FishingState::ReelingHooked)),
+                        is_line_broken.run_if(in_state(FishingState::ReelingHooked)).after(is_fish_caught),
                         cast_line.run_if(in_state(FishingState::Casting)),
                         animate_fishing_line.run_if(not(in_state(FishingState::Casting))),
                     )
-                        .after(simulate_physics),
-                    move_physics_objects.after(is_fish_caught),
-                    bend_fishing_rod.after(is_line_broken),
-                    draw_fishing_line.after(animate_fishing_line),
-                    animate_waves.after(simulate_physics),
+                        .after(bend_fishing_rod),
+                    move_physics_objects.after(is_fish_caught).after(is_line_broken),
+                    animate_waves.after(is_line_broken),
+                    adjust_fishing_line_size.after(animate_fishing_line),
+                    draw_fishing_line.after(adjust_fishing_line_size),
                     animate_splash.after(cast_line),
                 )
                     .run_if(in_state(CurrentInterface::Fishing)),
@@ -441,6 +474,36 @@ impl Plugin for FishingViewPlugin {
     }
 }
 
+fn spawn_waves(commands: &mut Commands, texture: &Handle<Image>, layout: &Handle<TextureAtlasLayout>) -> Entity {
+    commands.spawn((
+        SpriteBundle {
+            texture: texture.clone(),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: layout.clone(),
+            index: 0,
+        },
+        Wave
+    )).id()
+}
+
+fn spawn_waves(commands: &mut Commands, texture: &Handle<Image>, layout: &Handle<TextureAtlasLayout>) -> Entity {
+    commands.spawn((
+        SpriteBundle {
+            texture: texture.clone(),
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+        TextureAtlas {
+            layout: layout.clone(),
+            index: 0,
+        },
+        Wave
+    )).id()
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -449,6 +512,11 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let mut rng = rand::thread_rng();
+
+    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    let mut wave: Entity;
 
     //commands.insert_resource(FishBoundsDir {change_x: Vec3::new(0.,0.,0.), change_y: Vec3::new(0.,0.,0.)});
 
@@ -551,6 +619,7 @@ fn setup(
         FishLoc::Pond2,
     ));
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
 
     commands.spawn((
         SpriteBundle {
@@ -594,6 +663,9 @@ fn setup(
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default(),
+            cd: BASS.cd,
+            sa: (5.0 * 5.0, 5.0 * 8.0),
+            waves: wave
         },
         InPond,
         Collision,
@@ -645,6 +717,9 @@ fn setup(
         FishLoc::Pond1,
     ));
 
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
+
     commands.spawn((
         SpriteBundle {
             texture: fish_bass_handle.clone(),
@@ -687,14 +762,19 @@ fn setup(
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default(),
+            cd: BASS.cd,
+            sa: (5.0 * 5.0, 5.0 * 8.0),
+            waves: wave
         },
         InPond,
         Collision,
         PhysicsFish,
         FishLoc::Pond1,
+        HungerCpt::new(BASS.time_of_day)
     ));
 
     let fish_bass_handle: Handle<Image> = asset_server.load("fish/catfish.png");
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
 
     commands.spawn((
         SpriteBundle {
@@ -738,14 +818,45 @@ fn setup(
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default(),
+            cd: CATFISH.cd,
+            sa: (5.0 * 5.0, 5.0 * 8.0),
+            waves: wave
         },
         InPond,
         Collision,
         PhysicsFish,
         FishLoc::Pond1,
+        HungerCpt::new(CATFISH.time_of_day)
+    ));
+    
+    // HUD background
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle::new(208., 720.))),
+            material: materials.add(Color::BLACK),
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X + 536., FISHING_ROOM_Y, 999.25),
+                ..default()
+            },
+            ..default()
+        },
     ));
 
-    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/fishing_view.png");
+    // HUD
+    let hud_handle = asset_server.load("fishing_view/hud.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: hud_handle.clone(),
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 999.75),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+
+    let fishing_sheet_handle: Handle<Image> = asset_server.load("fishing_view/pond_view.png");
 
     commands.spawn((
         SpriteBundle {
@@ -782,7 +893,7 @@ fn setup(
             texture: bar_sheet_handle.clone(),
             sprite: Sprite { ..default() },
             transform: Transform {
-                translation: Vec3::new(FISHING_ROOM_X + 575., FISHING_ROOM_Y - 308., 899.),
+                translation: Vec3::new(FISHING_ROOM_X+575., FISHING_ROOM_Y-308., 999.5),
                 ..default()
             },
             ..default()
@@ -834,7 +945,8 @@ fn setup(
         },
         exclam_point,
     ));
-
+    
+    // Fishing rod
     let default_rod_type = &FishingRodType::NORMAL;
     let segment_count: usize = (FishingRodType::NORMAL.length / BENDING_RESOLUTION) as usize;
 
@@ -850,6 +962,7 @@ fn setup(
         ),
     };
 
+    // Fishling line
     for i in (0..segment_count).rev() {
         let l = i as f32 * BENDING_RESOLUTION;
         let radius = default_rod_type.thickness * l / default_rod_type.length;
@@ -895,19 +1008,9 @@ fn setup(
         rod_info,
     ));
 
-    commands.spawn((
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, 0.0))),
-            material: materials.add(Color::hsl(100., 1., 1.)),
-            transform: Transform::from_xyz(
-                FISHING_ROOM_X - 90.,
-                FISHING_ROOM_Y - (WIN_H / 2.) + 100.,
-                950.,
-            ),
-            ..default()
-        },
-        FishingLine::new(&FishingLineType::MONOFILILMENT),
-    ));
+    commands.spawn(
+    FishingLine::new(&FishingLineType::MONOFILILMENT)
+    );
 
     let splashes_sheet_handle: Handle<Image> = asset_server.load("fishing_view/splashes.png");
     let splash_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
@@ -933,43 +1036,17 @@ fn setup(
         Splash::default(),
     ));
 
-    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
-    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
-    let wave_layout_len = wave_layout.textures.len();
-    let wave_layout_handle = texture_atlases.add(wave_layout);
+    let lure_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
+    let lure_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
+    let lure_layout_len = lure_layout.textures.len();
+    let lure_layout_handle = texture_atlases.add(lure_layout);
+    
+    // Lure display on HUD
     commands.spawn((
         SpriteBundle {
-            texture: waves_sheet_handle.clone(),
-            transform: Transform {
-                translation: Vec3::new(
-                    FISHING_ROOM_X - 90.,
-                    FISHING_ROOM_Y - (WIN_H / 2.) + 100.,
-                    930.,
-                ),
-                ..default()
-            },
-            visibility: Visibility::Hidden,
-            ..default()
-        },
-        TextureAtlas {
-            layout: wave_layout_handle.clone(),
-            index: 0,
-        },
-        //AnimationTimer::new(0.2),
-        AnimationFrameCount(wave_layout_len), //number of different frames that we have
-        Wave,
-    ));
-
-    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
-    let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
-    let baits_layout_len = baits_layout.textures.len();
-    let baits_layout_handle = texture_atlases.add(baits_layout);
-
-    commands.spawn((
-        SpriteBundle {
-            texture: baits_sheet_handle.clone(),
-            transform: Transform {
-                translation: Vec3::new(FISHING_ROOM_X + 545., FISHING_ROOM_Y + 255., 930.),
+            texture: lure_sheet_handle.clone(),
+            transform: Transform{
+                translation: Vec3::new(FISHING_ROOM_X+545., FISHING_ROOM_Y+255.,   999.8),
                 scale: (Vec3::splat(3.0)),
                 ..default()
             },
@@ -977,87 +1054,56 @@ fn setup(
             ..default()
         },
         TextureAtlas {
-            layout: baits_layout_handle.clone(),
+            layout: lure_layout_handle.clone(),
             index: 0,
         },
-        OnScreenLure,
-        AnimationFrameCount(baits_layout_len),
+        LureHUD,
+        AnimationFrameCount(lure_layout_len),
         AnimationTimer::new(0.2), //number of different frames that we have
     ));
 
-    let baits_sheet_handle: Handle<Image> = asset_server.load("lures/baits.png");
-    let baits_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 3, 1, None, None);
-    let baits_layout_len = baits_layout.textures.len();
-    let baits_layout_handle = texture_atlases.add(baits_layout);
-
+    // Physical lure
+    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
+    
     commands.spawn((
         SpriteBundle {
-            texture: baits_sheet_handle.clone(),
-            transform: Transform::from_xyz(
-                FISHING_ROOM_X - 90.,
-                FISHING_ROOM_Y - (WIN_H / 2.) + 100.,
-                930.,
-            ),
+            texture: lure_sheet_handle.clone(),
+            transform: Transform::from_xyz(FISHING_ROOM_X-90., FISHING_ROOM_Y-(WIN_H/2.)+100.,   930.),
             visibility: Visibility::Hidden,
             ..default()
         },
         TextureAtlas {
-            layout: baits_layout_handle.clone(),
+            layout: lure_layout_handle.clone(),
             index: 0,
         },
-        Tile::BOBBER,
         PhysicsObject {
             mass: 2.0,
             position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
             rotation: Vec3::ZERO,
             velocity: Vec3::ZERO,
             forces: Forces::default(),
+            cd: Lure::BOBBER.cd,
+            sa: Lure::BOBBER.sa,
+            waves: wave
         },
         Collision,
-        AnimationFrameCount(baits_layout_len), //number of different frames that we have
-        Lure::default(),
-        Bobber::default(),
+        Lure::BOBBER,
     ));
-
-    /*let bobber_handle = asset_server.load("fishing_view/bobber.png");
-    commands.spawn((
-        SpriteBundle {
-            texture: bobber_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100.,100.)),
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3::new(0., 0.,   0.),
-                ..default()
-            },
-            visibility: Visibility::Hidden,
-            ..default()
-        },
-        Tile::BOBBER,
-        PhysicsObject {
-            mass: 2.0,
-            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
-            rotation: Vec3::ZERO,
-            velocity: Vec3::ZERO,
-            forces: Forces::default()
-        },
-        Collision,
-        Bobber::default(),
-    ));*/
 
     //spawning in the lilypad
     let lily_sheet_handle: Handle<Image> = asset_server.load("fishing_view/lilypad.png");
     let deep_sheet_handle: Handle<Image> = asset_server.load("fishing_view/deep.png");
+    let debries_sheet_handle: Handle<Image> = asset_server.load("fishing_view/water_bottle.png");
+    let bush_debries_sheet_handle: Handle<Image> = asset_server.load("tiles/bush_no_shadow.png");
     commands.spawn((
         SpriteBundle {
             texture: lily_sheet_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(128., 128.)),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(128.,128.)),
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(FISHING_ROOM_X + 160., FISHING_ROOM_Y + 100., 901.),
+                translation: Vec3::new(FISHING_ROOM_X+160., FISHING_ROOM_Y+100., 901.),
                 ..default()
             },
             ..default()
@@ -1088,6 +1134,96 @@ fn setup(
         InPond,
         FishLoc::Pond2,
     ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+100., FISHING_ROOM_Y+50., 901.),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        // HookedDebris { drag_increase: 1.5 },
+        DebrisHooked { hooked: false }, 
+        InPond,
+        FishLoc::Pond1,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: bush_debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(200.,200.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X - 500., FISHING_ROOM_Y - 1000., 901.),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        // HookedDebris { drag_increase: 1.5 },
+        DebrisHooked { hooked: false }, 
+        InPond,
+        FishLoc::Pond1,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+60., FISHING_ROOM_Y+0., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        HookedDebris { drag_increase: 1.5 },
+        InPond,
+        FishLoc::Pond2,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+60., FISHING_ROOM_Y+0., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        HookedDebris { drag_increase: 1.5 },
+        InPond,
+        FishLoc::Ocean,
+    ));
+    
 
     commands.spawn((
         SpriteBundle {
@@ -1132,6 +1268,8 @@ fn move_fish(
             Without<FishDetails>,
         ),
     >,
+    mut fish_details: Query<(&mut Fish, &mut Transform, &Species), (With<InPond>, With<Collision>, Without<PhysicsObject>, Without<PondObstruction>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>)>,
     time: Res<Time>,
     mut config: ResMut<DirectionTimer>,
     //mut fish_direction: ResMut<FishBoundsDir>
@@ -1144,53 +1282,69 @@ fn move_fish(
     for (mut fish_details, mut fish_pos) in fish_details.iter_mut() {
         //let mut rng = rand::thread_rng();
 
+    for (mut fish_details, mut fish_pos, fish_species) in fish_details.iter_mut() {
+        //let mut rng = rand::thread_rng();             
+        
         //move towards the obsticle on the x bounds
 
         if config.timer.finished() {
             let move_type: i32 = rng.gen_range(0..9);
             let dir: i32 = obst_rng.gen_range(0..9);
-            //finding where to go in relation to the
+            let mut move_skew: i32 = 0;
+            //finding where to go in relation to the 
             //position in relation to x row
             for (obst_details, obstical_type) in obst_details.iter_mut() {
                 //go back and account for margin of error done
-
-                if *obstical_type == ObstType::Fissure {
-                    if fish_details.name == "catfish" {
-                        if obst_details.translation.x >= fish_pos.translation.x {
-                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                        } else if obst_details.translation.x < fish_pos.translation.x {
-                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                        }
-
-                        //move towards the obsticle on the right bounds
-                        if obst_details.translation.y >= fish_pos.translation.y {
-                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
-                        } else if obst_details.translation.y < fish_pos.translation.y {
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
-                        }
+                if *obstical_type == fish_species.obj_pref.0 {
+                    //if fish_details.name == "catfish"{
+                    move_skew = fish_species.obj_pref.1;
+                    if obst_details.translation.x >= fish_pos.translation.x{
+                        fish_details.change_x = Vec3::new(0.5, 0., 0.);
+            
                     }
-                } else if *obstical_type == ObstType::Pad {
-                    if fish_details.name == "bass" {
-                        if obst_details.translation.x >= fish_pos.translation.x {
-                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                        } else if obst_details.translation.x < fish_pos.translation.x {
-                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                        }
-
-                        //move towards the obsticle on the right bounds
-                        if obst_details.translation.y >= fish_pos.translation.y {
-                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
-                        } else if obst_details.translation.y < fish_pos.translation.y {
-                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
-                        }
+                    else if obst_details.translation.x < fish_pos.translation.x{
+                        fish_details.change_x = Vec3::new(-0.5, 0., 0.);
                     }
+            
+                    //move towards the obsticle on the right bounds
+                    if obst_details.translation.y >= fish_pos.translation.y{
+                        fish_details.change_y = Vec3::new(0., 0.5, 0.);
+            
+                    }
+                    else if obst_details.translation.y < fish_pos.translation.y{
+                        fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                    }
+                    //}
                 }
+                // else if *obstical_type == ObstType::Pad{
+                //     if fish_details.name == "bass"{
+                //         if obst_details.translation.x >= fish_pos.translation.x{
+                //             fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                
+                //         }
+                //         else if obst_details.translation.x < fish_pos.translation.x{
+                //             fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                //         }
+                
+                //         //move towards the obsticle on the right bounds
+                //         if obst_details.translation.y >= fish_pos.translation.y{
+                //             fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                
+                //         }
+                //         else if obst_details.translation.y < fish_pos.translation.y{
+                //             fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                //         }
+                //     }
+                // }
+                //for each collision object add a            
             }
 
             println!("timer finished");
 
-            //println!("numer is {} {:?} {:?}", dir, fish_details.id, fish_details.name);
-            if move_type >= 4 {
+            
+
+            //println!("numer is {} {:?}", dir, fish_details.name);
+            if move_type >= 4+move_skew{
                 if dir == 0 {
                     fish_details.change_x = Vec3::new(0., 0., 0.);
                     fish_details.change_y = Vec3::new(0., 0.5, 0.);
@@ -1237,18 +1391,20 @@ fn move_fish(
         if (holdx.x) >= (-640. + 160.) && (holdx.x) <= (431. - 160.) {
             //println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_x;
-        } else {
-            //println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
-            //println!("holdx = {:?}", holdx);
+        }
+        else{
+            // println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            // println!("holdx = {:?}", holdx);
         }
         let holdy: Vec3 = fish_pos.translation + fish_details.change_y;
-        if (holdy.y) >= (-719.5 - 224. + 90.) && (holdy.y) <= (-719.5 + 360. - 90.) {
+        if (holdy.y) >= (-719.5-224. + 90.) && (holdy.y) <= (-719.5 + 360. - 90.) {
             //println!("{:?}", fish_pos.translation);
             fish_pos.translation += fish_details.change_y;
-        } else {
-
-            //println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
-            //println!("holdx = {:?}", holdy);
+        }
+        else{
+            
+            // println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            // println!("holdx = {:?}", holdy);
         }
     }
     //fish_pos.translation += change_y;
@@ -1259,79 +1415,15 @@ fn move_fish(
 
 fn add_fish(
     mut commands: Commands,
-    mut fish_details: Query<
-        (
-            &mut Fish,
-            &Species,
-            &mut Transform,
-            &mut Visibility,
-            &FishLoc,
-        ),
-        (
-            With<InPond>,
-            With<Fish>,
-            With<Collision>,
-            With<MysteryFish>,
-            Without<PhysicsObject>,
-            Without<Bobber>,
-        ),
-    >,
-    mut backgroundDeetsPond: Query<
-        (&mut Transform),
-        (
-            Without<BeachScreen>,
-            Without<Collision>,
-            Without<PhysicsObject>,
-            Without<Bobber>,
-            With<PondScreen>,
-            Without<MysteryFish>,
-            Without<InPond>,
-        ),
-    >,
-    mut backgroundDeetsBeach: Query<
-        (&mut Transform),
-        (
-            With<BeachScreen>,
-            Without<Collision>,
-            Without<PhysicsObject>,
-            Without<Bobber>,
-            Without<PondScreen>,
-            Without<MysteryFish>,
-            Without<InPond>,
-        ),
-    >,
-    mut fishes_phys: Query<
-        (Entity, &mut Transform, &FishLoc),
-        (
-            With<PhysicsFish>,
-            With<Fish>,
-            With<Collision>,
-            With<InPond>,
-            With<PhysicsObject>,
-            Without<Bobber>,
-            Without<MysteryFish>,
-            Without<PondScreen>,
-            Without<BeachScreen>,
-        ),
-    >,
-    mut obst_details: Query<
-        (&mut Transform, &mut ObstType, &FishLoc),
-        (
-            With<PondObstruction>,
-            With<Collision>,
-            With<InPond>,
-            Without<FishDetails>,
-            Without<MysteryFish>,
-            Without<PhysicsObject>,
-            Without<Bobber>,
-            Without<PondScreen>,
-            Without<BeachScreen>,
-        ),
-    >,
-    state: Res<State<FishingLocal>>,
-) {
-    let mut beachScr = backgroundDeetsBeach.single_mut();
-    let mut pondScr = backgroundDeetsPond.single_mut();
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility, &FishLoc), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
+    mut backgroundDeetsPond: Query<&mut Transform, (Without<BeachScreen>, Without<Collision>, Without<PhysicsObject>, Without<Lure>, With<PondScreen>, Without<MysteryFish>, Without<InPond>)>,
+    mut backgroundDeetsBeach: Query<&mut Transform, (With<BeachScreen>, Without<Collision>, Without<PhysicsObject>, Without<Lure>, Without<PondScreen>, Without<MysteryFish>, Without<InPond>)>,
+    mut fishes_phys: Query<(Entity, &mut Transform, &FishLoc), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Lure>, Without<MysteryFish>, Without<PondScreen>, Without<BeachScreen>)>,
+    mut obst_details: Query<(&mut Transform, &mut ObstType, &FishLoc), (With<PondObstruction>, With<Collision>, With<InPond>, Without<FishDetails>, Without<MysteryFish>, Without<PhysicsObject>, Without<Lure>, Without<PondScreen>, Without<BeachScreen>)>,
+    state: Res<State<FishingLocal>>,  
+){
+    let mut beachScr = backgroundDeetsBeach.single_mut(); 
+    let mut pondScr = backgroundDeetsPond.single_mut(); 
 
     if state.eq(&FishingLocal::Pond1) {
         for (mut fish, species, mut transform, mut visibility, loc) in &mut fish_details {
@@ -1350,7 +1442,11 @@ fn add_fish(
                     obstPos.translation =
                         Vec3::new(FISHING_ROOM_X - 360., FISHING_ROOM_Y - 100., 901.);
                 }
-            } else {
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-500., FISHING_ROOM_Y+50., 901.);
+                }
+            }
+            else{
                 obstPos.translation = Vec3::new(8000., 8000., 901.);
             }
         }
@@ -1381,7 +1477,11 @@ fn add_fish(
                 } else if *obstType == ObstType::Fissure {
                     obstPos.translation = Vec3::new(FISHING_ROOM_X + 260., FISHING_ROOM_Y, 901.);
                 }
-            } else {
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-350., FISHING_ROOM_Y+200., 901.);
+                }
+            }
+            else{
                 obstPos.translation = Vec3::new(8000., 8000., 901.);
             }
         }
@@ -1414,7 +1514,11 @@ fn add_fish(
                     obstPos.translation =
                         Vec3::new(FISHING_ROOM_X - 360., FISHING_ROOM_Y - 100., 901.);
                 }
-            } else {
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X+260., FISHING_ROOM_Y+300., 901.);
+                }
+            }
+            else{
                 obstPos.translation = Vec3::new(8000., 8000., 901.);
             }
         }
@@ -2220,79 +2324,176 @@ fn fishPopulation(
 }
 
 fn fish_area_bobber(
+){
+    let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
+    
+    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
+    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
+    let wave_layout_handle = texture_atlases.add(wave_layout);
+    let wave: Entity = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
+    
+    commands.spawn((
+        SpriteBundle {
+            texture: cool_fish_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(320.,180.)),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            transform: Transform {
+                translation: Vec3::new(-8000., -8000., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Fish{
+            name: "bass",
+            id: 0,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        InPond,
+        BASS,
+        Collision,
+        MysteryFish,
+        FishLoc::Ocean,
+    ));
+
+
+    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
+
+    commands.spawn((
+        SpriteBundle {
+            texture: fish_bass_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            transform: Transform {
+                translation: Vec3::new(-8000., -8000., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        BASS,
+        Fish{
+            name: "Bass2",
+            id: 2,
+            is_caught: false,
+            is_alive: true,
+            touching_lure: false,
+            length: 8.0,
+            width: 5.0,
+            weight: 2.0,
+            time_of_day: (0, 12),
+            weather: Weather::Sunny,
+            depth: (0,5),
+            //x, y, z
+            position: (8320, 3960),
+            change_x: Vec3::new(0.,0.,0.),
+            change_y: Vec3::new(0.,0.,0.),
+            //length, width, depth
+            bounds: (FISHING_ROOM_X as i32+100, FISHING_ROOM_Y as i32 + 100),
+            age: 6.0,
+            hunger: 10.0
+        },
+        PhysicsObject{
+            mass: 2.0,
+            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+            rotation: Vec3::ZERO,
+            velocity: Vec3::ZERO,
+            forces: Forces::default(),
+            cd: BASS.cd,
+            sa: (5.0 * 5.0, 5.0 * 8.0),
+            waves: wave
+        },
+        InPond,
+        Collision,
+        PhysicsFish,
+        FishLoc::Ocean,
+    ));
+    //this is working lets start adding stuff/ look at psuedo code.
+
+    //pond section and river section. 
+    println!("ITS 23!!! adding new fish now!!!");
+    
+
+}
+
+fn catch_debris(
+    mut debris_details: Query<(&mut Transform, &mut DebrisHooked),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>,
+    mut lure: Query<(&Transform, &mut PhysicsObject), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+) {
+    let (lure_transform, mut lure_physics) = lure.single_mut();
+
+    for (mut debris_position, mut debirs_is_hooked) in debris_details.iter_mut() {
+        let debris_pos = debris_position.translation;
+        let lure_position = lure_transform.translation;
+
+        if debris_pos.y > lure_position.y + 50.
+        || debris_pos.y < lure_position.y - 50.
+        || debris_pos.x < lure_position.x - 50.
+        || debris_pos.x > lure_position.x + 50. {
+        } else {
+            if !debirs_is_hooked.hooked {
+                debirs_is_hooked.hooked = true;
+                lure_physics.mass += 5.;
+            }
+            debris_position.translation = lure_position;
+            
+        }
+    }
+}
+
+fn fish_area_lure(
     mut commands: Commands,
-    mut fish_details: Query<
-        (&mut Fish, &Species, &mut Transform, &mut Visibility),
-        (
-            With<InPond>,
-            With<Fish>,
-            With<Collision>,
-            With<MysteryFish>,
-            Without<PhysicsObject>,
-            Without<Bobber>,
-        ),
-    >,
-    mut bobber: Query<
-        (&Transform, &Tile, Entity, &PhysicsObject, &mut Visibility),
-        (
-            With<Bobber>,
-            With<PhysicsObject>,
-            Without<Fish>,
-            Without<MysteryFish>,
-        ),
-    >,
-    mut fishes: Query<
-        (
-            Entity,
-            &mut Fish,
-            &Species,
-            &mut PhysicsObject,
-            &mut Transform,
-            &mut Visibility,
-        ),
-        (
-            With<PhysicsFish>,
-            With<Fish>,
-            With<Collision>,
-            With<InPond>,
-            With<PhysicsObject>,
-            Without<Bobber>,
-            Without<MysteryFish>,
-        ),
-    >, //add this in as the fish query, change the position of it at the end
-    mut exclamation: Query<
-        (&mut Transform, &mut Visibility),
-        (
-            With<exclam_point>,
-            Without<InPond>,
-            Without<Bobber>,
-            Without<PhysicsFish>,
-        ),
-    >,
-    //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Bobber>)>,
+    mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
+    mut lure: Query<(&Transform, Entity, &mut PhysicsObject, &mut Visibility), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Lure>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
+    mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Lure>, Without<PhysicsFish>)>,
+    //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Lure>)>,
     weather: Res<WeatherState>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
     mut next_state: ResMut<NextState<FishingState>>,
     time: Res<Time>,
     mut config: ResMut<ExclamationTimer>,
+    mut debris_details: Query<(&mut Transform, &mut DebrisHooked),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>
 ) {
-    //let (bob, tile) = bobber.single_mut();
-    //let (bob, tile, mut bobber_vis) = bobber.single_mut();
+    let (lure_transform,  lure_entity_id,mut lure_physics, mut lure_vis) = lure.single_mut();
+    let lure_position = lure_transform.translation;
+    //let (bob, tile) = lure.single_mut();
+    //let (bob, tile, mut lure_vis) = lure.single_mut();
     //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
-    let (bob, tile, bobber_entity_id, bobber_physics, mut bobber_vis) = bobber.single_mut();
+
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
-        let bobber_position = bob.translation;
+        let lure_position = lure_transform.translation;
+        
+        //println!("fish {:?} {} x {} y \n lure:  {} x {} y ", fishes_details.name, fish_pos.translation.x, fish_pos.translation.y, lure_position.x, lure_position.y);
+        
+        //let lure_position = bob.translation;
 
-        //println!("fish {:?} {} x {} y \n bobber:  {} x {} y ", fishes_details.name, fish_pos.translation.x, fish_pos.translation.y, bobber_position.x, bobber_position.y);
-
-        //let bobber_position = bob.translation;
-
-        if fish_pos_loc.y - 180. / 2. > bobber_position.y + 50.
-            || fish_pos_loc.y + 180. / 2. < bobber_position.y - 50.
-            || fish_pos_loc.x + 320. / 2. < bobber_position.x - 50.
-            || fish_pos_loc.x - 320. / 2. > bobber_position.x + 50.
+        if fish_pos_loc.y - 180. / 2. > lure_position.y + 50.
+            || fish_pos_loc.y + 180. / 2. < lure_position.y - 50.
+            || fish_pos_loc.x + 320. / 2. < lure_position.x - 50.
+            || fish_pos_loc.x - 320. / 2. > lure_position.x + 50.
         {
             //there is no hit
             fish_details.touching_lure = false;
@@ -2301,8 +2502,8 @@ fn fish_area_bobber(
             continue;
         }
         fish_details.touching_lure = true;
-        //println!("fish {:?}, {:?}", fish_details.name, fish_pos.translation);
-        //println!("bobber hit");
+        println!("fish {:?}, {:?}", fish_details.name, fish_pos.translation);
+        println!("lure hit");
 
         //let (entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) = fishes.single_mut();
 
@@ -2327,8 +2528,8 @@ fn fish_area_bobber(
                     //fish number matches the other number of the caught fish
                     println!("FIRST: {:?}", fishy_transform.translation);
                     //println!("FIRST: {:?}", exclam_transform.translation);
-                    fishy_transform.translation = bobber_position;
-                    //exclam_transform.translation = bobber_position;
+                    fishy_transform.translation = lure_position;
+                    //exclam_transform.translation = lure_position;
                     //exclam_transform.translation.y += 40.;
                     //*exclam_vis = Visibility::Visible;
 
@@ -2341,9 +2542,9 @@ fn fish_area_bobber(
                     }*/
 
                     //println!("SECOND: {:?}", exclam_transform.translation);
-                    fish_physics.position = bobber_position;
+                    fish_physics.position = lure_physics.position;
                     //fishy_transform.translation = fish_physics.position.with_z(901.);
-                    *bobber_vis = Visibility::Hidden; //yes
+                    *lure_vis = Visibility::Hidden; //yes
                     *fish_vis = Visibility::Hidden; //yes
                     *fishy_vis = Visibility::Visible;
                     fishy_details.is_caught = true;
@@ -2353,10 +2554,9 @@ fn fish_area_bobber(
                     //for (physics_object, mut transform) in objects.iter_mut() {
                     //transform.translation = physics_object.position.with_z(901.);
                     //unhide the actual fish
-                    fish_physics.mass = fish_physics.mass + bobber_physics.mass; //yes
-                    fishy_details.hooked_fish();
+                    fish_physics.mass = fish_physics.mass + lure_physics.mass; //yes
                     println!("fish name {:?}", fishy_details.name);
-                    commands.entity(bobber_entity_id).remove::<Hooked>(); //yes
+                    commands.entity(lure_entity_id).remove::<Hooked>(); //yes
                     commands.entity(entity_id).insert(Hooked); //yes
                     next_state.set(FishingState::ReelingHooked);
 
@@ -2367,11 +2567,20 @@ fn fish_area_bobber(
             }
             //next_state.set(FishingState::ReelingHooked); //yes
             //break; //yes
-        }
+        }  
+        
+        
     }
+
 }
 
-fn spawn_mark(commands: Commands, position: Vec3) {}
+
+fn spawn_mark(
+    commands: Commands,
+    position: Vec3,
+){
+
+}
 
 fn fishing_transition(
     mut return_pos: ResMut<PlayerReturnPos>,
@@ -2466,12 +2675,7 @@ fn switch_rod(
         inventory.rod_index + 1
     };
     let current_rod = inventory.rods[inventory.rod_index].name;
-
-    let new_type = match current_rod {
-        "Default Rod" => &FishingRodType::NORMAL,
-        "Surf Rod" => &FishingRodType::SURF,
-        _ => &FishingRodType::NORMAL,
-    };
+    let new_type = RODS.get(current_rod).unwrap();
 
     rod_info.rod_type = new_type;
     materials.remove(&rod_info.material);
@@ -2514,7 +2718,8 @@ fn switch_rod(
 fn switch_line(
     input: Res<ButtonInput<KeyCode>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut line: Query<(&mut FishingLine, &mut Handle<ColorMaterial>), With<FishingLine>>,
+    mut line: Query<&mut FishingLine>,
+    mut segments: Query<&Handle<ColorMaterial>, With<FishingLineSegment>>,
     mut player_inventory: Query<&mut PlayerInventory>,
 ) {
     if !input.just_pressed(SWITCH_LINE) {
@@ -2522,86 +2727,65 @@ fn switch_line(
     }
 
     let mut inventory = player_inventory.single_mut();
-    let (mut line_properties, line_material) = line.single_mut();
-
-    inventory.line_index = if inventory.line_index == inventory.lines.len() - 1 {
-        0
-    } else {
-        inventory.line_index + 1
-    };
+    let mut line_info = line.single_mut();
+    
+    inventory.line_index = if inventory.line_index == inventory.lines.len() - 1 { 0 } else { inventory.line_index + 1 };
     let current_line = inventory.lines[inventory.line_index].name;
-
-    line_properties.line_type = match current_line {
-        "FluoroCarbon Fishing Line" => &FishingLineType::FLUOROCARBON,
-        "Braided Fishing Line" => &FishingLineType::BRAIDED,
-        "Monofilament Fishing Line" => &FishingLineType::MONOFILILMENT,
-        _ => &FishingLineType::MONOFILILMENT,
-    };
-
-    let material = materials.get_mut(line_material.id()).unwrap();
-    material.color = line_properties.line_type.color;
+    line_info.line_type = LINES.get(current_line).unwrap();
+    
+    for material in segments.iter_mut() {
+        materials.get_mut(material).unwrap().color = line_info.line_type.color;
+    }
 }
 
-fn switch_bait(
+fn switch_lure (
     input: Res<ButtonInput<KeyCode>>,
-    mut screen_lure: Query<&mut TextureAtlas, With<OnScreenLure>>,
-    mut bait_lure: Query<
-        (&mut PhysicsObject, &mut TextureAtlas),
-        (With<Lure>, Without<OnScreenLure>),
-    >,
+    mut screen_lure: Query<&mut TextureAtlas, With<LureHUD>>,
+    mut lure: Query<(&mut Lure, &mut PhysicsObject, &mut TextureAtlas), (With<Lure>, Without<LureHUD>)>,
     mut player_inventory: Query<&mut PlayerInventory>,
 ) {
-    let mut inventory = player_inventory.single_mut();
-    let mut screen_texture = screen_lure.single_mut();
-    let (mut bait_physics, mut bait_texture) = bait_lure.single_mut();
-
-    if input.just_pressed(SWITCH_BAIT_NEXT) {
-        inventory.lure_index = if inventory.lure_index == inventory.lures.len() - 1 {
-            0
-        } else {
-            inventory.lure_index + 1
-        };
-    } else if input.just_pressed(SWITCH_BAIT_PREV) {
-        inventory.lure_index = if inventory.lure_index == 0 {
-            inventory.lures.len() - 1
-        } else {
-            inventory.lure_index - 1
-        };
-    } else {
+    if !input.just_pressed(SWITCH_LURE) {
         return;
     }
 
-    let new_bait = match inventory.lures[inventory.lure_index].name {
-        "Ball Bait" => &Lure::BALL,
-        "Frog Bait" => &Lure::FROG,
-        "Swim Bait" => &Lure::FISH,
-        _ => &Lure::BALL,
-    };
+    let mut inventory = player_inventory.single_mut();
+    let mut screen_texture  = screen_lure.single_mut();
+    let (mut lure, mut physics, mut lure_texture) = lure.single_mut();
 
-    *bait_physics = PhysicsObject::new(
-        new_bait.mass,
-        Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.),
-        Vec3::ZERO,
-        Vec3::ZERO,
-        Forces::default(),
-    );
-    screen_texture.index = new_bait.texture_index;
-    bait_texture.index = new_bait.texture_index;
+    inventory.lure_index = if inventory.lure_index == inventory.lures.len() - 1 { 0 } else { inventory.lure_index + 1 };
+    let current_lure = inventory.lures[inventory.lure_index].name;
+    let new_lure = LURES.get(current_lure).unwrap();
+    
+    *lure = **new_lure;
+
+    *physics = PhysicsObject {
+        mass: new_lure.mass,
+        position: Vec3::ZERO,
+        rotation: Vec3::ZERO,
+        velocity: Vec3::ZERO,
+        forces: Forces::default(),
+        cd: new_lure.cd,
+        sa: new_lure.sa,
+        waves: physics.waves
+    };
+    
+    screen_texture.index = new_lure.texture_index;
+    lure_texture.index = new_lure.texture_index;
 }
 
 fn begin_cast(
     mut commands: Commands,
     power_bar: Query<&PowerBar>,
     mut line: Query<&mut FishingLine>,
-    mut bobber: Query<(Entity, &mut Visibility), With<Lure>>,
+    mut lure: Query<(Entity, &mut Visibility, &mut PhysicsObject), With<Lure>>
 ) {
     let power_bar_info = power_bar.single();
     let mut line_info = line.single_mut();
-    let (entity_id, mut bobber_visibililty) = bobber.single_mut();
-
+    let (entity_id, mut lure_visibililty, mut lure_physics) = lure.single_mut(); 
+    
     line_info.cast_distance = power_bar_info.power / MAX_POWER * MAX_CAST_DISTANCE;
     commands.entity(entity_id).insert(Hooked);
-    *bobber_visibililty = Visibility::Visible;
+    *lure_visibililty = Visibility::Visible;
 }
 
 fn is_done_reeling(
@@ -2621,6 +2805,46 @@ fn is_done_reeling(
     }
 }
 
+fn is_debris_caught (
+    mut commands: Commands,
+    mut debris_details: Query<(Entity, &mut DebrisHooked, &Transform, &mut Visibility),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>,
+    mut lure: Query<(&mut PhysicsObject), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    rod: Query<&FishingRod, With<FishingRod>>,
+) {
+    let (mut lure_physics) = lure.single_mut();
+    let rod_info = rod.single();
+
+    for (entity_id, mut debirs_is_hooked, debris_loc,mut visibility) in debris_details.iter_mut() {
+        let distance = (debris_loc.translation - rod_info.tip_pos).length();
+        if distance < (CATCH_MARGIN + 700.){
+            // *visibility = Visibility::Hidden;
+            lure_physics.mass -= 5.;
+            // debirs_is_hooked.hooked = false;
+            commands.entity(entity_id).despawn();
+        }
+    }
+}
+
+fn is_debris_caught (
+    mut commands: Commands,
+    mut debris_details: Query<(Entity, &mut DebrisHooked, &Transform, &mut Visibility),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>,
+    mut lure: Query<(&mut PhysicsObject), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    rod: Query<&FishingRod, With<FishingRod>>,
+) {
+    let (mut lure_physics) = lure.single_mut();
+    let rod_info = rod.single();
+
+    for (entity_id, mut debirs_is_hooked, debris_loc,mut visibility) in debris_details.iter_mut() {
+        let distance = (debris_loc.translation - rod_info.tip_pos).length();
+        if distance < (CATCH_MARGIN + 700.){
+            // *visibility = Visibility::Hidden;
+            lure_physics.mass -= 5.;
+            // debirs_is_hooked.hooked = false;
+            commands.entity(entity_id).despawn();
+        }
+    }
+}
+
 fn is_fish_caught(
     mut commands: Commands,
     mut player_inventory: Query<&mut PlayerInventory>,
@@ -2629,7 +2853,7 @@ fn is_fish_caught(
     mut hooked_object: Query<(Entity, &mut Fish, &mut PhysicsObject), With<Hooked>>,
 ) {
     let rod_info = rod.single();
-    let (entity_id, mut fish_details, mut fish_physics) = hooked_object.single_mut();
+    let (entity_id, mut fish_details, fish_physics) = hooked_object.single_mut();
     let mut inventory_info = player_inventory.single_mut();
 
     let distance = (fish_physics.position - rod_info.tip_pos).length();
@@ -2638,16 +2862,11 @@ fn is_fish_caught(
         fish_details.is_caught = true;
         inventory_info.coins += fish_details.weight as u32 * 2;
 
-        // Reset fish for testing
-        //fish_details.hooked_fish();
 
-        //THIS IS RESETTING THE FISH!!!! BEN NOTE
-        fish_physics.position = Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y + 100., 0.);
-        fish_physics.velocity = Vec3::new(0., 0., 0.);
-        fish_physics.forces = Forces::default();
-        fish_details.is_caught = false;
-
-        commands.entity(entity_id).remove::<Hooked>();
+        // Despawn fish
+        commands.entity(entity_id).despawn();
+        commands.entity(fish_physics.waves).despawn();
+        fish_details.hooked_fish();
 
         next_state.set(FishingState::Idle);
     }
@@ -2679,12 +2898,12 @@ fn cast_line(
     mut next_state: ResMut<NextState<FishingState>>,
     rod: Query<&FishingRod, With<FishingRod>>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
-    mut bobber: Query<(&mut Transform, &mut PhysicsObject), (With<Lure>, Without<FishingRod>)>,
+    mut lure: Query<(&mut Transform, &mut PhysicsObject), (With<Lure>, Without<FishingRod>)>,
     mut splash: Query<(&mut Splash, &mut Visibility), With<Splash>>,
 ) {
     let rod_info = rod.single();
     let mut line_info = line.single_mut();
-    let (mut bobber_transform, mut bobber_physics) = bobber.single_mut();
+    let (mut lure_transform, mut lure_physics) = lure.single_mut();
     let (mut splash_info, mut splash_visibility) = splash.single_mut();
     let angle_vector = Vec2::from_angle(rod_info.rotation).extend(0.);
 
@@ -2694,47 +2913,47 @@ fn cast_line(
 
     if line_info.length == line_info.cast_distance {
         // Cast finished
+        lure_physics.forces.gravity = Vec3::new(0., 0., -GRAVITY * lure_physics.mass);
         line_info.length = line_info.cast_distance;
         splash_info.position = line_info.end.with_z(902.);
         *splash_visibility = Visibility::Visible;
         next_state.set(FishingState::ReelingUnhooked);
     }
 
-    //setting the position of the bobber along with the physics location of the bobber.
-    //also make sure that we are setting the bobber to be a hooked object
-    bobber_physics.position = line_info.end.with_z(950.);
-    bobber_transform.translation = line_info.end.with_z(950.);
+    //setting the position of the lure along with the physics location of the lure.
+    //also make sure that we are setting the lure to be a hooked object
+    lure_physics.position = Vec3::new(line_info.end.x, line_info.end.y, lure_physics.position.z);
+    lure_physics.forces.water = Vec3::ZERO;
+    lure_transform.translation = line_info.end.with_z(950.);
 }
 
 fn animate_fishing_line(
     rod: Query<&FishingRod, With<FishingRod>>,
     hooked_fish: Query<(&Species, &PhysicsObject), (With<Fish>, With<Hooked>)>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
-    mut bobber: Query<&PhysicsObject, With<Lure>>,
+    mut lure: Query<&PhysicsObject, With<Lure>>,
     state: Res<State<FishingState>>,
+    time: Res<Time>,
 ) {
     let rod_info = rod.single();
     let mut line_info = line.single_mut();
 
     line_info.start = rod_info.tip_pos;
 
-    match state.get() {
-        FishingState::Idle => {
-            line_info.end = line_info.start;
-        }
-        FishingState::ReelingHooked => {
-            let (fish_species, fish_physics) = hooked_fish.single();
-            let fish_offset = fish_species
-                .hook_pos
-                .rotate(Vec2::from_angle(fish_physics.rotation.z));
-            let fish_pos = fish_physics.position + fish_offset.extend(0.);
-            line_info.end = fish_pos;
-        }
-        FishingState::ReelingUnhooked => {
-            let bobber_physics = bobber.single_mut();
-            line_info.end = bobber_physics.position;
-        }
-        _ => {}
+
+    if !hooked_fish.is_empty() {
+        // Reeling hooked
+        let (fish_species, fish_physics) = hooked_fish.single();
+        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(fish_physics.rotation.z));
+        let fish_pos = fish_physics.position + fish_offset.extend(0.);
+        line_info.end = fish_pos;
+    } else if state.eq(&FishingState::ReelingUnhooked) {
+        // Reeling unhooked
+        let lure_physics = lure.single_mut();
+        line_info.end = lure_physics.position;
+    } else {
+        // Idle
+        line_info.end = line_info.start;
     }
 }
 
@@ -2742,59 +2961,107 @@ fn reset_interface(
     mut power_bar: Query<&mut PowerBar>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
     mut splash: Query<&mut TextureAtlas, With<Splash>>,
-    mut bobber: Query<(&mut PhysicsObject, &mut Visibility), With<Lure>>,
+    mut lure: Query<(&mut PhysicsObject, &mut Visibility), With<Lure>>
 ) {
     let mut power_bar_info = power_bar.single_mut();
     let mut line_info = line.single_mut();
     let mut splash_texture = splash.single_mut();
-    let (mut bobber_physics, mut bobber_visibility) = bobber.single_mut();
+    let (mut lure_physics, mut lure_visibility) = lure.single_mut();
 
     line_info.length = 0.;
     line_info.start = Vec3::ZERO;
     line_info.end = Vec3::ZERO;
-    bobber_physics.velocity = Vec3::ZERO;
-    bobber_physics.forces = Forces::default();
-    *bobber_visibility = Visibility::Hidden;
+    lure_physics.position.z = 0.;
+    lure_physics.velocity = Vec3::ZERO;
+    lure_physics.forces = Forces::default();
+    *lure_visibility = Visibility::Hidden;
     splash_texture.index = 0;
     power_bar_info.power = 0.;
 }
 
-pub fn move_physics_objects(
-    mut objects: Query<(&PhysicsObject, &mut Transform), With<PhysicsObject>>,
+pub fn move_physics_objects (
+    mut objects: Query<(&PhysicsObject, &mut Sprite, &mut Transform), With<PhysicsObject>>
 ) {
-    for (physics_object, mut transform) in objects.iter_mut() {
+    for (physics_object, mut sprite, mut transform) in objects.iter_mut() {
         transform.translation = physics_object.position.with_z(transform.translation.z);
         transform.rotation = Quat::from_rotation_z(physics_object.rotation.z);
+
+        let new_alpha = if physics_object.position.z > 0. {
+            1.
+        } else {
+            1. / (1. - physics_object.position.z / DEPTH_DECAY).powi(2)
+        };
+
+        sprite.color.set_alpha(new_alpha);
     }
 }
 
-fn draw_fishing_line(
+fn adjust_fishing_line_size (
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut line: Query<
-        (&mut Transform, &mut Mesh2dHandle, &mut FishingLine),
-        (With<FishingLine>, Without<FishingRod>),
-    >,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut line: Query<&mut FishingLine>,
+    mut line_segments: Query<(&mut Visibility, &mut Transform, &Handle<ColorMaterial>), With<FishingLineSegment>>
 ) {
-    let (mut line_transform, mut line_mesh, line_info) = line.single_mut();
+    let mut line_info = line.single_mut();
 
     let pos_delta = line_info.end - line_info.start;
-    let line_length = pos_delta.with_z(0.).length();
+    let segment_count = pos_delta.with_z(0.).length() as usize;
+    let segments = line_info.segments.len();
 
-    let line_pos = (line_info.start + line_info.end) / 2.;
-    let line_rotation = f32::atan2(pos_delta.y, pos_delta.x) + PI / 2.;
+    if segments < segment_count {
+        for _i in segments..segment_count {
+            let entity_id = commands.spawn((
+                MaterialMesh2dBundle {
+                    mesh: Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, FishingLine::WIDTH))),
+                    material: materials.add(ColorMaterial::from_color(line_info.line_type.color)),
+                    ..default()
+                },
+                FishingLineSegment
+            )).id();
 
-    // Draw fishing line
-    line_transform.translation = Vec3::new(line_pos.x, line_pos.y, line_transform.translation.z);
-    line_transform.rotation = Quat::from_rotation_z(line_rotation);
+            line_info.segments.push(entity_id);
+        }
+    } else if segments > segment_count {
+        for i in segment_count..segments {
+            let entity_id = line_info.segments[i];
+            let (mut visibility, mut _transform, _material) = line_segments.get_mut(entity_id).unwrap();
+            
+            *visibility = Visibility::Hidden;
+        }
+    }
+}
 
-    let width = if line_length == 0. {
-        0.
-    } else {
-        FishingLine::WIDTH
-    };
+fn draw_fishing_line (
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut line: Query<&mut FishingLine>,
+    mut line_segments: Query<(&mut Visibility, &mut Transform, &Handle<ColorMaterial>), With<FishingLineSegment>>
+) {
+    if line_segments.is_empty() {
+        return;
+    }
 
-    meshes.remove(line_mesh.id());
-    *line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(width, line_length)));
+    let line_info = line.single_mut();
+
+    let pos_delta = line_info.end - line_info.start;
+    let segment_count = pos_delta.with_z(0.).length() as usize;
+
+    for i in 0..segment_count {
+        let entity_id = line_info.segments[i];
+        let (mut visibility, mut transform, material_handle) = line_segments.get_mut(entity_id).unwrap();
+        let position = line_info.start + i as f32 / segment_count as f32 * pos_delta;
+
+        let new_alpha = if position.z > 0. {
+            1.
+        } else {
+            1. / (1. - position.z / DEPTH_DECAY).powi(2)
+        };
+
+        *visibility = Visibility::Visible;
+        transform.translation = position.with_z(950.);
+        let material = materials.get_mut(material_handle).unwrap();
+        material.color = material.color.with_alpha(new_alpha);
+    }
 }
 
 fn animate_splash(
@@ -2832,22 +3099,25 @@ fn animate_splash(
     }
 }
 
-fn animate_waves(
-    objects: Query<(&PhysicsObject, &Fish), (With<PhysicsObject>, With<Fish>)>,
-    mut wave: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), With<Wave>>,
-) {
-    let (mut wave_texture, mut wave_transform, mut wave_visibility) = wave.single_mut();
+fn animate_waves (
+    objects: Query<(&Visibility, &PhysicsObject), With<PhysicsObject>>, 
+    mut waves: Query<(&mut TextureAtlas, &mut Transform, &mut Visibility), (With<Wave>, Without<PhysicsObject>)>
+) { 
+    for (object_visibility, physics_object) in objects.iter() {
+        let (mut wave_texture, mut wave_transform, mut wave_visibility) = waves.get_mut(physics_object.waves).unwrap();
 
-    // Currently only supports one object and only supports fish
-    for (physics_object, fish) in objects.iter() {
-        let magnitude = physics_object.forces.water.length();
-
-        if magnitude == 0. {
+        if object_visibility == Visibility::Hidden || physics_object.position.z > 0. {
             *wave_visibility = Visibility::Hidden;
-            return;
+            continue;
         }
 
-        if magnitude < 200. {
+        let decay_factor = (1. - physics_object.position.z / DEPTH_DECAY).powi(3);
+        let magnitude = physics_object.forces.water.length() / decay_factor;
+
+        if magnitude < 50. {
+            *wave_visibility = Visibility::Hidden;
+            continue;
+        } else if magnitude < 200. {
             wave_texture.index = 0;
         } else if magnitude < 400. {
             wave_texture.index = 1;
@@ -2856,14 +3126,10 @@ fn animate_waves(
         } else {
             wave_texture.index = 3;
         }
-        if fish.is_caught {
-            *wave_visibility = Visibility::Visible;
 
-            wave_transform.translation = physics_object.position.with_z(902.);
-            wave_transform.rotation = Quat::from_rotation_z(
-                f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.,
-            );
-        }
-        return;
+        *wave_visibility = Visibility::Visible;
+    
+        wave_transform.translation = physics_object.position.with_z(902.);
+        wave_transform.rotation = Quat::from_rotation_z(f32::atan2(physics_object.forces.water.y, physics_object.forces.water.x) - PI / 2.);
     }
 }

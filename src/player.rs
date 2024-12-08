@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crate::hud::HintDisplay;
+use crate::inventory::PlayerInventory;
 use crate::map::*;
 use crate::button::*;
 use crate::resources::*;
@@ -31,6 +33,14 @@ pub enum PlayerDirection {
     Right,
 }
 
+#[derive(Component)]
+pub struct Forageable;
+
+#[derive(Default, Component)]
+pub struct CanPickUp {
+    pub isitem: bool,
+}
+
 #[derive(Default, Component)]
 pub struct InputStack {
     stack: Vec<KeyCode>,
@@ -56,13 +66,16 @@ pub fn move_player(
     state: Res<State<MapState>>,
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack), With<Player>>,
+    mut player: Query<(&mut Transform, &mut PlayerDirection, &Location, &Animation, &mut InputStack, &mut CanPickUp), With<Player>>,
+    inventory: Query<&PlayerInventory>,
     collision_query: Query<(&Transform, &Tile), (With<Collision>, Without<Player>)>,
     mut fish_button: Query<&mut Visibility, With<FishingButton>>,
-    mut next_state: ResMut<NextState<FishingLocal>>,
+    mut hint_display: Query<&mut Visibility, (With<HintDisplay>, Without<FishingButton>)>,
+    mut next_fishing_area: ResMut<NextState<FishingLocal>>
 ) {
-    let (mut pt, mut direction, location, animation, mut input_stack) = player.single_mut();
+    let (mut pt, mut direction, location, animation, mut input_stack, mut CanPickUp) = player.single_mut();
     let mut fish_button_visibility = fish_button.single_mut();
+    let mut hint_visibility = hint_display.single_mut();
 
     // Map transition
     if state.eq(&MapState::MapTransition) {
@@ -141,53 +154,94 @@ pub fn move_player(
     }
 
     // Calculate new position
+    // Snap to edge of screen
     let min_pos = Vec3::new(
         location.x as f32 * WIN_W - WIN_W / 2. + PLAYER_WIDTH / 2.,
         location.y as f32 * WIN_H - WIN_H / 2. + PLAYER_HEIGHT / 2.,
         pt.translation.z,
     );
+
     let max_pos = Vec3::new(
         location.x as f32 * WIN_W + WIN_W / 2. - PLAYER_WIDTH / 2.,
         location.y as f32 * WIN_H + WIN_H / 2. - PLAYER_HEIGHT / 2.,
         pt.translation.z,
     );
 
-    let new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
+    let mut new_pos = (pt.translation + Vec3::new(change_direction.x, change_direction.y, pt.translation.z)).clamp(min_pos, max_pos);
 
-    // Check for collisions
+    // Check for tile collisions
     for object in collision_query.iter() {
         let (transform, tile) = object;
 
-        if new_pos.y - PLAYER_HEIGHT / 2. > transform.translation.y + tile.hitbox.y / 2.
-            || new_pos.y + PLAYER_HEIGHT / 2. < transform.translation.y - tile.hitbox.y / 2. 
-            || new_pos.x + PLAYER_WIDTH / 2. < transform.translation.x - tile.hitbox.x / 2. 
-            || new_pos.x - PLAYER_WIDTH / 2. > transform.translation.x + tile.hitbox.x / 2.
+        if new_pos.y - PLAYER_HEIGHT / 2. >= transform.translation.y + tile.hitbox.y / 2.
+            || new_pos.y + PLAYER_HEIGHT / 2. <= transform.translation.y - tile.hitbox.y / 2. 
+            || new_pos.x + PLAYER_WIDTH / 2. <= transform.translation.x - tile.hitbox.x / 2. 
+            || new_pos.x - PLAYER_WIDTH / 2. >= transform.translation.x + tile.hitbox.x / 2.
         {
+            CanPickUp.isitem = false;
             continue;
         }
         
         // Collision detected
+        // Snap player to edge of tile
+        match *direction {
+            PlayerDirection::Back => {
+                // Snap to bottom of tile
+                pt.translation.y = transform.translation.y - (tile.hitbox.y + PLAYER_HEIGHT) / 2.;
+            },
+            PlayerDirection::Front => {
+                pt.translation.y = transform.translation.y + (tile.hitbox.y + PLAYER_HEIGHT) / 2.;
+            },
+            PlayerDirection::Left => {
+                pt.translation.x = transform.translation.x + (tile.hitbox.x + PLAYER_WIDTH) / 2.;
+            },
+            PlayerDirection::Right => {
+                pt.translation.x = transform.translation.x - (tile.hitbox.x + PLAYER_WIDTH) / 2.;
+            }
+        }
+
         if tile.interactable {
             match tile {
-                &Tile::WATER => {
-                    next_state.set(FishingLocal::Pond1);
+                &Tile::GOLDLINE => {
+                    CanPickUp.isitem = true;
                     *fish_button_visibility = Visibility::Visible;
+                }
+                &Tile::WATER => {
+                    CanPickUp.isitem = false;
+                    next_fishing_area.set(FishingLocal::Pond1);
+                    *fish_button_visibility = Visibility::Visible;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATER2 => {
-                    next_state.set(FishingLocal::Pond2);
+                    CanPickUp.isitem = false;
+                    next_fishing_area.set(FishingLocal::Pond2);
                     *fish_button_visibility = Visibility::Visible;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 &Tile::WATEROCEAN => {
-                    next_state.set(FishingLocal::Beach);
-                    *fish_button_visibility = Visibility::Visible;
+                    // Requires surf rod
+                    CanPickUp.isitem = false;
+                    let inv = inventory.single();
+
+                    for rod in inv.rods.iter() {
+                        if rod.name.eq("Surf Rod") {
+                            next_fishing_area.set(FishingLocal::Beach);
+                            *fish_button_visibility = Visibility::Visible;
+                            *hint_visibility = Visibility::Hidden;
+                            return;
+                        }
+                    }
+
+                    *hint_visibility = Visibility::Visible;
                 }
-                
                 &Tile::SHOP => {
+                    CanPickUp.isitem = false;
                     *fish_button_visibility = Visibility::Hidden;
+                    *hint_visibility = Visibility::Hidden;
                 }
                 _ => {
-
                     *fish_button_visibility = Visibility::Hidden;
+                    *hint_visibility = Visibility::Hidden;
                 }
             }
         }
@@ -197,6 +251,7 @@ pub fn move_player(
 
     // No collision
     *fish_button_visibility = Visibility::Hidden;
+    *hint_visibility = Visibility::Hidden;
     pt.translation = new_pos;
 }
 
@@ -210,7 +265,7 @@ pub fn animate_player(
         &AnimationFrameCount,
         &PlayerDirection,
         &InputStack
-    )>,
+    )>
 ) {
     let (_texture_handle, mut texture_atlas, mut timer, _frame_count, direction, input_stack) = player.single_mut();
     timer.set_duration(Duration::from_secs_f32(FISHING_ANIM_TIME));
