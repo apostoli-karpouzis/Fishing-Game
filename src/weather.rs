@@ -4,7 +4,7 @@ use rand::prelude::*;
 
 use crate::{interface::CurrentInterface, player::Player, window::{WIN_H, WIN_W}};
 
-const WEATHER_UPDATE_PERIOD: f32 = 30.;
+const WEATHER_UPDATE_PERIOD: f32 = 20.;
 
 #[derive(Event)]
 pub struct RegionChangedEvent(pub Region);
@@ -103,6 +103,7 @@ pub fn rain_particle_system(
     mut query: Query<(Entity, &RainParticle, &mut Transform, &mut Sprite)>,
     time: Res<Time>,
 ) {
+
     
     
     let (window_width, window_height) = (8.5*WIN_W, 8.5*WIN_H);
@@ -190,7 +191,7 @@ pub fn spawn_weather_tint_overlay(mut commands: Commands){
     commands.spawn((SpriteBundle {
         sprite: Sprite {
             color: Color::srgba(0.5, 0.5, 0.5, 0.0),
-            custom_size: Some(Vec2::new(10000.,10000.)),
+            custom_size: Some(Vec2::new(15000.,15000.)),
             ..default()
         },
         transform: Transform::from_xyz(0.0, 0.0, 999.),
