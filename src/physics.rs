@@ -7,6 +7,9 @@ use crate::map::*;
 use std::f32;
 use f32::consts::PI;
 use std::collections::HashSet;
+use rand::Rng; 
+
+use crate::species::Behavior;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
@@ -226,15 +229,80 @@ pub fn calculate_player_force (
     };
 }
 
-pub fn calculate_fish_force (
-    mut fishes: Query<(&mut Fish, &mut PhysicsObject), With<Fish>>,
+pub fn calculate_fish_force(
+    fishing_rod: Query<&FishingRod, With<FishingRod>>,
+    mut fishes: Query<(&mut Fish, &mut PhysicsObject, &Species), With<Fish>>,
 ) {
-    for fish in fishes.iter_mut() {
-        let (mut fish_details, mut fish_physics) = fish;
+    let rod_info = fishing_rod.single();
+    
+    for (mut fish, mut fish_physics, species) in fishes.iter_mut() {
         
-        fish_physics.forces.own = (fish_physics.forces.player + fish_physics.forces.water) * -0.1;
+        // check if the fish is hooked
+        if !fish.is_caught {
+            // if the fish is not hooked, skip the force calculation and behavior application
+            println!("no fish hooked, skipping force calculation.");
+            continue;
+        }
+        
+        // get fish anger (hunger * age)
+        let anger = fish.fish_anger();
+
+        // defining force multipliers based on fish behavior
+        let behavior_multiplier = match species.behavior {
+            Behavior::Aggressive => 0.3, // aggressive fish have larger multiplier
+            Behavior::Evasive => 0.2,    // evasive fish have moderate multiplier
+            Behavior::Passive => 0.1,    // passive fish have smaller multiplier
+            Behavior::Elusive => 0.8,    // elusive fish are just hard
+        };
+
+        // print fish behavior and anger
+        println!("{:?} with {:?} tendencies hooked. Anger: {}", species.name, species.behavior, anger);
+        println!("Behavior multiplier: {}", behavior_multiplier);
+
+        let fish_position = fish_physics.position;
+
+        let direction = match species.behavior {
+            Behavior::Aggressive => {
+                // aggro fish circle around the rod
+                let delta = fish_position.xy() - rod_info.tip_pos.xy();
+                let direction = Vec3::new(-delta.y, delta.x, 0.0).normalize_or_zero();
+                println!("AGGRO fish is circling around the rod. direction: {:?}", direction);
+                direction
+            }
+            Behavior::Evasive => {
+                // evasive fish flee from the rod
+                let direction = (fish_position - rod_info.tip_pos).normalize_or_zero();
+                println!("EVASIVE fish is fleeing from the rod. direction: {:?}", direction);
+                direction
+            }
+            Behavior::Passive => {
+                // passive fish do nothing
+                println!("PASSIVE fish is letting you reel him in for dinner");
+                Vec3::ZERO
+            }
+            Behavior::Elusive => {
+                // elusive fish get wild
+                let mut rng = rand::thread_rng();
+                let rand_direction = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0).normalize_or_zero();
+                let rand_speed = rng.gen_range(0.8..1.5); // Random burst of speed
+                let direction = rand_direction * rand_speed;
+                println!("ELUSIVE fish is moving randomly. direction: {:?}", direction);
+                direction
+            }
+        };
+
+        // scale direction by anger level and behavior multiplier 
+        let calculated_force = direction * anger * behavior_multiplier;
+
+        // apply resistance to player and water forces
+        let resistance_force = (fish_physics.forces.player + fish_physics.forces.water) * -0.1;
+
+        // add the calculated force and apply resistance
+        fish_physics.forces.own = calculated_force + resistance_force;
     }
 }
+
+
 
 pub fn simulate_physics (
     time: Res<Time>,

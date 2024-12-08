@@ -82,10 +82,10 @@ impl Fish {
     }
     //calc fish anger
     pub fn fish_anger(&mut self) -> f32 {
-        return self.age * self.hunger;
+        (self.age * self.hunger).clamp(0.0, 100.0)
     }
     pub fn fish_weight(&mut self) -> f32 {
-        return self.age * self.hunger;
+        self.age * self.hunger
     }
 }
 

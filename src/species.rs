@@ -3,6 +3,14 @@ use crate::weather::*;
 use crate::fishing_view::*;
 
 
+#[derive(Clone, Copy, Debug)]
+pub enum Behavior {
+    Aggressive, // moves in circles or just random idk yet  (higher multiplier for anger)
+    Evasive,    // moves away from the rod x y and z        (medium multiplier for anger)
+    Passive,    // moves slowly / minimal                   (lower multiplier for anger)
+    Elusive     // for the rare fish
+}
+
 
 //Species struct
 #[derive(Component)]
@@ -22,7 +30,8 @@ pub struct Species{
     //length, width, depth
     pub bounds: (i32, i32),
     pub catch_prob: f32,
-    pub obj_pref: (ObstType, i32)
+    pub obj_pref: (ObstType, i32),
+    pub behavior: Behavior
 }
 
 impl Species {
@@ -39,7 +48,9 @@ impl Species {
         in_position: (i32, i32),
         in_bounds: (i32, i32),
         in_catch_prob: f32,
-        in_obj_pref: (ObstType, i32)) -> Self{
+        in_obj_pref: (ObstType, i32),
+        in_behavior: Behavior
+    ) -> Self{
             
 
             Self{
@@ -55,7 +66,8 @@ impl Species {
                 position: in_position,
                 bounds: in_bounds,
                 catch_prob: in_catch_prob,
-                obj_pref: in_obj_pref
+                obj_pref: in_obj_pref,
+                behavior: in_behavior
             }
     }
 }
@@ -112,6 +124,7 @@ pub const BASS: Species = Species::new(
     (10,10),
     0.3,
     (ObstType::Pad, 2),
+    Behavior::Evasive
 );
 
 //Catfish
@@ -129,6 +142,7 @@ pub const CATFISH: Species = Species::new(
     (5, 4),
     0.2,
     (ObstType::Fissure, 1),
+    Behavior::Aggressive
 );
 
 //Tuna
@@ -146,6 +160,7 @@ pub const TUNA: Species = Species::new(
     (5,4),
     0.5,
     (ObstType::Pad, 2),
+    Behavior::Passive
 );
 
 //Mahi-mahi
@@ -163,6 +178,7 @@ pub const MAHIMAHI: Species = Species::new(
     (5,4),
     0.4,
     (ObstType::Fissure, 1),
+    Behavior::Aggressive
 );
 
 //Swordfish
@@ -181,6 +197,7 @@ pub const SWORDFISH: Species = Species::new(
     (5,4),
     0.4,
     (ObstType::Fissure, 3),
+    Behavior::Evasive
 );
 
 //Red Handfsih
@@ -200,4 +217,5 @@ pub const REDHANDFISH: Species = Species::new(
     (5,4),
     0.1,
     (ObstType::Fissure, 0),
+    Behavior::Elusive
 );
