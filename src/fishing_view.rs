@@ -1,5 +1,6 @@
 extern crate rand;
 
+use bevy::render::view::visibility;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -96,6 +97,17 @@ pub enum FishingState {
     ReelingUnhooked,
     ReelingHooked
 }
+
+#[derive(Component)]
+pub struct HookedDebris {
+    pub drag_increase: f32,
+}
+
+#[derive(Component)]
+pub struct DebrisHooked {
+    pub hooked: bool,
+}
+
 
 #[derive(Component)]
 struct LureHUD;
@@ -287,6 +299,7 @@ pub enum ObstType{
     Tree,
     Fissure,
     Pad,
+    Debris,
 }
 
 #[derive(Component, PartialEq)]
@@ -366,6 +379,8 @@ impl Plugin for FishingViewPlugin {
         .add_systems(Update,
             (
                 move_fish,
+                catch_debris.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
+                is_debris_caught.run_if(in_state(FishingState::ReelingUnhooked).or_else(in_state(FishingState::ReelingHooked))),
                 fish_area_lure.run_if(in_state(FishingState::ReelingUnhooked)).after(move_fish),
                 (
                     power_bar_cast,
@@ -1025,6 +1040,8 @@ fn setup (
     //spawning in the lilypad
     let lily_sheet_handle: Handle<Image> = asset_server.load("fishing_view/lilypad.png");
     let deep_sheet_handle: Handle<Image> = asset_server.load("fishing_view/deep.png");
+    let debries_sheet_handle: Handle<Image> = asset_server.load("fishing_view/water_bottle.png");
+    let bush_debries_sheet_handle: Handle<Image> = asset_server.load("tiles/bush_no_shadow.png");
     commands.spawn((
         SpriteBundle {
             texture: lily_sheet_handle.clone(),
@@ -1064,6 +1081,96 @@ fn setup (
         InPond,
         FishLoc::Pond2,
     ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+100., FISHING_ROOM_Y+50., 901.),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        // HookedDebris { drag_increase: 1.5 },
+        DebrisHooked { hooked: false }, 
+        InPond,
+        FishLoc::Pond1,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: bush_debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(200.,200.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X - 500., FISHING_ROOM_Y - 1000., 901.),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        // HookedDebris { drag_increase: 1.5 },
+        DebrisHooked { hooked: false }, 
+        InPond,
+        FishLoc::Pond1,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            visibility: Visibility::Visible,
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+60., FISHING_ROOM_Y+0., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        HookedDebris { drag_increase: 1.5 },
+        InPond,
+        FishLoc::Pond2,
+    ));
+
+    commands.spawn((
+        SpriteBundle {
+            texture: debries_sheet_handle.clone(),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(150.,150.)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3::new(FISHING_ROOM_X+60., FISHING_ROOM_Y+0., 901.),
+                ..default()
+            },
+            ..default()
+        },
+        Collision,
+        PondObstruction,
+        ObstType::Debris,
+        HookedDebris { drag_increase: 1.5 },
+        InPond,
+        FishLoc::Ocean,
+    ));
+    
 
     commands.spawn((
         SpriteBundle {
@@ -1268,6 +1375,9 @@ fn add_fish(
                 else if *obstType == ObstType::Fissure{
                     obstPos.translation = Vec3::new(FISHING_ROOM_X-360., FISHING_ROOM_Y-100., 901.);
                 }
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-500., FISHING_ROOM_Y+50., 901.);
+                }
             }
             else{
                 obstPos.translation = Vec3::new(8000., 8000., 901.);
@@ -1302,6 +1412,9 @@ fn add_fish(
                 }
                 else if *obstType == ObstType::Fissure{
                     obstPos.translation = Vec3::new(FISHING_ROOM_X+260., FISHING_ROOM_Y, 901.);
+                }
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X-350., FISHING_ROOM_Y+200., 901.);
                 }
             }
             else{
@@ -1338,6 +1451,9 @@ fn add_fish(
                 }
                 else if *obstType == ObstType::Fissure{
                     obstPos.translation = Vec3::new(FISHING_ROOM_X-360., FISHING_ROOM_Y-100., 901.);
+                }
+                else if *obstType == ObstType::Debris{
+                    obstPos.translation = Vec3::new(FISHING_ROOM_X+260., FISHING_ROOM_Y+300., 901.);
                 }
             }
             else{
@@ -1486,10 +1602,35 @@ fn fishPopulation(
 
 }
 
+fn catch_debris(
+    mut debris_details: Query<(&mut Transform, &mut DebrisHooked),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>,
+    mut lure: Query<(&Transform, &mut PhysicsObject), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+) {
+    let (lure_transform, mut lure_physics) = lure.single_mut();
+
+    for (mut debris_position, mut debirs_is_hooked) in debris_details.iter_mut() {
+        let debris_pos = debris_position.translation;
+        let lure_position = lure_transform.translation;
+
+        if debris_pos.y > lure_position.y + 50.
+        || debris_pos.y < lure_position.y - 50.
+        || debris_pos.x < lure_position.x - 50.
+        || debris_pos.x > lure_position.x + 50. {
+        } else {
+            if !debirs_is_hooked.hooked {
+                debirs_is_hooked.hooked = true;
+                lure_physics.mass += 5.;
+            }
+            debris_position.translation = lure_position;
+            
+        }
+    }
+}
+
 fn fish_area_lure(
     mut commands: Commands,
     mut fish_details: Query<(&mut Fish, &Species, &mut Transform, &mut Visibility), (With<InPond>, With<Fish>, With<Collision>, With<MysteryFish>, Without<PhysicsObject>, Without<Lure>)>,
-    mut lure: Query<(&Transform, Entity, &PhysicsObject, &mut Visibility), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    mut lure: Query<(&Transform, Entity, &mut PhysicsObject, &mut Visibility), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
     mut fishes: Query<(Entity, &mut Fish, &Species, &mut PhysicsObject, &mut Transform, &mut Visibility), (With<PhysicsFish>, With<Fish>, With<Collision>, With<InPond>, With<PhysicsObject>, Without<Lure>, Without<MysteryFish>)>, //add this in as the fish query, change the position of it at the end 
     mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Lure>, Without<PhysicsFish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Lure>)>,
@@ -1499,12 +1640,13 @@ fn fish_area_lure(
     mut next_state: ResMut<NextState<FishingState>>,
     time: Res<Time>,
     mut config: ResMut<ExclamationTimer>,
-    
+    mut debris_details: Query<(&mut Transform, &mut DebrisHooked),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>
 ) {
+    let (lure_transform,  lure_entity_id,mut lure_physics, mut lure_vis) = lure.single_mut();
+    let lure_position = lure_transform.translation;
     //let (bob, tile) = lure.single_mut();
     //let (bob, tile, mut lure_vis) = lure.single_mut();
     //let (mut exclam_transform, mut exclam_vis) = exclamation.single_mut();
-    let (lure_transform,  lure_entity_id, lure_physics, mut lure_vis) = lure.single_mut();
 
     for (mut fish_details, fish_species, fish_pos, mut fish_vis) in fish_details.iter_mut() {
         let fish_pos_loc = fish_pos.translation;
@@ -1583,6 +1725,7 @@ fn fish_area_lure(
         
         
     }
+
 }
 
 
@@ -1808,6 +1951,26 @@ fn is_done_reeling(
     if distance <= CATCH_MARGIN {
         commands.entity(entity_id).remove::<Hooked>();
         next_state.set(FishingState::Idle);
+    }
+}
+
+fn is_debris_caught (
+    mut commands: Commands,
+    mut debris_details: Query<(Entity, &mut DebrisHooked, &Transform, &mut Visibility),(With<Collision>, With<InPond>, With<DebrisHooked>, Without<Lure>, Without<PhysicsFish>, Without<PhysicsObject>, Without<MysteryFish>, Without<Fish>)>,
+    mut lure: Query<(&mut PhysicsObject), (With<Lure>, With<PhysicsObject>, Without<Fish>, Without<MysteryFish>)>,
+    rod: Query<&FishingRod, With<FishingRod>>,
+) {
+    let (mut lure_physics) = lure.single_mut();
+    let rod_info = rod.single();
+
+    for (entity_id, mut debirs_is_hooked, debris_loc,mut visibility) in debris_details.iter_mut() {
+        let distance = (debris_loc.translation - rod_info.tip_pos).length();
+        if distance < (CATCH_MARGIN + 700.){
+            // *visibility = Visibility::Hidden;
+            lure_physics.mass -= 5.;
+            // debirs_is_hooked.hooked = false;
+            commands.entity(entity_id).despawn();
+        }
     }
 }
 
