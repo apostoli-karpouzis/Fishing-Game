@@ -80,8 +80,6 @@ pub fn hook_fish(
 
         prob_timer.timer.tick(time.delta());
         if prob_timer.timer.just_finished() {
-                let (fish, species) = potential_fish;
-                let prob = 100. * calc_fish_prob(fish, species, &weather, region,&timer);
                 let (fish, species, hook_prob_cpt) = potential_fish;
                 
                 let mut t: bool = false;
@@ -91,7 +89,7 @@ pub fn hook_fish(
 
                 let mut w: bool = false;
                 let current_weather = weather.weather_by_region.get(region.get()).unwrap();
-                if species.weather == weather.current_weather {
+                if species.weather == *current_weather {
                     w = true;
                 }
 
