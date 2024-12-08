@@ -127,6 +127,7 @@ pub fn update_clock_display(
 
 pub fn update_weather_display(
     weather: Res<WeatherState>,
+    current_region: Res<State<Region>>,
     mut query: Query<(&mut Text, &mut Visibility), With<WeatherDisplay>>,
     interface: Res<State<CurrentInterface>>,
 ) {
@@ -136,19 +137,19 @@ pub fn update_weather_display(
     }
     else {
         *visibility = Visibility::Visible;
-    }
-    match weather.current_weather {
-        Weather::Cloudy => { 
-            text.sections[0].value = format!("Weather: Cloudy");
-        },
-        Weather::Rainy => { 
-            text.sections[0].value = format!("Weather: Rainy");
-        },
-        Weather::Thunderstorm => { 
-            text.sections[0].value = format!("Weather: Thunderstorm");
-        },
-        _ => {
-            text.sections[0].value = format!("Weather: Sunny");
-        }
+        let region = current_region.get();
+        let current_weather = weather.weather_by_region.get(region).unwrap_or(&Weather::Sunny);
+        let region_name = match region {
+            Region::West => "West",
+            Region::Central => "Central",
+            Region::Shore => "Shore",
+        };
+        let weather_description = match current_weather {
+            Weather::Cloudy => "Cloudy",
+            Weather::Rainy => "Rainy",
+            Weather::Thunderstorm => "Thunderstorm",
+            Weather::Sunny=> "Sunny",
+        };
+        text.sections[0].value = format!("Region: {} | Weather: {}", region_name, weather_description);
     }
 }
