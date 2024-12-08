@@ -344,8 +344,6 @@ pub struct InPond;
 #[derive(Component)]
 pub struct IsBass;
 
-
-
 #[derive(Component)]
 pub struct exclam_point;
 
@@ -533,7 +531,6 @@ fn spawn_waves(
         ))
         .id()
 }
-
 
 fn setup(
     mut commands: Commands,
@@ -1276,7 +1273,7 @@ fn setup(
 
 fn move_fish(
     mut fish_details: Query<
-        (&mut Fish, &mut Transform, &Species),
+        (&mut Fish, &mut Transform, &Species, &mut FishLoc),
         (
             With<InPond>,
             With<Collision>,
@@ -1285,7 +1282,7 @@ fn move_fish(
         ),
     >,
     mut obst_details: Query<
-        (&mut Transform, &mut ObstType),
+        (&mut Transform, &mut ObstType, &mut FishLoc),
         (
             With<PondObstruction>,
             With<Collision>,
@@ -1304,7 +1301,7 @@ fn move_fish(
 
     //let mut rng = rand::thread_rng();
 
-    for (mut fish_details, mut fish_pos, fish_species) in fish_details.iter_mut() {
+    for (mut fish_details, mut fish_pos, fish_species, fishLoc) in fish_details.iter_mut() {
         //let mut rng = rand::thread_rng();
 
         //move towards the obsticle on the x bounds
@@ -1315,22 +1312,24 @@ fn move_fish(
             let mut move_skew: i32 = 0;
             //finding where to go in relation to the
             //position in relation to x row
-            for (obst_details, obstical_type) in obst_details.iter_mut() {
+            for (obst_details, obstical_type, obstLoc) in obst_details.iter_mut() {
                 //go back and account for margin of error done
                 if *obstical_type == fish_species.obj_pref.0 {
                     //if fish_details.name == "catfish"{
-                    move_skew = fish_species.obj_pref.1;
-                    if obst_details.translation.x >= fish_pos.translation.x {
-                        fish_details.change_x = Vec3::new(0.5, 0., 0.);
-                    } else if obst_details.translation.x < fish_pos.translation.x {
-                        fish_details.change_x = Vec3::new(-0.5, 0., 0.);
-                    }
+                    if *obstLoc == *fishLoc {
+                        move_skew = fish_species.obj_pref.1;
+                        if obst_details.translation.x >= fish_pos.translation.x {
+                            fish_details.change_x = Vec3::new(0.5, 0., 0.);
+                        } else if obst_details.translation.x < fish_pos.translation.x {
+                            fish_details.change_x = Vec3::new(-0.5, 0., 0.);
+                        }
 
-                    //move towards the obsticle on the right bounds
-                    if obst_details.translation.y >= fish_pos.translation.y {
-                        fish_details.change_y = Vec3::new(0., 0.5, 0.);
-                    } else if obst_details.translation.y < fish_pos.translation.y {
-                        fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                        //move towards the obsticle on the right bounds
+                        if obst_details.translation.y >= fish_pos.translation.y {
+                            fish_details.change_y = Vec3::new(0., 0.5, 0.);
+                        } else if obst_details.translation.y < fish_pos.translation.y {
+                            fish_details.change_y = Vec3::new(0.0, -0.5, 0.);
+                        }
                     }
                     //}
                 }
@@ -1412,12 +1411,15 @@ fn move_fish(
             // println!("holdx = {:?}", holdx);
         }
         let holdy: Vec3 = fish_pos.translation + fish_details.change_y;
-        if (holdy.y) >= (-719.5 - 224. + 90.) && (holdy.y) <= (-719.5 + 360. - 90.) {
-            //println!("{:?}", fish_pos.translation);
+        if (holdy.y) >= (-1400. - 224. + 90.) && (holdy.y) <= (-1400. + 360. - 90.) {
+            println!("fish going up");
             fish_pos.translation += fish_details.change_y;
         } else {
-
-            // println!("fish: {:?} {:?}", fish_details.name, fish_details.id);
+            println!("{},  {}", FISHING_ROOM_X, FISHING_ROOM_Y);
+            println!(
+                "fish: {:?} {:?} {:?}",
+                fish_details.name, fish_details.id, fish_pos.translation
+            );
             // println!("holdx = {:?}", holdy);
         }
     }
@@ -1636,12 +1638,10 @@ fn fishPopulation(
         ),
     >,
 ) {
-
     let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
     let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
     let wave_layout_handle = texture_atlases.add(wave_layout);
     let mut wave: Entity;
-    wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
 
     let target_p1 = 10;
     let target_p2 = 10;
@@ -1657,6 +1657,7 @@ fn fishPopulation(
     let fish_cat_handle: Handle<Image> = asset_server.load("fish/catfish.png");
     let fish_mahimahi_handle: Handle<Image> = asset_server.load("fish/mahimahi.png");
     let fish_swordfish_handle: Handle<Image> = asset_server.load("fish/swordfish.png");
+    let fish_handfish_handle: Handle<Image> = asset_server.load("fish/redhandfish.png");
     let fish_tuna_handle: Handle<Image> = asset_server.load("fish/tuna.png");
     let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
 
@@ -1696,6 +1697,7 @@ fn fishPopulation(
 
             if rng.gen_range(0..100) <= 50 {
                 //spawning bass
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 let fish_length = rng.gen_range(BASS.length.0..BASS.length.1);
                 let fish_width = rng.gen_range(BASS.width.0..BASS.width.1);
                 let fish_weight = rng.gen_range(BASS.weight.0..BASS.weight.1);
@@ -1793,6 +1795,7 @@ fn fishPopulation(
                     FishLoc::Pond1,
                 ));
             } else {
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 let fish_length = rng.gen_range(CATFISH.length.0..CATFISH.length.1);
                 let fish_width = rng.gen_range(CATFISH.width.0..CATFISH.width.1);
                 let fish_weight = rng.gen_range(CATFISH.weight.0..CATFISH.weight.1);
@@ -1909,6 +1912,7 @@ fn fishPopulation(
             total_fish += 1;
 
             if rng.gen_range(0..100) <= 50 {
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 //spawning bass
                 let fish_length = rng.gen_range(BASS.length.0..BASS.length.1);
                 let fish_width = rng.gen_range(BASS.width.0..BASS.width.1);
@@ -2010,7 +2014,7 @@ fn fishPopulation(
                 let fish_length = rng.gen_range(CATFISH.length.0..CATFISH.length.1);
                 let fish_width = rng.gen_range(CATFISH.width.0..CATFISH.width.1);
                 let fish_weight = rng.gen_range(CATFISH.weight.0..CATFISH.weight.1);
-
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 commands.spawn((
                     SpriteBundle {
                         texture: cool_fish_handle.clone(),
@@ -2121,6 +2125,7 @@ fn fishPopulation(
             total_fish += 1;
             let fish_num = rng.gen_range(0..100);
             if fish_num <= 30 {
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 //spawning bass
                 let fish_length = rng.gen_range(MAHIMAHI.length.0..MAHIMAHI.length.1);
                 let fish_width = rng.gen_range(MAHIMAHI.width.0..MAHIMAHI.width.1);
@@ -2236,7 +2241,7 @@ fn fishPopulation(
                 let fish_length = rng.gen_range(TUNA.length.0..TUNA.length.1);
                 let fish_width = rng.gen_range(TUNA.width.0..TUNA.width.1);
                 let fish_weight = rng.gen_range(TUNA.weight.0..TUNA.weight.1);
-
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 commands.spawn((
                     SpriteBundle {
                         texture: cool_fish_handle.clone(),
@@ -2330,7 +2335,8 @@ fn fishPopulation(
                     PhysicsFish,
                     FishLoc::Ocean,
                 ));
-            } else if fish_num >= 60 {
+            } else if fish_num >= 60 && fish_num < 90 {
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
                 let fish_length = rng.gen_range(SWORDFISH.length.0..SWORDFISH.length.1);
                 let fish_width = rng.gen_range(SWORDFISH.width.0..SWORDFISH.width.1);
                 let fish_weight = rng.gen_range(SWORDFISH.weight.0..SWORDFISH.weight.1);
@@ -2428,6 +2434,105 @@ fn fishPopulation(
                     PhysicsFish,
                     FishLoc::Ocean,
                 ));
+            } else if fish_num >= 90 {
+                wave = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
+                let fish_length = rng.gen_range(REDHANDFISH.length.0..REDHANDFISH.length.1);
+                let fish_width = rng.gen_range(REDHANDFISH.width.0..REDHANDFISH.width.1);
+                let fish_weight = rng.gen_range(REDHANDFISH.weight.0..REDHANDFISH.weight.1);
+                println!("spawning legendary fish");
+                commands.spawn((
+                    SpriteBundle {
+                        texture: cool_fish_handle.clone(),
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(320., 180.)),
+                            ..default()
+                        },
+                        visibility: Visibility::Visible,
+                        transform: Transform {
+                            translation: Vec3::new(-8000., -8000., 901.),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    Fish {
+                        name: "Handfish",
+                        id: total_fish as u32,
+                        is_caught: false,
+                        is_alive: true,
+                        touching_lure: false,
+                        length: fish_length,
+                        width: fish_width,
+                        weight: fish_weight,
+                        time_of_day: (0, 18),
+                        weather: Weather::Sunny,
+                        depth: REDHANDFISH.depth,
+                        //x, y, z
+                        position: (8320, 3960),
+                        change_x: Vec3::new(0., 0., 0.),
+                        change_y: Vec3::new(0., 0., 0.),
+                        //length, width, depth
+                        bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
+                        age: 1.0,
+                        hunger: 10.0,
+                    },
+                    InPond,
+                    REDHANDFISH,
+                    Collision,
+                    MysteryFish,
+                    FishLoc::Ocean,
+                ));
+                commands.spawn((
+                    SpriteBundle {
+                        //fix
+                        texture: fish_handfish_handle.clone(),
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(100., 100.)),
+                            ..default()
+                        },
+                        visibility: Visibility::Hidden,
+                        transform: Transform {
+                            translation: Vec3::new(-8000., -8000., 901.),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    SWORDFISH,
+                    Fish {
+                        name: "SWORDFISH",
+                        id: total_fish as u32,
+                        is_caught: false,
+                        is_alive: true,
+                        touching_lure: false,
+                        length: fish_length,
+                        width: fish_width,
+                        weight: fish_weight,
+                        time_of_day: (0, 12),
+                        weather: Weather::Sunny,
+                        depth: REDHANDFISH.depth,
+                        //x, y, z
+                        position: (8320, 3960),
+                        change_x: Vec3::new(0., 0., 0.),
+                        change_y: Vec3::new(0., 0., 0.),
+                        //length, width, depth
+                        bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
+                        age: 1.0,
+                        hunger: 10.0,
+                    },
+                    PhysicsObject {
+                        mass: 10.0,
+                        position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
+                        rotation: Vec3::ZERO,
+                        velocity: Vec3::ZERO,
+                        forces: Forces::default(),
+                        cd: REDHANDFISH.cd,
+                        sa: (5.0 * 5.0, 5.0 * 8.0),
+                        waves: wave,
+                    },
+                    InPond,
+                    Collision,
+                    PhysicsFish,
+                    FishLoc::Ocean,
+                ));
             }
         } else {
             println!("no beach fish");
@@ -2439,117 +2544,6 @@ fn fishPopulation(
     //pond section and river section.
     println!("ITS 23!!! adding new fish now!!!");
 }
-
-/* fn fish_area_bobber() {
-    let cool_fish_handle: Handle<Image> = asset_server.load("fishing_view/awesome_fishy.png");
-
-    let waves_sheet_handle: Handle<Image> = asset_server.load("fishing_view/waves.png");
-    let wave_layout = TextureAtlasLayout::from_grid(UVec2::new(100, 100), 4, 1, None, None);
-    let wave_layout_handle = texture_atlases.add(wave_layout);
-    let wave: Entity = spawn_waves(&mut commands, &waves_sheet_handle, &wave_layout_handle);
-
-    commands.spawn((
-        SpriteBundle {
-            texture: cool_fish_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(320., 180.)),
-                ..default()
-            },
-            visibility: Visibility::Visible,
-            transform: Transform {
-                translation: Vec3::new(-8000., -8000., 901.),
-                ..default()
-            },
-            ..default()
-        },
-        Fish {
-            name: "bass",
-            id: 0,
-            is_caught: false,
-            is_alive: true,
-            touching_lure: false,
-            length: 8.0,
-            width: 5.0,
-            weight: 2.0,
-            time_of_day: (0, 12),
-            weather: Weather::Sunny,
-            depth: (0, 5),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0., 0., 0.),
-            change_y: Vec3::new(0., 0., 0.),
-            //length, width, depth
-            bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
-            age: 6.0,
-            hunger: 10.0,
-        },
-        InPond,
-        BASS,
-        Collision,
-        MysteryFish,
-        FishLoc::Ocean,
-    ));
-
-    let fish_bass_handle: Handle<Image> = asset_server.load("fish/bass.png");
-
-    commands.spawn((
-        SpriteBundle {
-            texture: fish_bass_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100., 100.)),
-                ..default()
-            },
-            visibility: Visibility::Hidden,
-            transform: Transform {
-                translation: Vec3::new(-8000., -8000., 901.),
-                ..default()
-            },
-            ..default()
-        },
-        BASS,
-        Fish {
-            name: "Bass2",
-            id: 2,
-            is_caught: false,
-            is_alive: true,
-            touching_lure: false,
-            length: 8.0,
-            width: 5.0,
-            weight: 2.0,
-            time_of_day: (0, 12),
-            weather: Weather::Sunny,
-            depth: (0, 5),
-            //x, y, z
-            position: (8320, 3960),
-            change_x: Vec3::new(0., 0., 0.),
-            change_y: Vec3::new(0., 0., 0.),
-            //length, width, depth
-            bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
-            age: 6.0,
-            hunger: 10.0,
-        },
-        PhysicsObject {
-            mass: 2.0,
-            position: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 0.),
-            rotation: Vec3::ZERO,
-            velocity: Vec3::ZERO,
-            forces: Forces::default(),
-            cd: BASS.cd,
-            sa: (5.0 * 5.0, 5.0 * 8.0),
-            waves: wave,
-        },
-        InPond,
-        Collision,
-        PhysicsFish,
-        FishLoc::Ocean,
-    ));
-    //this is working lets start adding stuff/ look at psuedo code.
-
-    //pond section and river section.
-    println!("ITS 23!!! adding new fish now!!!");
-}
-
-*/
 
 fn catch_debris(
     mut debris_details: Query<
@@ -2761,8 +2755,6 @@ fn fish_area_lure(
         }
     }
 }
-
-fn spawn_mark(commands: Commands, position: Vec3) {}
 
 fn fishing_transition(
     mut return_pos: ResMut<PlayerReturnPos>,
@@ -3037,7 +3029,6 @@ fn is_debris_caught(
         }
     }
 }
-
 
 fn is_fish_caught(
     mut commands: Commands,
