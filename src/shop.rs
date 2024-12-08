@@ -124,7 +124,7 @@ fn spawn_shop(asset_server: Res<AssetServer>, mut commands: Commands) {
     commands.spawn((
         TransformBundle::from(Transform::from_xyz(1024., -96., 0.)),
         ShopEntrance,
-        Tile::new("shopEntrance", true, Vec2::new(64., 64.)),
+        Tile::SHOP
     ));
     commands.spawn(SpriteBundle {
         texture: asset_server.load("shop/inventory.png"),

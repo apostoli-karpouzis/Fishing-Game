@@ -4,7 +4,6 @@ use bevy::time::Timer;
 use bevy::window::EnabledButtons;
 use bevy::window::PresentMode;
 use fishing_game::interface::CurrentInterface;
-use rand::Rng;
 
 use fishing_game::button::*;
 use fishing_game::camera::*;
@@ -20,19 +19,11 @@ use fishing_game::shop::*;
 use fishing_game::weather::*;
 use fishing_game::window::*;
 
-const OLD_TILE_SIZE: f32 = 64.;
-
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::Srgba(Srgba::gray(0.25))))
-        .insert_resource(StartFishingAnimation {
-            active: false,
-            button_control_active: true,
-        })
-        .insert_resource(FishingAnimationDuration(Timer::from_seconds(
-            2.0,
-            TimerMode::Once,
-        )))
+        .insert_resource(StartFishingAnimation { active: false, button_control_active: true })
+        .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: TITLE.into(),
@@ -98,17 +89,20 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let mut rng = rand::thread_rng();
-
-    commands.spawn((Camera2dBundle::default(), Animation::new()));
+    
+    commands.spawn((
+        Camera2dBundle::default(),
+        Animation::new()
+    ));
 
     commands.insert_resource(PlayerReturnPos::default());
 
+    
     //GRASS CODE V
-
+    
     //let bg_texture_handle = asset_server.load("map/test_bg.png");
     let grass_sheet_handle = asset_server.load("map/ground_sheet.png");
-    let grass_layout =
-        TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
+    let grass_layout = TextureAtlasLayout::from_grid(UVec2::splat(OLD_TILE_SIZE as u32), 6, 5, None, None);
 
     let grass_layout_len = grass_layout.textures.len();
     //println!("grasslayout.len {}", grass_layout_len);
@@ -146,7 +140,7 @@ fn setup(
                     //implement random function.
                     index: random_index,
                     layout: grass_layout_handle.clone(),
-                },
+                }
             ));
             //second time
             t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
@@ -164,7 +158,7 @@ fn setup(
                     //implement random function.
                     index: (random_index + 1),
                     layout: grass_layout_handle.clone(),
-                },
+                }
             ));
             //
             //do this twice uhhhhhh....
@@ -179,94 +173,93 @@ fn setup(
 
     // After the grass spawning loop
 
-    let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
-    let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore.png");
-    let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
-    let shore_layout_handle = texture_atlases.add(shore_layout);
+let sand_sheet_handle: Handle<Image> = asset_server.load("tiles/sand.png");
+let shore_sheet_handle: Handle<Image> = asset_server.load("tiles/shore.png");
+let shore_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 64), 3, 3, None, None);
+let shore_layout_handle = texture_atlases.add(shore_layout);
 
-    let beach_width = WIN_W * 0.5;
-    let grass_end = WIN_W * 4.5;
-    let beach_start = grass_end;
+let beach_width = WIN_W * 0.5;
+let grass_end = WIN_W * 4.5;
+let beach_start = grass_end;
 
-    let mut j = 0.;
-    while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
-        let mut i = 0.;
-        let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 1.);
-
-        while (i as f32) * OLD_TILE_SIZE < beach_width {
-            if i <= 1. {
-                // Spawn sand
-                commands.spawn((
-                    SpriteBundle {
-                        texture: sand_sheet_handle.clone(),
-                        transform: Transform {
-                            translation: t,
-                            ..default()
-                        },
+let mut j = 0.;
+while (j as f32) * OLD_TILE_SIZE - y_bound < WIN_H * 5.5 {
+    let mut i = 0.;
+    let mut t = Vec3::new(beach_start - x_bound, (OLD_TILE_SIZE * j) + (-y_bound), 1.);
+    
+    while (i as f32) * OLD_TILE_SIZE < beach_width {
+        if i <= 1.{
+            // Spawn sand
+            commands.spawn((
+            SpriteBundle {
+                texture: sand_sheet_handle.clone(),
+                transform: Transform {
+                    translation: t,
+                    ..default()
+                },
+                ..default()
+            },
+            TextureAtlas {
+                index: 0,
+                layout: shore_layout_handle.clone(),
+            },
+            ));
+        }else if i == 2. {  // This will be the middle column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
                         ..default()
                     },
-                    TextureAtlas {
-                        index: 0,
-                        layout: shore_layout_handle.clone(),
-                    },
-                ));
-            } else if i == 2. {
-                // This will be the middle column of the beach
-                commands.spawn((
-                    SpriteBundle {
-                        texture: shore_sheet_handle.clone(),
-                        transform: Transform {
-                            translation: t,
-                            ..default()
-                        },
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 3,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATEROCEAN,
+            ));
+        } else if i >= 3. {  // This will be the rightmost column of the beach
+            commands.spawn((
+                SpriteBundle {
+                    texture: shore_sheet_handle.clone(),
+                    transform: Transform {
+                        translation: t,
                         ..default()
                     },
-                    TextureAtlas {
-                        index: 3,
-                        layout: shore_layout_handle.clone(),
-                    },
-                    Collision,
-                    Tile::WATEROCEAN,
-                ));
-            } else if i >= 3. {
-                // This will be the rightmost column of the beach
-                commands.spawn((
-                    SpriteBundle {
-                        texture: shore_sheet_handle.clone(),
-                        transform: Transform {
-                            translation: t,
-                            ..default()
-                        },
-                        ..default()
-                    },
-                    TextureAtlas {
-                        index: 4,
-                        layout: shore_layout_handle.clone(),
-                    },
-                    Collision,
-                    Tile::WATEROCEAN,
-                ));
-            }
-
-            i += 1.;
-            t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+                    ..default()
+                },
+                TextureAtlas {
+                    index: 4,
+                    layout: shore_layout_handle.clone(),
+                },
+                Collision,
+                Tile::WATEROCEAN,
+            ));
         }
-        j += 1.;
-    }
 
+        i += 1.;
+        t += Vec3::new(OLD_TILE_SIZE, 0., 0.);
+    }
+    j += 1.;
+}
+    
+    
     //start of water code
     let water_sheet_handle = asset_server.load("tiles/water.png");
     for y in -10..0 {
-        for x in -10..0 {
+        for x in -10..0{
             commands.spawn((
                 SpriteBundle {
                     texture: water_sheet_handle.clone(),
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::new(16., 16.)),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
                         ..default()
                     },
                     transform: Transform {
-                        translation: Vec3::new(x as f32 * 16., y as f32 * 16., 900.),
+                        translation: Vec3::new(x as f32 * 16.,  y as f32 * 16., 900.),
                         ..default()
                     },
                     ..default()
@@ -278,16 +271,16 @@ fn setup(
     }
     //second pond
     for y in -10..0 {
-        for x in -10..0 {
+        for x in -10..0{
             commands.spawn((
                 SpriteBundle {
                     texture: water_sheet_handle.clone(),
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::new(16., 16.)),
+                        sprite: Sprite {
+                        custom_size: Some(Vec2::new(16.,16.)),
                         ..default()
                     },
                     transform: Transform {
-                        translation: Vec3::new(x as f32 * 16. + 400., y as f32 * 16. + 100., 900.),
+                        translation: Vec3::new(x as f32 * 16. + 400.,  y as f32 * 16. + 100., 900.),
                         ..default()
                     },
                     ..default()
@@ -304,31 +297,25 @@ fn setup(
     let player_layout = TextureAtlasLayout::from_grid(UVec2::new(64, 128), 4, 5, None, None);
     let player_layout_len = player_layout.textures.len();
     let player_layout_handle = texture_atlases.add(player_layout);
-    let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png");
+    let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
 
     // MAP
     let map: Map = Map {
-        areas: vec![
-            vec![
-                Area {
-                    zone: FishingZone {
-                        current: Vec3::new(-10.0, 0., 0.)
-                    },
-                    layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
-                    objects: Vec::new()
-                };
-                MAP_HEIGHT
-            ];
-            MAP_WIDTH
-        ],
+        areas: vec![vec![Area {
+            zone: FishingZone {
+                current: Vec3::new(-10.0, 0., 0.)
+            },
+            layout: [[&Tile::WATER; GRID_ROWS]; GRID_COLUMNS],
+            objects: Vec::new()
+        }; MAP_HEIGHT]; MAP_WIDTH],
         width: MAP_WIDTH,
-        height: MAP_HEIGHT,
+        height: MAP_HEIGHT
     };
 
     commands.spawn((
         SpriteBundle {
             texture: player_sheet_handle,
-            transform: Transform::from_xyz(0., -(WIN_H / 2.) + (OLD_TILE_SIZE * 1.5), 901.),
+            transform: Transform::from_xyz(0., -300., 901.),
             ..default()
         },
         TextureAtlas {
@@ -342,18 +329,17 @@ fn setup(
         InputStack::default(),
         PlayerDirection::Back, // Default direction facing back
         Location {
-            map: map,
             x: 0,
             y: 0,
         },
-        Animation::new(),
+        Animation::new()
     ));
-
+    
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100., 100.)),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
                 ..default()
             },
             transform: Transform {
@@ -368,8 +354,8 @@ fn setup(
     commands.spawn((
         SpriteBundle {
             texture: tree_sheet_handle.clone(),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100., 100.)),
+                sprite: Sprite {
+                custom_size: Some(Vec2::new(100.,100.)),
                 ..default()
             },
             transform: Transform {
@@ -381,16 +367,21 @@ fn setup(
         Tile::TREE,
         Collision,
     ));
-
+    
     //spawn_button(&mut commands, asset_server);
     //spawn_button(&mut commands, asset_server);
 
     //Time of day timer
-    commands.insert_resource(GameDayTimer::new(3.));
+    commands.insert_resource(
+        GameDayTimer::new(3.),
+    );
+
+    
 
     //let grass_layout_len = grass_layout.textures.len();
-    //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png");
+    //let tree_sheet_handle: Handle<Image> = asset_server.load("tiles/tree.png"); 
 
+    
     spawn_fishing_button(&mut commands, &asset_server);
     spawn_money_display(&mut commands, &asset_server);
     spawn_clock_display(&mut commands, &asset_server);
