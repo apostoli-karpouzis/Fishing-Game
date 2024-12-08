@@ -78,14 +78,17 @@ impl Fish {
         let roll = prob_rng.gen_range(0..100);
         if (roll as f32) < (hunger_inc_prob * 100.) {
             self.hunger += 1.0;
+            if self.hunger >= 10. {
+                self.hunger = 10.;
+            }
         }
     }
     //calc fish anger
     pub fn fish_anger(&mut self) -> f32 {
-        return self.age * self.hunger;
+        (self.age * self.hunger).clamp(0.0, 100.0)
     }
     pub fn fish_weight(&mut self) -> f32 {
-        return self.age * self.hunger;
+        self.age * self.hunger
     }
 }
 
@@ -112,15 +115,16 @@ pub fn fish_update(
         mut commands: Commands,
         mut aging_fish: Query<(&mut Fish, Entity, &Species, &HungerCpt), (With<Fish>, With<InPond>)>,
         time: Res<GameDayTimer>,
-        weather: Res<WeatherState>
+        weather: Res<WeatherState>,
+        region: Res<State<Region>>,
     )
     {
         if time.timer.just_finished() {
             for (mut fish, entity_id, species, hunger_cpt) in aging_fish.iter_mut(){
                 let mut w: bool = false;
                 let mut t: bool = false;
-
-                if species.weather == weather.current_weather {
+                let current_weather = weather.weather_by_region.get(region.get()).unwrap();
+                if species.weather == *current_weather {
                     w = true;
                 }
                 if species.time_of_day.0 <= time.hour as usize && species.time_of_day.1 >= time.hour as usize {

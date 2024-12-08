@@ -3,6 +3,14 @@ use crate::weather::*;
 use crate::fishing_view::*;
 
 
+#[derive(Clone, Copy, Debug)]
+pub enum Behavior {
+    Aggressive, // moves in circles or just random idk yet  (higher multiplier for anger)
+    Evasive,    // moves away from the rod x y and z        (medium multiplier for anger)
+    Passive,    // moves slowly / minimal                   (lower multiplier for anger)
+    Elusive     // for the rare fish
+}
+
 
 //Species struct
 #[derive(Component)]
@@ -22,7 +30,9 @@ pub struct Species{
     //length, width, depth
     pub bounds: (i32, i32),
     pub catch_prob: f32,
-    pub obj_pref: (ObstType, i32)
+    pub obj_pref: (ObstType, i32),
+    pub behavior: Behavior,
+    pub lure_pref: Lure
 }
 
 impl Species {
@@ -39,7 +49,9 @@ impl Species {
         in_position: (i32, i32),
         in_bounds: (i32, i32),
         in_catch_prob: f32,
-        in_obj_pref: (ObstType, i32)) -> Self{
+        in_obj_pref: (ObstType, i32),
+        in_behavior: Behavior,
+        in_lure: Lure) -> Self{
             
 
             Self{
@@ -55,7 +67,9 @@ impl Species {
                 position: in_position,
                 bounds: in_bounds,
                 catch_prob: in_catch_prob,
-                obj_pref: in_obj_pref
+                obj_pref: in_obj_pref,
+                behavior: in_behavior,
+                lure_pref: in_lure
             }
     }
 }
@@ -110,8 +124,10 @@ pub const BASS: Species = Species::new(
     (0,20),
     (FISHING_ROOM_X as i32 + 90, FISHING_ROOM_Y as i32 + 50),
     (10,10),
-    0.3,
+    0.5,
     (ObstType::Pad, 2),
+    Behavior::Evasive,
+    Lure::BOBBER,
 );
 
 //Catfish
@@ -127,8 +143,10 @@ pub const CATFISH: Species = Species::new(
     (20,40),
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5, 4),
-    0.2,
+    0.4,
     (ObstType::Fissure, 1),
+    Behavior::Aggressive,
+    Lure::FROG,
 );
 
 //Tuna
@@ -146,6 +164,8 @@ pub const TUNA: Species = Species::new(
     (5,4),
     0.5,
     (ObstType::Pad, 2),
+    Behavior::Passive,
+    Lure::BOBBER,
 );
 
 //Mahi-mahi
@@ -163,6 +183,8 @@ pub const MAHIMAHI: Species = Species::new(
     (5,4),
     0.4,
     (ObstType::Fissure, 1),
+    Behavior::Aggressive,
+    Lure::FISH,
 );
 
 //Swordfish
@@ -176,11 +198,13 @@ pub const SWORDFISH: Species = Species::new(
     (18, 24),
     //is sunny just clear at night?
     Weather::Sunny,
-    (100, 500),
+    (100, 200),
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.4,
     (ObstType::Fissure, 3),
+    Behavior::Evasive,
+    Lure::FISH,
 );
 
 //Red Handfsih
@@ -195,9 +219,11 @@ pub const REDHANDFISH: Species = Species::new(
     (20, 21),
     //is sunny just clear at night?
     Weather::Sunny,
-    (499, 500),
+    (198, 200),
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.1,
     (ObstType::Fissure, 0),
+    Behavior::Elusive,
+    Lure::FROG,
 );
