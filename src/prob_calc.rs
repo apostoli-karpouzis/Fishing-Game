@@ -283,9 +283,9 @@ impl HookProbCpt {
                             }
                             in_cpt[ind] = hook_hunger_prob*time_pref_prob*weather_pref_prob*depth_pref_prob*lure_pref_prob;
                             in_cpt[160+ind] = 1. - (hook_hunger_prob*time_pref_prob*weather_pref_prob*depth_pref_prob*lure_pref_prob);
-                            println!("hunger prob:{}  time_prob:{}  weather_prob:{}  depth_prob:{}  lure_prob:{}", hook_hunger_prob, time_pref_prob, weather_pref_prob, depth_pref_prob, lure_pref_prob);
-                            print!("{}\t{}", in_cpt[ind], in_cpt[160+ind]);
-                            println!("\n");
+                            // println!("hunger prob:{}  time_prob:{}  weather_prob:{}  depth_prob:{}  lure_prob:{}", hook_hunger_prob, time_pref_prob, weather_pref_prob, depth_pref_prob, lure_pref_prob);
+                            // print!("{}\t{}", in_cpt[ind], in_cpt[160+ind]);
+                            // println!("\n");
                             ind+=1;
                             }
                         
