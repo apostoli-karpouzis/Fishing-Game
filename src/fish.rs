@@ -78,6 +78,9 @@ impl Fish {
         let roll = prob_rng.gen_range(0..100);
         if (roll as f32) < (hunger_inc_prob * 100.) {
             self.hunger += 1.0;
+            if self.hunger >= 10. {
+                self.hunger = 10.;
+            }
         }
     }
     //calc fish anger
