@@ -1,4 +1,6 @@
+use bevy::render::view::visibility;
 use bevy::{prelude::*, utils::HashMap};
+use crate::inventory::PlayerInventory;
 use crate::weather::*;
 use crate::gameday::*;
 use crate::fishing_view::*;
@@ -6,7 +8,8 @@ use crate::species::Species;
 use crate::prob_calc::*;
 use rand::Rng;
 
-
+#[derive(Resource)]
+pub struct FishVisibiltyUpdated(pub bool);
 #[derive(Component)]
 pub struct Fish {
     pub name: &'static str,
@@ -111,6 +114,28 @@ impl Pond {
     }
 }
 
+pub fn update_fish_visibility(
+    mut fish_query: Query<&mut Visibility, With<MysteryFish>>,
+    inventory_query: Query<&PlayerInventory>,
+    mut visibility_updated: ResMut<FishVisibiltyUpdated>,
+){
+    if visibility_updated.0 {
+        return;
+    }
+
+    let player_inventory = inventory_query.single();
+    let has_sunglasses = player_inventory.cosmetics.iter().any(|item| item.name == "Polarized Sun Glasses");
+
+    print!("Updating fish visibility...  ");
+    for mut visibility in fish_query.iter_mut(){
+        *visibility = if has_sunglasses {
+            Visibility::Visible
+        }else{
+            Visibility::Hidden
+        };
+    }
+    visibility_updated.0 = true;
+}
 pub fn fish_update(
         mut commands: Commands,
         mut aging_fish: Query<(&mut Fish, Entity, &Species, &HungerCpt), (With<Fish>, With<InPond>)>,

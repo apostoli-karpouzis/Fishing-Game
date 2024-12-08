@@ -121,7 +121,7 @@ struct PowerBar {
 }
 
 #[derive(Component)]
-struct MysteryFish;
+pub struct MysteryFish;
 
 #[derive(Component)]
 struct PhysicsFish;
@@ -387,10 +387,12 @@ impl Plugin for FishingViewPlugin {
         app
         .init_state::<FishingState>()
         .insert_resource(ProbTimer::new(2.))
+        .insert_resource(FishVisibiltyUpdated(false))
         .add_systems(Startup, setup)
         .add_systems(Update,
             (
                 move_fish,
+                update_fish_visibility.run_if(|visibilty_updated: Res<FishVisibiltyUpdated>| !visibilty_updated.0),
                 fish_area_lure.run_if(in_state(FishingState::ReelingUnhooked)).after(move_fish),
                 (
                     power_bar_cast,
@@ -489,7 +491,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(-8000., -8000., 901.),
                 ..default()
@@ -534,7 +536,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHING_ROOM_X, FISHING_ROOM_Y, 901.),
                 ..default()
@@ -637,7 +639,7 @@ fn setup (
                 custom_size: Some(Vec2::new(320.,180.)),
                 ..default()
             },
-            visibility: Visibility::Visible,
+            visibility: Visibility::Hidden,
             transform: Transform {
                 translation: Vec3::new(FISHING_ROOM_X-40., FISHING_ROOM_Y+40., 901.),
                 ..default()
