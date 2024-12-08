@@ -65,7 +65,7 @@ impl Fish {
     pub fn hooked_fish(&mut self) {
         self.age += 10.0;           //age increase when caught, tough fight
         self.hunger -= 10.0;        //less likely to go for bait when caught
-
+        println!("fish is hooked");
         //check if dead
         if self.age >= 100.0 {
             self.die();

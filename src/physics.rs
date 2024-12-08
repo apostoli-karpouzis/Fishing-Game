@@ -240,7 +240,7 @@ pub fn calculate_fish_force(
         // check if the fish is hooked
         if !fish.is_caught {
             // if the fish is not hooked, skip the force calculation and behavior application
-            println!("no fish hooked, skipping force calculation.");
+            //println!("no fish hooked, skipping force calculation.");
             continue;
         }
         
