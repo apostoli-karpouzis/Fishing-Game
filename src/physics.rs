@@ -249,8 +249,8 @@ pub fn calculate_fish_force(
 
         // defining force multipliers based on fish behavior
         let behavior_multiplier = match species.behavior {
-            Behavior::Aggressive => 1.7, // aggressive fish have larger multiplier
-            Behavior::Evasive => 2.3,    // evasive fish have moderate multiplier
+            Behavior::Aggressive => 2.7, // aggressive fish have larger multiplier
+            Behavior::Evasive => 3.3,    // evasive fish have moderate multiplier
             Behavior::Passive => 0.5,    // passive fish have smaller multiplier
             Behavior::Elusive => 4.5,    // elusive fish are just hard
         };

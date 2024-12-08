@@ -33,19 +33,21 @@ pub fn calc_fish_prob(
     fish: &mut Fish, 
     species: &Species, 
     weather: &Res<WeatherState>, 
+    current_region: &Res<State<Region>>,
     time: &Res<GameDayTimer>) -> f32
     {
         let fish_hunger = fish.hunger;
         let mut a = 0.05 + (0.05*fish_hunger);
         let mut b_a = 0.;
         let mut b = 0.;
-        if species.weather == weather.current_weather && (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
+        let current_weather = weather.weather_by_region.get(current_region.get()).unwrap();
+        if species.weather == *current_weather && (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
             b_a = species.catch_prob;
             b = (0.25)*(((species.time_of_day.1 as f32)-(species.time_of_day.0 as f32))/24.);
         }
-        else if species.weather == weather.current_weather || (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
+        else if species.weather == *current_weather || (time.hour >= (species.time_of_day.0 as i32) && time.hour <= (species.time_of_day.1 as i32)) {
             b_a = species.catch_prob/2.;
-            if species.weather == weather.current_weather {
+            if species.weather == *current_weather {
                 b = (0.25)*(1. - (((species.time_of_day.1 as f32)-(species.time_of_day.0 as f32))/24.));
             }
             else {
@@ -69,6 +71,7 @@ pub fn calc_fish_prob(
 pub fn hook_fish(
     mut potential_fish: (&mut Fish, &Species, &HookProbCpt),
     weather: &Res<WeatherState>,
+    region: &Res<State<Region>>,
     timer: &Res<GameDayTimer>,
     mut prob_timer: &mut ResMut<ProbTimer>,
     time: &Res<Time>,
@@ -77,6 +80,8 @@ pub fn hook_fish(
 
         prob_timer.timer.tick(time.delta());
         if prob_timer.timer.just_finished() {
+                let (fish, species) = potential_fish;
+                let prob = 100. * calc_fish_prob(fish, species, &weather, region,&timer);
                 let (fish, species, hook_prob_cpt) = potential_fish;
                 
                 let mut t: bool = false;
@@ -85,6 +90,7 @@ pub fn hook_fish(
                 }
 
                 let mut w: bool = false;
+                let current_weather = weather.weather_by_region.get(region.get()).unwrap();
                 if species.weather == weather.current_weather {
                     w = true;
                 }

@@ -115,15 +115,16 @@ pub fn fish_update(
         mut commands: Commands,
         mut aging_fish: Query<(&mut Fish, Entity, &Species, &HungerCpt), (With<Fish>, With<InPond>)>,
         time: Res<GameDayTimer>,
-        weather: Res<WeatherState>
+        weather: Res<WeatherState>,
+        region: Res<State<Region>>,
     )
     {
         if time.timer.just_finished() {
             for (mut fish, entity_id, species, hunger_cpt) in aging_fish.iter_mut(){
                 let mut w: bool = false;
                 let mut t: bool = false;
-
-                if species.weather == weather.current_weather {
+                let current_weather = weather.weather_by_region.get(region.get()).unwrap();
+                if species.weather == *current_weather {
                     w = true;
                 }
                 if species.time_of_day.0 <= time.hour as usize && species.time_of_day.1 >= time.hour as usize {

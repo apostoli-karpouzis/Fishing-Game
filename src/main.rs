@@ -26,6 +26,7 @@ fn main() {
         .insert_resource(FishingAnimationDuration(Timer::from_seconds(2.0, TimerMode::Once)))
         .insert_resource(GameDayTimer::new(3.))
         .insert_resource(PlayerReturnPos::default())
+        .insert_resource(CurrentRegion(Region::West))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: TITLE.into(),
@@ -43,6 +44,7 @@ fn main() {
         .init_state::<CurrentInterface>()
         .init_state::<MapState>()
         .init_state::<Weather>()
+        .init_state::<Region>()
         .init_state::<FishingLocal>()
         .init_state::<MidnightState>()
         .init_resource::<WeatherState>()
@@ -75,7 +77,8 @@ fn main() {
         )
 
         // Weather updates
-        .add_systems(Update, update_weather)
+        .add_event::<RegionChangedEvent>()
+        .add_systems(Update, ( handle_region_change, update_weather, update_player_region))
         .add_systems(Update, update_weather_tint.after(update_weather))
         .add_systems(Update, rain_particle_system.run_if(run_if_raining))
         .add_systems(OnEnter(Weather::Sunny), despawn_rain_particles)

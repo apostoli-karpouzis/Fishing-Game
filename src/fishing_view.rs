@@ -1617,6 +1617,7 @@ fn fish_area_lure(
     mut exclamation: Query<(&mut Transform, &mut Visibility), (With<exclam_point>, Without<InPond>, Without<Lure>, Without<PhysicsFish>)>,
     //mut fishes_physics: Query<(Entity, &Fish, &Species, &mut PhysicsObject), (With<Fish>, Without<Lure>)>,
     weather: Res<WeatherState>,
+    region: Res<State<Region>>,
     timer: Res<GameDayTimer>,
     mut prob_timer: ResMut<ProbTimer>,
     mut next_state: ResMut<NextState<FishingState>>,
@@ -1658,7 +1659,7 @@ fn fish_area_lure(
         
 
         //ERROR HERE
-        if hook_fish((&mut fish_details, fish_species, hook_cpt), &weather, &timer, &mut prob_timer, &time, lure_details){
+        if hook_fish((&mut fish_details, fish_species, hook_cpt), &weather, &region, &timer, &mut prob_timer, &time, lure_details){
             for(entity_id, mut fishy_details, fish_species, mut fish_physics, mut fishy_transform, mut fishy_vis) in fishes.iter_mut(){
                 if fishy_details.id == fish_details.id{ //fish number matches the other number of the caught fish
                     println!("FIRST: {:?}", fishy_transform.translation);
