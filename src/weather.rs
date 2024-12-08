@@ -240,7 +240,7 @@ pub fn handle_region_change(
 fn determine_region(player_position: Vec3) -> Region {
     if player_position.x <= 1.5* WIN_W {
         return Region::West;
-    } else if player_position.x > 1.5*WIN_W && player_position.x <= 6.0 * WIN_W {
+    } else if player_position.x > 1.5*WIN_W && player_position.x <= 3.5 * WIN_W {
         return Region::Central;
     }else{
         return Region::Shore;
