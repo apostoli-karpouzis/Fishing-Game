@@ -3085,6 +3085,7 @@ fn handle_debris(
             || debris_pos.y <= attached_to.y - debris_info.height / 2.
             || debris_pos.x <= attached_to.x - debris_info.width / 2.
             || debris_pos.x >= attached_to.x + debris_info.width / 2.
+            || attached_to.y <= -5.
         {
             if debris_is_hooked.hooked {
                 debris_position.translation = attached_to;
