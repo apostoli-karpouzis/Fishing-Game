@@ -13,7 +13,7 @@ use crate::species::Behavior;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
-pub const PIXELS_PER_METER: f32 = 150.;
+pub const PIXELS_PER_METER: f32 = 300.;
 pub const BENDING_RESOLUTION: f32 = 1. / PIXELS_PER_METER;
 
 pub const GRAVITY: f32 = 40.;
@@ -62,32 +62,34 @@ pub fn bend_fishing_rod (
     mut commands: Commands,
     mut fishing_rod: Query<(&mut FishingRod, &Transform), With<FishingRod>>,
     mut line: Query<&mut FishingLine, With<FishingLine>>,
-    hooked_object: Query<(&Species, &PhysicsObject), With<Hooked>>
+    hooked_object: Query<&PhysicsObject, With<Hooked>>
 ) {
     let (mut rod_info, rod_transform) = fishing_rod.single_mut();
     let mut line_info = line.single_mut();
     
-    let traverse_force = if hooked_object.is_empty() {
-        // Rod bending currently only supported for fish
-        0.
+    let traverse_force: f32;
+    let mut rotation: Quat = Quat::from_rotation_z(rod_info.rotation);
+
+    if hooked_object.is_empty() {
+        traverse_force = 0.;
     } else {
-        let (fish_species, physics_object) = hooked_object.single();
+        let physics_object = hooked_object.single();
 
-        // Temporary 2D calculation
-        let rod_dir = Vec2::from_angle(rod_info.rotation);
-        let rod_end = rod_transform.translation.xy() + rod_info.rod_type.length / 2. * rod_dir;
-        let fish_offset = fish_species.hook_pos.rotate(Vec2::from_angle(physics_object.rotation.z));
-        let fish_pos = physics_object.position.xy() + fish_offset;
-        let line_dir = fish_pos - rod_end;
-        let angle = Vec2::angle_between(rod_dir, line_dir);
+        // Magnitude
+        let rod_dir = Vec2::from_angle(rod_info.rotation).extend(0.);
+        let rod_end = rod_transform.translation.with_z(0.) + rod_info.rod_type.length / 2. * rod_dir;
+        let line_dir = (physics_object.position - rod_end).normalize();
+        let end1_force = physics_object.forces.player.length();
+        let end2_force = (physics_object.forces.water + physics_object.forces.own).dot(line_dir);
+        traverse_force = end1_force + end2_force;
 
-        (physics_object.forces.water.length() + physics_object.forces.own.length()) * f32::sin(angle)
+        let angle = if line_dir == Vec3::ZERO { 0. } else { (rod_info.rotation - f32::atan2(line_dir.y, line_dir.x )).signum() * line_dir.angle_between(rod_dir) };
+        rotation = rotation.mul_quat(Quat::from_rotation_x(angle + PI / 2.));
     };
 
     let rod_type = rod_info.rod_type;
     let thickness_ratio = rod_type.thickness / rod_type.radius;
     let thickness_ratio_inverse = 1. - thickness_ratio;
-    let base_rotation = Vec2::from_angle(rod_info.rotation);
 
     let mut position = Vec2::ZERO;
     let mut theta = 0.;
@@ -113,13 +115,15 @@ pub fn bend_fishing_rod (
         }
 
         // Display
-        let screen_position = PLAYER_POSITION.xy() + position.rotate(base_rotation) * PIXELS_PER_METER;
+        let rotated_position = Quat::mul_vec3(rotation, position.extend(0.));
+        let screen_position = PLAYER_POSITION + rotated_position * PIXELS_PER_METER ;
 
         let mut entity = commands.entity(rod_info.segments[i]);
         entity.insert(Transform::from_xyz(screen_position.x, screen_position.y, 901.));
     }
     
-    rod_info.tip_pos = (rod_transform.translation.xy() + position.rotate(base_rotation) * PIXELS_PER_METER).extend(0.);
+    let tip_pos_raw = Quat::mul_vec3(rotation, position.extend(0.));
+    rod_info.tip_pos = (rod_transform.translation + tip_pos_raw * PIXELS_PER_METER).with_z(0.);
     line_info.start = rod_info.tip_pos;
 }
 

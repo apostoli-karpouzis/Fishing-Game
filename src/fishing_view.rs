@@ -230,7 +230,7 @@ impl FishingRodType {
 
     pub const NORMAL: FishingRodType = FishingRodType::new(
         "rods/default.png",
-        1.5,
+        0.75,
         0.015,
         0.004,
         3450E6,
@@ -239,7 +239,7 @@ impl FishingRodType {
     );
     pub const SURF: FishingRodType = FishingRodType::new(
         "rods/surf.png",
-        2.,
+        1.,
         0.015,
         0.004,
         3450E6,
@@ -470,7 +470,7 @@ impl Plugin for FishingViewPlugin {
                         .after(move_fish),
                     (power_bar_cast, switch_rod, switch_line, switch_lure)
                         .run_if(in_state(FishingState::Idle)),
-                    rod_rotate,
+                    rod_rotate.after(fish_area_lure),
                     (
                         calculate_water_force,
                         (calculate_buoyancy_force, calculate_player_force).run_if(
@@ -486,10 +486,10 @@ impl Plugin for FishingViewPlugin {
                     simulate_physics.after(calculate_fish_force),
                     (
                         bend_fishing_rod,
-                        /*handle_debris.run_if(
+                        handle_debris.run_if(
                             in_state(FishingState::ReelingUnhooked)
                                 .or_else(in_state(FishingState::ReelingHooked)),
-                        ),*/
+                        ),
                     )
                         .after(simulate_physics),
                     (
@@ -3030,11 +3030,13 @@ fn begin_cast(
 
 fn handle_debris(
     mut debris_details: Query<(&mut Transform, &DebrisType, &mut DebrisHooked), With<DebrisHooked>>,
-    mut hooked_object: Query<
-        (&Transform, &mut PhysicsObject),
-        (With<Hooked>, Without<DebrisHooked>, Without<PhysicsFish>),
-    >,
+    mut hooked_object: Query<(&Transform, &mut PhysicsObject), (With<Hooked>, Without<DebrisHooked>)>,
 ) {
+    // Return if fish just caught
+    if hooked_object.is_empty() {
+        return;
+    }
+
     let (hooked_object_transform, mut hooked_object_physics) = hooked_object.single_mut();
 
     for (mut debris_position, debris_info, mut debris_is_hooked) in debris_details.iter_mut() {
