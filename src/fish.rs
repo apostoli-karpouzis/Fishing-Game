@@ -114,28 +114,6 @@ impl Pond {
     }
 }
 
-pub fn update_fish_visibility(
-    mut fish_query: Query<&mut Visibility, With<MysteryFish>>,
-    inventory_query: Query<&PlayerInventory>,
-    mut visibility_updated: ResMut<FishVisibiltyUpdated>,
-){
-    if visibility_updated.0 {
-        return;
-    }
-
-    let player_inventory = inventory_query.single();
-    let has_sunglasses = player_inventory.cosmetics.iter().any(|item| item.name == "Polarized Sun Glasses");
-
-    print!("Updating fish visibility...  ");
-    for mut visibility in fish_query.iter_mut(){
-        *visibility = if has_sunglasses {
-            Visibility::Visible
-        }else{
-            Visibility::Hidden
-        };
-    }
-    visibility_updated.0 = true;
-}
 pub fn fish_update(
         mut commands: Commands,
         mut aging_fish: Query<(&mut Fish, Entity, &Species, &HungerCpt), (With<Fish>, With<InPond>)>,
