@@ -219,7 +219,7 @@ pub const REDHANDFISH: Species = Species::new(
     (20, 21),
     //is sunny just clear at night?
     Weather::Sunny,
-    (198, 200),
+    (148, 150),
     (FISHING_ROOM_X as i32, FISHING_ROOM_Y as i32 + 120),
     (5,4),
     0.1,
