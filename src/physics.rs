@@ -83,7 +83,7 @@ pub fn bend_fishing_rod (
         let end2_force = (physics_object.forces.water + physics_object.forces.own).dot(line_dir);
         traverse_force = end1_force + end2_force;
 
-        let angle = if line_dir == Vec3::ZERO { 0. } else { (rod_info.rotation - f32::atan2(line_dir.y, line_dir.x )).signum() * line_dir.angle_between(rod_dir) };
+        let angle = if line_dir == Vec3::ZERO { 0. } else { (rod_info.rotation - f32::atan2(line_dir.y, line_dir.x )).signum() * line_dir.with_z(0.).angle_between(rod_dir) };
         rotation = rotation.mul_quat(Quat::from_rotation_x(angle + PI / 2.));
     };
 
