@@ -457,13 +457,11 @@ impl Plugin for FishingViewPlugin {
 
         app.init_state::<FishingState>()
             .insert_resource(ProbTimer::new(2.))
-            .insert_resource(FishVisibiltyUpdated(false))
             .add_systems(Startup, setup)
             .add_systems(
                 Update,
                 (
                     move_fish,
-                    update_fish_visibility.run_if(|visibilty_updated: Res<FishVisibiltyUpdated>| !visibilty_updated.0),
                     fish_area_lure
                         .run_if(in_state(FishingState::ReelingUnhooked))
                         .after(move_fish),
@@ -2814,7 +2812,7 @@ fn fishing_transition(
     mut power_bar: Query<(&mut Transform, &mut PowerBar), (With<PowerBar>, Without<Camera>)>,
     mut rod: Query<&mut Transform, (With<FishingRod>, Without<Camera>, Without<PowerBar>)>,
     player_inventory: Query<&mut PlayerInventory>,
-    mut fishes: Query<(&mut Visibility), (With<MysteryFish>, With<InPond>)>,
+    mut fishes: Query<&mut Visibility, With<MysteryFish>>,
 ) {
     let mut camera_transform = camera.single_mut();
     let (mut power_bar_transform, mut power) = power_bar.single_mut();
