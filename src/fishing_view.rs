@@ -3098,6 +3098,11 @@ fn handle_debris(
     mut debris_details: Query<(&mut Transform, &DebrisType, &mut DebrisHooked), With<DebrisHooked>>,
     mut hooked_object: Query<(&Transform, &mut PhysicsObject), (With<Hooked>, Without<DebrisHooked>)>,
 ) {
+    // Return if fish just caught
+    if hooked_object.is_empty() {
+        return;
+    }
+
     let (hooked_object_transform, mut hooked_object_physics) = hooked_object.single_mut();
 
     for (mut debris_position, debris_info, mut debris_is_hooked) in debris_details.iter_mut() {
