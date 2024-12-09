@@ -12,11 +12,6 @@ use crate::species::*;
 use crate::weather::*;
 use crate::window::*;
 use bevy::prelude::*;
-use bevy::prelude::*;
-use bevy::prelude::*;
-use bevy::render::view::visibility;
-use bevy::sprite::*;
-use bevy::sprite::*;
 use bevy::sprite::*;
 use lazy_static::lazy_static;
 use rand::Rng;
@@ -47,7 +42,7 @@ pub const FISHING_ROOM_Y: f32 = FISHING_ROOM_CENTER.y;
 pub const PLAYER_POSITION: Vec3 = Vec3::new(
     FISHING_ROOM_X - 100.,
     FISHING_ROOM_Y - (WIN_H / 2.) + 50.,
-    902.,
+    950.,
 );
 
 const POWER_BAR_Y_OFFSET: f32 = FISHING_ROOM_Y - 308.;
@@ -147,6 +142,7 @@ pub struct FishingRod {
     pub rotation: f32,
     pub material: Handle<ColorMaterial>,
     pub segments: Vec<Entity>,
+    pub line: Vec<Entity>,
     pub tip_pos: Vec3,
 }
 
@@ -196,6 +192,9 @@ impl Eq for Particle {}
 
 #[derive(Component)]
 struct FishingRodSegment;
+
+#[derive(Component)]
+struct FishingRodLineSegment;
 
 pub struct FishingRodType {
     pub texture: &'static str,
@@ -1018,6 +1017,7 @@ fn setup(
         rotation: PI / 2.,
         material: materials.add(default_rod_type.blank_color),
         segments: Vec::with_capacity(segment_count),
+        line: Vec::with_capacity(segment_count),
         tip_pos: Vec3::new(
             PLAYER_POSITION.x,
             PLAYER_POSITION.y + default_rod_type.length * PIXELS_PER_METER,
@@ -1025,13 +1025,14 @@ fn setup(
         ),
     };
 
-    // Fishling line
+    // Fishing rod and attached line segments
     for i in (0..segment_count).rev() {
         let l = i as f32 * BENDING_RESOLUTION;
         let radius = default_rod_type.thickness * l / default_rod_type.length;
-        let radius_pixels = (radius * 750.).max(1.);
+        let radius_pixels = (radius * ROD_RADIUS_PIXELS_PER_METER).max(1.);
 
-        let segment = commands.spawn((
+        // Rod segments
+        let mut segment = commands.spawn((
             MaterialMesh2dBundle {
                 mesh: Mesh2dHandle(meshes.add(Rectangle::new(radius_pixels, radius_pixels))),
                 material: rod_info.material.clone(),
@@ -1041,6 +1042,21 @@ fn setup(
         ));
 
         rod_info.segments.push(segment.id());
+
+        // Line segments
+        let line_mesh = Mesh2dHandle(meshes.add(Rectangle::new(FishingLine::WIDTH, FishingLine::WIDTH)));
+        let line_material = materials.add(ColorMaterial::from_color(FishingLineType::MONOFILILMENT.color));
+
+        segment = commands.spawn((
+            MaterialMesh2dBundle {
+                mesh: line_mesh.clone(),
+                material: line_material.clone(),
+                ..default()
+            },
+            FishingRodLineSegment,
+        ));
+
+        rod_info.line.push(segment.id());
     }
 
     let mut particle_info: ParticleList = ParticleList {
@@ -2953,6 +2969,7 @@ fn switch_rod(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut rod: Query<(&mut FishingRod, &mut Handle<Image>, &Transform), With<FishingRod>>,
     segments: Query<(Entity, &Mesh2dHandle), With<FishingRodSegment>>,
+    line_segments: Query<(Entity, &Mesh2dHandle, &Handle<ColorMaterial>), (With<FishingRodLineSegment>, Without<FishingRodSegment>)>,
     mut player_inventory: Query<&mut PlayerInventory>,
 ) {
     if !input.just_pressed(SWITCH_ROD) {
@@ -2984,16 +3001,23 @@ fn switch_rod(
         commands.entity(segment_id).despawn();
     }
 
+    let (_segment_id, line_mesh, line_material_handle) = line_segments.iter().next().unwrap();
+
+    for (segment_id, _mesh_handle, _material_handle) in line_segments.iter() {
+        commands.entity(segment_id).despawn();
+    }
+
     // Create new segments
     let new_segment_count: usize = (new_type.length / BENDING_RESOLUTION) as usize;
     rod_info.segments = Vec::with_capacity(new_segment_count);
+    rod_info.line = Vec::with_capacity(new_segment_count);
 
     for i in (0..new_segment_count).rev() {
         let l = i as f32 * BENDING_RESOLUTION;
         let radius = new_type.thickness * l / new_type.length;
-        let radius_pixels = (radius * 750.).max(1.);
+        let radius_pixels = (radius * ROD_RADIUS_PIXELS_PER_METER).max(1.);
 
-        let entity = commands
+        let mut segment = commands
             .spawn((
                 MaterialMesh2dBundle {
                     mesh: Mesh2dHandle(meshes.add(Rectangle::new(radius_pixels, radius_pixels))),
@@ -3004,7 +3028,18 @@ fn switch_rod(
             ))
             .id();
 
-        rod_info.segments.push(entity);
+        rod_info.segments.push(segment);
+
+        segment = commands.spawn((
+            MaterialMesh2dBundle {
+                mesh: line_mesh.clone(),
+                material: line_material_handle.clone(),
+                ..default()
+            },
+            FishingRodLineSegment,
+        )).id();
+
+        rod_info.line.push(segment);
     }
 }
 
@@ -3013,6 +3048,7 @@ fn switch_line(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut line: Query<&mut FishingLine>,
     mut segments: Query<&Handle<ColorMaterial>, With<FishingLineSegment>>,
+    mut rod_segments: Query<&Handle<ColorMaterial>, With<FishingRodLineSegment>>,
     mut player_inventory: Query<&mut PlayerInventory>,
 ) {
     if !input.just_pressed(SWITCH_LINE) {
@@ -3031,6 +3067,10 @@ fn switch_line(
     line_info.line_type = LINES.get(current_line).unwrap();
 
     for material in segments.iter_mut() {
+        materials.get_mut(material).unwrap().color = line_info.line_type.color;
+    }
+
+    for material in rod_segments.iter_mut() {
         materials.get_mut(material).unwrap().color = line_info.line_type.color;
     }
 }

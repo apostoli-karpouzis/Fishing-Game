@@ -13,6 +13,7 @@ use crate::species::Behavior;
 
 const REEL: KeyCode = KeyCode::KeyO;
 
+pub const ROD_RADIUS_PIXELS_PER_METER: f32 = 750.;
 pub const PIXELS_PER_METER: f32 = 300.;
 pub const BENDING_RESOLUTION: f32 = 1. / PIXELS_PER_METER;
 
@@ -69,9 +70,11 @@ pub fn bend_fishing_rod (
     
     let traverse_force: f32;
     let mut rotation: Quat = Quat::from_rotation_z(rod_info.rotation);
+    let line_rotation: Quat = Quat::from_rotation_z(rod_info.rotation).mul_quat(Quat::from_rotation_x(PI / 2.));
 
     if hooked_object.is_empty() {
         traverse_force = 0.;
+        rotation = rotation.mul_quat(Quat::from_rotation_x(PI / 2.));
     } else {
         let physics_object = hooked_object.single();
 
@@ -94,6 +97,8 @@ pub fn bend_fishing_rod (
     let mut position = Vec2::ZERO;
     let mut theta = 0.;
 
+    let mut line_segment_screen_position = Vec3::ZERO;
+
     for i in 0..rod_info.segments.len() {
         // Calculate position of each segment
         let l = i as f32 * BENDING_RESOLUTION;
@@ -114,16 +119,23 @@ pub fn bend_fishing_rod (
             // BREAK
         }
 
-        // Display
-        let rotated_position = Quat::mul_vec3(rotation, position.extend(0.));
-        let screen_position = PLAYER_POSITION + rotated_position * PIXELS_PER_METER ;
+        // Fishing rod segment
+        let rotated_position = rotation.mul_vec3(position.extend(0.));
+        let segment_screen_position = PLAYER_POSITION + rotated_position * PIXELS_PER_METER;
 
-        let mut entity = commands.entity(rod_info.segments[i]);
-        entity.insert(Transform::from_xyz(screen_position.x, screen_position.y, 901.));
+        let mut segment = commands.entity(rod_info.segments[i]);
+        segment.insert(Transform::from_xyz(segment_screen_position.x, segment_screen_position.y, 901.));
+
+        // Fishing line segment
+        let line_segment_offset = Vec3::new(0., 0., -(rod_type.radius - r2) * PIXELS_PER_METER / ROD_RADIUS_PIXELS_PER_METER);
+        let line_segment_offset_rotated = line_rotation.mul_vec3(line_segment_offset);
+        line_segment_screen_position = segment_screen_position + (line_segment_offset_rotated * ROD_RADIUS_PIXELS_PER_METER).clamp_length_min(1.);
+
+        let mut line_segment = commands.entity(rod_info.line[i]);
+        line_segment.insert(Transform::from_xyz(line_segment_screen_position.x, line_segment_screen_position.y, 902.));
     }
     
-    let tip_pos_raw = Quat::mul_vec3(rotation, position.extend(0.));
-    rod_info.tip_pos = (rod_transform.translation + tip_pos_raw * PIXELS_PER_METER).with_z(0.);
+    rod_info.tip_pos = line_segment_screen_position.with_z(0.);
     line_info.start = rod_info.tip_pos;
 }
 
