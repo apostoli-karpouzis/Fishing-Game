@@ -1760,7 +1760,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     BASS,
@@ -1804,7 +1804,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 2.0,
@@ -1862,7 +1862,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     CATFISH,
@@ -1906,7 +1906,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 5.0,
@@ -1984,7 +1984,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     BASS,
@@ -2129,7 +2129,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 5.0,
@@ -2205,7 +2205,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     MAHIMAHI,
@@ -2249,7 +2249,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 2.0,
@@ -2423,7 +2423,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     SWORDFISH,
@@ -2468,7 +2468,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 10.0,
@@ -2526,7 +2526,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     InPond,
                     REDHANDFISH,
@@ -2575,7 +2575,7 @@ fn fishPopulation(
                         //length, width, depth
                         bounds: (FISHING_ROOM_X as i32 + 100, FISHING_ROOM_Y as i32 + 100),
                         age: 1.0,
-                        hunger: 10.0,
+                        hunger: 1.0,
                     },
                     PhysicsObject {
                         mass: 10.0,
