@@ -230,7 +230,7 @@ impl FishingRodType {
 
     pub const NORMAL: FishingRodType = FishingRodType::new(
         "rods/default.png",
-        1.5,
+        0.75,
         0.015,
         0.004,
         3450E6,
@@ -239,7 +239,7 @@ impl FishingRodType {
     );
     pub const SURF: FishingRodType = FishingRodType::new(
         "rods/surf.png",
-        2.,
+        1.,
         0.015,
         0.004,
         3450E6,
@@ -3096,10 +3096,7 @@ fn begin_cast(
 
 fn handle_debris(
     mut debris_details: Query<(&mut Transform, &DebrisType, &mut DebrisHooked), With<DebrisHooked>>,
-    mut hooked_object: Query<
-        (&Transform, &mut PhysicsObject),
-        (With<Hooked>, Without<DebrisHooked>, Without<PhysicsFish>),
-    >,
+    mut hooked_object: Query<(&Transform, &mut PhysicsObject), (With<Hooked>, Without<DebrisHooked>, Without<PhysicsFish>)>,
 ) {
     let (hooked_object_transform, mut hooked_object_physics) = hooked_object.single_mut();
 
